@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "typecheck": "tsc",
     "cf-typegen": "wrangler types",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.170.41",
@@ -22,6 +24,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.62.5",
+    "@cloudflare/vitest-plugin": "catalog:",
     "@flareling/config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "catalog:",
@@ -31,6 +34,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "catalog:",
     "vite": "^8.3.2",
+    "vitest": "catalog:",
     "wrangler": "^4.147.0"
   }
 }

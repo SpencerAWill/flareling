@@ -374,7 +374,7 @@ Defaults that keep the bill small:
 
 | Layer | Tooling | Notes |
 | --- | --- | --- |
-| Unit and integration | Vitest with `@cloudflare/vitest-plugin` | Runs in workerd with real D1, KV, R2, Queues, and DOs. Migrations are applied with `readD1Migrations`. Storage is isolated per test. |
+| Unit and integration | Vitest with `@cloudflare/vitest-plugin` | Runs in workerd with real D1, KV, R2, Queues, and DOs. Migrations are applied with `readD1Migrations`. Storage is isolated per test file. |
 | Component | Vitest (DOM config), Storybook | For `libs/ui` and app components |
 | Property-based | fast-check (`*.property.test.ts`) | For parsers, permissions, and anything with a large input space |
 | E2E | Playwright, desktop and mobile projects | Runs locally in CI and as a smoke test against each deploy |
