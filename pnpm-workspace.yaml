@@ -114,6 +114,7 @@ catalog:
   lint-staged: ^17.6.0
   sherif: ^1.13.0
   turbo: ^2.11.7
+  knip: ^6.39.0
 
 peerDependencyRules:
   allowedVersions:

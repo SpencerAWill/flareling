@@ -112,8 +112,8 @@ jobs:
       - name: gitleaks
         run: ./gitleaks git --redact --no-banner --verbose .
 
-  # The same gate as `pnpm verify` locally (Biome, sherif, typecheck, tests in
-  # workerd, boundaries), then a production build, the Worker size budget, and
+  # The same gate as `pnpm verify` locally (Biome, sherif, knip, typecheck,
+  # tests in workerd, boundaries), then a production build, the Worker size budget, and
   # Playwright against that build. One job rather than several so the install
   # and build are paid for once.
   verify:

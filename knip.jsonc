@@ -1,0 +1,44 @@
+{
+  // knip: unused files, exports, exported types, and dependencies across the
+  // whole workspace. Biome only sees unused locals; knip works on the module
+  // graph, so it catches an export nobody imports, a file nothing reaches, or
+  // a dependency no source file uses. Runs in `pnpm verify` and CI.
+  //
+  // Most entry points (Vite, Vitest, Playwright, Wrangler, TanStack Start, the
+  // tsconfig presets) are found by knip's plugins. Every setting below exists
+  // because a plugin can't see something; each says what and why. Before
+  // adding a suppression, check that the finding is a false positive: the
+  // point of this file is to keep the signal. Conventions follow
+  // ucmc.spencerwill.com's knip.config.ts.
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+
+  // An export used only inside its own file is live code with a redundant
+  // `export`, not dead code (for example `plan` in infra/github/src/config.ts).
+  "ignoreExportsUsedInFile": true,
+
+  // `cloudflare:workers` and `cloudflare:test` are modules the workerd runtime
+  // provides, not packages. knip reads the specifier's first segment as a
+  // package name.
+  "ignoreDependencies": ["cloudflare"],
+
+  "workspaces": {
+    // Libs are internal, so their public exports are not an API for outside
+    // consumers: an export no app or lib imports is dead code. knip skips a
+    // package's entry exports by default, which would hide exactly that.
+    "libs/*": {
+      "includeEntryExports": true
+    },
+    "apps/web": {
+      // The Workers test pool's `main` (see vitest.config.ts). It's referenced
+      // by a string in cloudflareTest() options, which knip's Vitest plugin
+      // doesn't read, so its default export would report as unused.
+      "entry": ["test/worker.ts"]
+    },
+    "tooling/scripts": {
+      // check-worker-size spawns `wrangler` from the calling app's PATH (each
+      // app that runs it already depends on wrangler). Declaring wrangler here
+      // too would add a second copy of something this package never imports.
+      "ignoreBinaries": ["wrangler"]
+    }
+  }
+}

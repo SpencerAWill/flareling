@@ -193,7 +193,7 @@ Rules:
 | `pnpm dev` | Runs all apps locally with bindings wired together |
 | `pnpm dev --filter web` | Runs one app and the apps it binds to |
 | `pnpm build` | Builds every package, cached by Turborepo |
-| `pnpm verify` | Biome, sherif, typecheck, tests, and boundaries (knip to come): the same gate CI runs |
+| `pnpm verify` | Biome, sherif, knip, typecheck, tests, and boundaries: the same gate CI runs |
 | `pnpm test` | Runs unit and integration tests in the Workers runtime |
 | `pnpm test:e2e` | Builds, then runs Playwright with axe against the production build (desktop and mobile projects). The dev container installs the browsers; elsewhere run `pnpm --filter @flareling/web test:e2e:install` once. UI mode: `pnpm --filter @flareling/web test:e2e:ui`, on port 9323 |
 | `pnpm size` | Builds, then fails if any Worker's gzip upload is over its budget (below the Free plan's 3 MB cap) |

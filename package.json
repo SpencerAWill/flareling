@@ -16,7 +16,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "boundaries": "turbo boundaries",
-    "verify": "biome check && sherif && turbo run typecheck test && turbo boundaries",
+    "verify": "biome check && sherif && knip && turbo run typecheck test && turbo boundaries",
     "check": "biome check",
     "check:fix": "biome check --write",
     "format": "biome format --write",
@@ -25,7 +25,8 @@
     "prepare": "husky",
     "sherif": "sherif",
     "size": "turbo run size",
-    "test:e2e": "turbo run test:e2e"
+    "test:e2e": "turbo run test:e2e",
+    "knip": "knip"
   },
   "config": {
     "commitizen": {
@@ -40,6 +41,7 @@
     "commitizen": "catalog:",
     "husky": "catalog:",
     "inquirer": "catalog:",
+    "knip": "catalog:",
     "lint-staged": "catalog:",
     "sherif": "catalog:",
     "turbo": "catalog:"
