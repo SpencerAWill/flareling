@@ -1,0 +1,98 @@
+# Dependabot version updates.
+# https://docs.github.com/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+#
+# Every `cooldown` is at least 7 days to match `minimumReleaseAge: 10080` in
+# pnpm-workspace.yaml. pnpm refuses versions younger than that, so a PR for one
+# would fail to install. The same rule is applied to the non-npm ecosystems by
+# hand. Majors soak for 30 days where the ecosystem supports per-semver
+# cooldowns (npm only, of those below).
+version: 2
+updates:
+  # The whole pnpm workspace through the root lockfile, catalog included.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
+    groups:
+      # Families that release together and break together, one PR each.
+      tanstack:
+        patterns: ["@tanstack/*"]
+      tailwind:
+        patterns: ["tailwindcss", "@tailwindcss/*"]
+      # Vitest rides with the Cloudflare group because @cloudflare/vitest-plugin
+      # pins its peer range. Moving them in one PR keeps the pair compatible.
+      cloudflare:
+        patterns:
+          - "@cloudflare/*"
+          - "wrangler"
+          - "miniflare"
+          - "workerd"
+          - "vitest"
+          - "@vitest/*"
+      pulumi:
+        patterns: ["@pulumi/*"]
+      tooling:
+        patterns:
+          - "@biomejs/*"
+          - "@commitlint/*"
+          - "commitizen"
+          - "husky"
+          - "inquirer"
+          - "lint-staged"
+          - "turbo"
+          - "typescript"
+      # Catch-alls for the remaining minor and patch bumps. Majors outside the
+      # groups above get their own PR so each one is reviewed on its own.
+      production-minor:
+        dependency-type: production
+        update-types: ["minor", "patch"]
+      development-minor:
+        dependency-type: development
+        update-types: ["minor", "patch"]
+
+  # Actions are pinned to commit SHAs, so this is what moves them forward.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # Dev container features, through .devcontainer/devcontainer-lock.json.
+  - package-ecosystem: devcontainers
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+    groups:
+      devcontainers:
+        patterns: ["*"]
+
+  # Sidecar images in the dev container's compose file (Mailpit).
+  - package-ecosystem: docker-compose
+    directory: /.devcontainer
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+    groups:
+      docker-compose:
+        patterns: ["*"]

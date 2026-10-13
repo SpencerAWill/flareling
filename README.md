@@ -224,16 +224,16 @@ Each deploy runs in a fixed order:
 
 Production deploys use the `prod` GitHub environment (with required reviewers where the plan allows; see [plan limits](#github-as-code)) and `concurrency` set to `cancel-in-progress: false` so a deploy is never cut off halfway. They also use Workers gradual deployments for percentage rollouts and instant rollback.
 
-### GitHub Actions workflows 🚧
+### GitHub Actions workflows
 
 | Workflow | Runs on | Does |
 | --- | --- | --- |
-| `ci.yml` | PRs (skips drafts) | Path filtering, `pnpm audit --prod`, `pnpm verify`, build, Playwright, `pulumi preview` of `infra/cloudflare` commented on the PR (skipped for forks) |
-| `workflow-lint` job | Changes under `.github/` | actionlint and zizmor |
-| `lint-pr.yml` | PR opened or edited | Enforces a semantic PR title |
-| `preview.yml` | PR opened or updated | Uploads preview versions of affected Workers and comments URLs |
-| `deploy.yml` | Merge to `main` (dev), dispatch (prod) | The five-step deploy above |
-| `quality.yml` | Weekly schedule | Coverage and mutation testing reports (informational, not gates) |
+| `ci.yml` | PRs (skips drafts) and pushes to `main` | Path filtering, `pnpm audit --prod`, `pnpm verify`, and a build. 🚧 Playwright, and a `pulumi preview` of `infra/cloudflare` commented on the PR (skipped for forks) |
+| `workflow-lint` job in `ci.yml` | Workflow changes, and every push to `main` | actionlint and zizmor, from checksum-verified release binaries |
+| `lint-pr.yml` | PR opened, edited, or updated | Runs commitlint on the PR title, which becomes the squash commit on `main` |
+| `preview.yml` 🚧 | PR opened or updated | Uploads preview versions of affected Workers and comments URLs |
+| `deploy.yml` 🚧 | Merge to `main` (dev), dispatch (prod) | The five-step deploy above |
+| `quality.yml` 🚧 | Weekly schedule | Coverage and mutation testing reports (informational, not gates) |
 
 CI secrets are scoped per GitHub environment where the plan allows, and fall back to repository secrets otherwise. `infra/github` creates and writes all of them except `PULUMI_ACCESS_TOKEN`, which is set by hand once. See [GitHub as code](#github-as-code).
 
@@ -386,7 +386,7 @@ Defaults that keep the bill small:
 - **Release-age quarantine.** `minimumReleaseAge` in `pnpm-workspace.yaml` refuses packages published less than 7 days ago.
 - **Explicit build scripts.** `allowBuilds` lists exactly which dependencies may run install scripts (esbuild, workerd, and so on).
 - **Documented overrides.** Every security `overrides` entry cites its GHSA ID, and audit ignores are time-boxed.
-- **Dependabot cooldowns.** Updates wait 7 days, or 30 for majors, and are grouped (TanStack, Cloudflare, Pulumi, lint tooling).
+- **Dependabot cooldowns.** Updates wait 7 days, or 30 for majors, and are grouped (TanStack, Cloudflare with Vitest, Pulumi, tooling). Actions, dev container features, and the Mailpit image are covered too.
 - **Hardened Actions.** All actions are pinned to commit SHAs. `${{ }}` expressions never appear inside `run:` bodies; values pass through `env:`. zizmor and actionlint gate workflow changes.
 - **Auth defaults.** `__Host-` cookies, Turnstile on public forms, rate-limiting bindings on auth routes, and RBAC permissions stored as data.
 - `apps/admin` sits behind **Cloudflare Access**. WAF managed rules are declared in Pulumi.
