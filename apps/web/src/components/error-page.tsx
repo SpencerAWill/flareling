@@ -21,7 +21,8 @@ export function ErrorPage({ error, reset }: ErrorComponentProps) {
         className="self-start rounded border px-4 py-2"
         onClick={() => {
           reset();
-          router.invalidate();
+          // Fire and forget: a failed reload lands back in this boundary.
+          void router.invalidate();
         }}
       >
         Try again

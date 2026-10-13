@@ -24,6 +24,25 @@ RUN set -eux; \
 # same pnpm. `corepack enable` installs the shims into /usr/local/bin as root.
 RUN corepack enable
 
+# gitleaks for the pre-commit secret scan (lint-staged.config.js). No dev
+# container feature verifies the binary it downloads, so it is fetched here from
+# the pinned release and checked against the SHA-256 published in that
+# release's checksums.txt. CI pins the same version in ci.yml; bump both.
+ARG GITLEAKS_VERSION=8.30.1
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      amd64) asset=linux_x64; sha=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb ;; \
+      arm64) asset=linux_arm64; sha=e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080 ;; \
+      *) echo "no pinned gitleaks checksum for ${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /tmp/gitleaks.tar.gz \
+      "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_${asset}.tar.gz"; \
+    echo "${sha}  /tmp/gitleaks.tar.gz" | sha256sum --check --strict; \
+    tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks; \
+    rm /tmp/gitleaks.tar.gz; \
+    gitleaks version
+
 # Image-intrinsic env: static values that should apply however the container is
 # launched (VS Code, Zed, `docker compose exec`, CI). Per-host values like TZ
 # stay in devcontainer.json so they can read ${localEnv:...}.
@@ -36,9 +55,16 @@ RUN corepack enable
 # COREPACK_ENABLE_DOWNLOAD_PROMPT=0: corepack otherwise asks "Do you want to
 # continue?" before downloading the pinned pnpm, which hangs the unattended
 # `pnpm install` in update-content.
+#
+# PNPM_CONFIG_STORE_DIR pins the pnpm store to the node_modules volume. pnpm 12
+# finds that spot on its own only when run from the repo root. Run from a
+# package (`cd apps/web && pnpm add ...`), it places the store next to that
+# package's node_modules, on the slow bind mount, and fills a second full store
+# at /workspace/.pnpm-store.
 ENV CLAUDE_CONFIG_DIR=/home/${USERNAME}/.claude \
     PNPM_HOME=/home/${USERNAME}/.local/share/pnpm \
     PATH=/home/${USERNAME}/.local/share/pnpm:${PATH} \
+    PNPM_CONFIG_STORE_DIR=/workspace/node_modules/.pnpm-store \
     NODE_OPTIONS=--max-old-space-size=4096 \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     DEVCONTAINER=true

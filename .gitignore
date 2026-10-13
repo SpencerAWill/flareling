@@ -153,3 +153,8 @@ vite.config.ts.timestamp-*
 .wrangler/
 # TanStack Start build temp files.
 .tanstack/
+
+# Playwright output: per-test traces and screenshots, and the HTML report.
+test-results/
+playwright-report/
+blob-report/

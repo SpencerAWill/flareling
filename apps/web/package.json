@@ -14,27 +14,33 @@
     "cf-typegen": "wrangler types",
     "deploy": "wrangler deploy",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "size": "check-worker-size",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium webkit"
   },
   "dependencies": {
-    "@tanstack/react-router": "^1.170.41",
-    "@tanstack/react-start": "^1.168.60",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.62.5",
+    "@axe-core/playwright": "catalog:",
+    "@cloudflare/vite-plugin": "catalog:",
     "@cloudflare/vitest-plugin": "catalog:",
     "@flareling/config": "workspace:*",
-    "@tailwindcss/vite": "^4.3.3",
+    "@flareling/scripts": "workspace:*",
+    "@playwright/test": "catalog:",
+    "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.2",
-    "tailwindcss": "^4.3.3",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vite": "^8.3.2",
+    "vite": "catalog:",
     "vitest": "catalog:",
-    "wrangler": "^4.147.0"
+    "wrangler": "catalog:"
   }
 }

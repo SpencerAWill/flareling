@@ -1,0 +1,9 @@
+# Code owners are requested for review automatically on every PR that touches
+# their paths. A project made from this template replaces the handle below.
+# Later lines take precedence, so add narrower paths (for example
+# `/infra/ @infra-team`) below the default as a team grows.
+#
+# Requiring their approval to merge is a ruleset setting (`infra/github`), which
+# GitHub only offers on plans with rulesets for private repos.
+
+* @SpencerAWill

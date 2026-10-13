@@ -1,0 +1,8 @@
+{
+  "extends": "@flareling/config/tsconfig/base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "erasableSyntaxOnly": true
+  },
+  "include": ["src"]
+}

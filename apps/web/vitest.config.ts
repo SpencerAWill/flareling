@@ -1,7 +1,7 @@
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // Kept apart from vite.config.ts: `cloudflareTest()` takes the place of
 // `cloudflare()` from @cloudflare/vite-plugin, and the two do not share a
@@ -23,4 +23,8 @@ export default defineConfig({
     // same as the production build.
     viteReact(),
   ],
+  test: {
+    // e2e/ is Playwright's (playwright.config.ts), run by `test:e2e`.
+    exclude: [...configDefaults.exclude, "e2e/**"],
+  },
 });

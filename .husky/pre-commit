@@ -1,1 +1,10 @@
+# Secret scan of the staged diff. gitleaks is a standalone binary installed by
+# the dev container's Dockerfile, so a commit made from a host without it warns
+# and continues; the gitleaks job in ci.yml scans every push and PR regardless.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --pre-commit --staged --redact --no-banner
+else
+  echo "pre-commit: gitleaks not found, skipping the secret scan (CI still runs it)" >&2
+fi
+
 pnpm exec lint-staged

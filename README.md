@@ -116,14 +116,16 @@ Key principles:
 │   └── github/             # Pulumi: repo settings, rulesets, environments, CI secrets (one stack)
 ├── tooling/                # Dev-time only, never bundled
 │   ├── config/             # Shared tsconfig presets (Vitest and Wrangler presets to come)
-│   └── scripts/            # Bootstrap, type generation, Pulumi → Wrangler sync
+│   └── scripts/            # Worker size check; bootstrap and Pulumi → Wrangler sync to come
 ├── .claude/                # Agent rules, subagents, skills, and hooks (see below)
 ├── .devcontainer/          # Dev container with Mailpit sidecar
 ├── .github/
 │   ├── workflows/          # CI, deploys, infra, PR title lint, scheduled quality
 │   ├── dependabot.yml
 │   ├── zizmor.yml
+│   ├── CODEOWNERS
 │   └── ISSUE_TEMPLATE/ + pull_request_template.md
+├── docs/adr/               # Architecture decision records
 ├── CLAUDE.md
 ├── CONTRIBUTING.md
 ├── SECURITY.md
@@ -191,9 +193,10 @@ Rules:
 | `pnpm dev` | Runs all apps locally with bindings wired together |
 | `pnpm dev --filter web` | Runs one app and the apps it binds to |
 | `pnpm build` | Builds every package, cached by Turborepo |
-| `pnpm verify` | Lint, typecheck, knip, and tests: the same gate CI runs |
+| `pnpm verify` | Biome, sherif, typecheck, tests, and boundaries (knip to come): the same gate CI runs |
 | `pnpm test` | Runs unit and integration tests in the Workers runtime |
-| `pnpm test:e2e` | Runs Playwright (desktop and mobile projects) |
+| `pnpm test:e2e` | Builds, then runs Playwright with axe against the production build (desktop and mobile projects). Install browsers once with `pnpm --filter @flareling/web test:e2e:install` |
+| `pnpm size` | Builds, then fails if any Worker's gzip upload is over its budget (below the Free plan's 3 MB cap) |
 | `pnpm lint` / `pnpm format` | Runs Biome |
 | `pnpm cf-typegen` | Regenerates binding types from each `wrangler.jsonc` (`wrangler types`) |
 | `pnpm db:generate` | Generates a D1 migration from schema changes |
@@ -203,7 +206,7 @@ Rules:
 
 Local configuration lives in each deployable's `.env.local`, copied from a committed `.env.example`. Wrangler v4 reads `.env` files natively. Every deployable validates its env at startup with a schema from `libs/env`, so a missing variable fails loudly instead of at the first request that needs it.
 
-Pre-commit hooks run `biome check --write --error-on-warnings` on staged files, and `commit-msg` enforces Conventional Commits.
+Pre-commit hooks scan staged changes for secrets with gitleaks and run `biome check --write --error-on-warnings` on staged files, and `commit-msg` enforces Conventional Commits. Decisions that shape the codebase are recorded in [`docs/adr/`](./docs/adr/README.md).
 
 ## Environments and deployment
 
@@ -228,7 +231,7 @@ Production deploys use the `prod` GitHub environment (with required reviewers wh
 
 | Workflow | Runs on | Does |
 | --- | --- | --- |
-| `ci.yml` | PRs (skips drafts) and pushes to `main` | Path filtering, `pnpm audit --prod`, `pnpm verify`, and a build. 🚧 Playwright, and a `pulumi preview` of `infra/cloudflare` commented on the PR (skipped for forks) |
+| `ci.yml` | PRs (skips drafts) and pushes to `main` | Path filtering, `pnpm audit --prod`, a gitleaks scan of the full history, `pnpm verify`, a build, the Worker size budget, and Playwright with axe. 🚧 A `pulumi preview` of `infra/cloudflare` commented on the PR (skipped for forks) |
 | `workflow-lint` job in `ci.yml` | Workflow changes, and every push to `main` | actionlint and zizmor, from checksum-verified release binaries |
 | `lint-pr.yml` | PR opened, edited, or updated | Runs commitlint on the PR title, which becomes the squash commit on `main` |
 | `preview.yml` 🚧 | PR opened or updated | Uploads preview versions of affected Workers and comments URLs |
@@ -377,13 +380,17 @@ Defaults that keep the bill small:
 | Unit and integration | Vitest with `@cloudflare/vitest-plugin` | Runs in workerd with real D1, KV, R2, Queues, and DOs. Migrations are applied with `readD1Migrations`. Storage is isolated per test file. |
 | Component | Vitest (DOM config), Storybook | For `libs/ui` and app components |
 | Property-based | fast-check (`*.property.test.ts`) | For parsers, permissions, and anything with a large input space |
-| E2E | Playwright, desktop and mobile projects | Runs locally in CI and as a smoke test against each deploy |
+| E2E | Playwright, desktop and mobile projects | Runs against `vite preview` (the production build in workerd) in CI, and against a deployed URL with `E2E_BASE_URL`. Fails on console errors and uncaught exceptions. |
+| Accessibility | `@axe-core/playwright` | Every E2E page check includes an axe scan against WCAG 2.1 A and AA |
 | Contract | Vitest | Checks that internal apps satisfy the RPC interfaces their callers depend on (once any exist) |
 | Mutation | Stryker (weekly) | Measures test quality and reports only |
 
 ## Security and supply chain
 
 - **Release-age quarantine.** `minimumReleaseAge` in `pnpm-workspace.yaml` refuses packages published less than 7 days ago.
+- **Trust policy.** `trustPolicy: no-downgrade` refuses a version whose publish provenance is weaker than an earlier one's. Exceptions are exact versions with a reason.
+- **One version per dependency.** Every external version lives in the pnpm catalog (`catalogMode: strict`), and sherif checks the workspace for inconsistencies.
+- **Secret scanning.** gitleaks scans staged changes in the pre-commit hook and the full history in CI. It's installed from a checksum-verified release in the dev container.
 - **Explicit build scripts.** `allowBuilds` lists exactly which dependencies may run install scripts (esbuild, workerd, and so on).
 - **Documented overrides.** Every security `overrides` entry cites its GHSA ID, and audit ignores are time-boxed.
 - **Dependabot cooldowns.** Updates wait 7 days, or 30 for majors, and are grouped (TanStack, Cloudflare with Vitest, Pulumi, tooling). Actions, dev container features, and the Mailpit image are covered too.
@@ -423,7 +430,7 @@ Lessons learned the hard way:
 - **Drizzle snapshots can drift** from the migrations directory. The schema-drift test catches this. If snapshots are already broken, write the migration SQL by hand rather than trusting `drizzle-kit generate`.
 - **`wrangler-action` needs `environment: production`** for production. Without it, production secrets are uploaded to the default (dev) Worker.
 - **pnpm 11 and later ignore `.npmrc`** for workspace settings. Put them in `pnpm-workspace.yaml`. Since pnpm 12, an unrecognized key there is a hard error (`ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS`) because the repo pins its pnpm version, so typos fail fast instead of being silently ignored.
-- **The pnpm store in dev containers.** pnpm 12 automatically puts the store in `node_modules/.pnpm-store` when no parent directory supports hard links, so the `storeDir` override used in www.spencerwill.com is no longer needed.
+- **The pnpm store in dev containers.** pnpm 12 puts the store in `node_modules/.pnpm-store` automatically, but only when it runs from the repo root. Run from a package directory, it creates a second full store at `/workspace/.pnpm-store` on the slow bind mount. The dev container pins the store with `PNPM_CONFIG_STORE_DIR` in its Dockerfile.
 - **Upgrading from pnpm 11:** use `--no-frozen-lockfile` (`--frozen-lockfile false` was removed). Expect the first install to re-key some peer variants of cyclic dependencies once.
 
 ## Adding an app or lib

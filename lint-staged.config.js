@@ -1,6 +1,7 @@
 /**
- * Biome is the entire pre-commit toolchain: it lints, formats, and sorts
- * imports in a single pass.
+ * Biome is the entire lint-staged toolchain: it lints, formats, and sorts
+ * imports in a single pass. (The secret scan runs separately in
+ * .husky/pre-commit, over the whole staged diff rather than per file.)
  *
  * The "*" glob hands Biome every staged path and lets biome.json decide what is
  * in scope, so the include list lives in exactly one place.

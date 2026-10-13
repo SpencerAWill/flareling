@@ -16,13 +16,16 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "boundaries": "turbo boundaries",
-    "verify": "biome check && turbo run typecheck test && turbo boundaries",
+    "verify": "biome check && sherif && turbo run typecheck test && turbo boundaries",
     "check": "biome check",
     "check:fix": "biome check --write",
     "format": "biome format --write",
     "lint": "biome lint",
     "commit": "cz",
-    "prepare": "husky"
+    "prepare": "husky",
+    "sherif": "sherif",
+    "size": "turbo run size",
+    "test:e2e": "turbo run test:e2e"
   },
   "config": {
     "commitizen": {
@@ -30,14 +33,15 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.15",
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.2.3",
-    "@commitlint/cz-commitlint": "^21.2.3",
-    "commitizen": "^4.3.2",
-    "husky": "^9.1.7",
-    "inquirer": "^12.11.1",
-    "lint-staged": "^17.6.0",
-    "turbo": "^2.11.7"
+    "@biomejs/biome": "catalog:",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
+    "@commitlint/cz-commitlint": "catalog:",
+    "commitizen": "catalog:",
+    "husky": "catalog:",
+    "inquirer": "catalog:",
+    "lint-staged": "catalog:",
+    "sherif": "catalog:",
+    "turbo": "catalog:"
   }
 }

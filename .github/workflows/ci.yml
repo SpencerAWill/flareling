@@ -80,14 +80,48 @@ jobs:
 
       - run: pnpm audit --audit-level high --prod
 
-  # The same gate as `pnpm verify` locally (Biome, typecheck, tests in workerd,
-  # boundaries), plus a production build of every app.
+  # Secret scan over the full history, on every run: a credential committed and
+  # then deleted is still in the history GitHub serves. The pre-commit hook runs
+  # the same scan on staged changes; this is the backstop for commits made
+  # without it. Installed like actionlint and zizmor below, from the pinned
+  # release with a SHA-256 check (the version matches .devcontainer/Dockerfile).
+  secrets:
+    name: Secret scan (gitleaks)
+    needs: paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          curl -fsSL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum --check --strict
+          tar xzf gitleaks.tar.gz gitleaks
+          ./gitleaks version
+
+      - name: gitleaks
+        run: ./gitleaks git --redact --no-banner --verbose .
+
+  # The same gate as `pnpm verify` locally (Biome, sherif, typecheck, tests in
+  # workerd, boundaries), then a production build, the Worker size budget, and
+  # Playwright against that build. One job rather than several so the install
+  # and build are paid for once.
   verify:
-    name: Verify and build
+    name: Verify, build, E2E
     needs: paths
     if: needs.paths.outputs.code == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -117,6 +151,44 @@ jobs:
       - run: pnpm verify
 
       - run: pnpm build
+
+      # Fails when a Worker's gzip upload passes its budget (below the Workers
+      # Free plan's 3 MB cap). Sizes go to the run summary.
+      - run: pnpm size
+
+      # Browser binaries are cached by Playwright version rather than by the
+      # lockfile, which changes on every dependency bump. A cache hit still has
+      # to install the system packages, which cannot be cached.
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(pnpm --filter @flareling/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @flareling/web exec playwright install --with-deps chromium webkit
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @flareling/web exec playwright install-deps chromium webkit
+
+      # Against `vite preview`, which serves the production build through
+      # workerd. The build step above is a turbo cache hit here.
+      - run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7
 
   # Static analysis for the workflows themselves, which nothing else checks.
   # actionlint covers the schema, expression types and (through shellcheck,

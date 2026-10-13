@@ -9,11 +9,20 @@
       "dependsOn": ["^build", "transit"],
       "outputs": ["dist/**"]
     },
+    "size": {
+      "dependsOn": ["build"],
+      "passThroughEnv": ["GITHUB_STEP_SUMMARY"]
+    },
     "typecheck": {
       "dependsOn": ["transit"]
     },
     "test": {
       "dependsOn": ["transit"]
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "passThroughEnv": ["CI", "E2E_BASE_URL"]
     },
     "dev": {
       "cache": false,

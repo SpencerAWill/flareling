@@ -39,10 +39,9 @@ services:
       # (measured in ucmc). Source stays bind-mounted and host-visible;
       # node_modules does not.
       #
-      # pnpm 12 notices that its default store (in $HOME, on the container's
-      # own filesystem) cannot hardlink into this volume, and moves the store
-      # to node_modules/.pnpm-store automatically, so no storeDir override is
-      # needed.
+      # The pnpm store lives on this volume too, so packages hardlink into it.
+      # The Dockerfile pins it with PNPM_CONFIG_STORE_DIR: pnpm 12 only picks
+      # node_modules/.pnpm-store by itself when run from the repo root.
       - node-modules:/workspace/node_modules
       # Claude Code state: transcripts, prompt history, and (via
       # CLAUDE_CONFIG_DIR in the Dockerfile) .claude.json. Survives rebuilds,

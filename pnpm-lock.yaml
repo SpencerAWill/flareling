@@ -189,9 +189,30 @@ settings:
 
 catalogs:
   default:
+    '@axe-core/playwright':
+      specifier: ^4.13.0
+      version: 4.13.0
+    '@biomejs/biome':
+      specifier: ^2.5.15
+      version: 2.5.15
+    '@cloudflare/vite-plugin':
+      specifier: ^1.62.5
+      version: 1.62.5
     '@cloudflare/vitest-plugin':
       specifier: ^1.3.6
       version: 1.3.6
+    '@commitlint/cli':
+      specifier: ^21.2.3
+      version: 21.2.3
+    '@commitlint/config-conventional':
+      specifier: ^21.2.3
+      version: 21.2.3
+    '@commitlint/cz-commitlint':
+      specifier: ^21.2.3
+      version: 21.2.3
+    '@playwright/test':
+      specifier: ^1.63.0
+      version: 1.63.0
     '@pulumi/cloudflare':
       specifier: ^6.21.0
       version: 6.21.0
@@ -201,65 +222,122 @@ catalogs:
     '@pulumi/pulumi':
       specifier: ^3.267.0
       version: 3.267.0
+    '@tailwindcss/vite':
+      specifier: ^4.3.3
+      version: 4.3.3
+    '@tanstack/react-router':
+      specifier: ^1.170.41
+      version: 1.170.41
+    '@tanstack/react-start':
+      specifier: ^1.168.60
+      version: 1.168.60
     '@types/node':
       specifier: ^24.19.1
       version: 24.19.1
+    '@types/react':
+      specifier: ^19.3.0
+      version: 19.3.0
+    '@types/react-dom':
+      specifier: ^19.3.0
+      version: 19.3.0
+    '@vitejs/plugin-react':
+      specifier: ^6.1.2
+      version: 6.1.2
+    commitizen:
+      specifier: ^4.3.2
+      version: 4.3.2
+    husky:
+      specifier: ^9.1.7
+      version: 9.1.7
+    inquirer:
+      specifier: ^12.11.1
+      version: 12.11.1
+    lint-staged:
+      specifier: ^17.6.0
+      version: 17.6.0
+    react:
+      specifier: ^19.3.0
+      version: 19.3.0
+    react-dom:
+      specifier: ^19.3.0
+      version: 19.3.0
+    sherif:
+      specifier: ^1.13.0
+      version: 1.13.0
+    tailwindcss:
+      specifier: ^4.3.3
+      version: 4.3.3
+    turbo:
+      specifier: ^2.11.7
+      version: 2.11.7
     typescript:
       specifier: ^7.0.2
       version: 7.0.2
+    vite:
+      specifier: ^8.3.2
+      version: 8.3.2
     vitest:
       specifier: ^4.1.11
       version: 4.1.11
+    wrangler:
+      specifier: ^4.147.0
+      version: 4.147.0
 
 importers:
 
   .:
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.5.15
+        specifier: 'catalog:'
         version: 2.5.15
       '@commitlint/cli':
-        specifier: ^21.2.3
+        specifier: 'catalog:'
         version: 21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.3)(typescript@7.0.2)
       '@commitlint/config-conventional':
-        specifier: ^21.2.3
+        specifier: 'catalog:'
         version: 21.2.3
       '@commitlint/cz-commitlint':
-        specifier: ^21.2.3
+        specifier: 'catalog:'
         version: 21.2.3(@types/node@26.6.4)(commitizen@4.3.2(@types/node@26.6.4)(typescript@7.0.2))(inquirer@12.11.1(@types/node@26.6.4))(typescript@7.0.2)
       commitizen:
-        specifier: ^4.3.2
+        specifier: 'catalog:'
         version: 4.3.2(@types/node@26.6.4)(typescript@7.0.2)
       husky:
-        specifier: ^9.1.7
+        specifier: 'catalog:'
         version: 9.1.7
       inquirer:
-        specifier: ^12.11.1
+        specifier: 'catalog:'
         version: 12.11.1(@types/node@26.6.4)
       lint-staged:
-        specifier: ^17.6.0
+        specifier: 'catalog:'
         version: 17.6.0
+      sherif:
+        specifier: 'catalog:'
+        version: 1.13.0
       turbo:
-        specifier: ^2.11.7
+        specifier: 'catalog:'
         version: 2.11.7
 
   apps/web:
     dependencies:
       '@tanstack/react-router':
-        specifier: ^1.170.41
+        specifier: 'catalog:'
         version: 1.170.41(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-start':
-        specifier: ^1.168.60
+        specifier: 'catalog:'
         version: 1.168.60(esbuild@0.28.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.12)(supports-color@7.2.0)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.1))
       react:
-        specifier: ^19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       react-dom:
-        specifier: ^19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
     devDependencies:
+      '@axe-core/playwright':
+        specifier: 'catalog:'
+        version: 4.13.0(playwright-core@1.63.0)
       '@cloudflare/vite-plugin':
-        specifier: ^1.62.5
+        specifier: 'catalog:'
         version: 1.62.5(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.1))(wrangler@4.147.0(@types/node@24.19.1))
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'
@@ -267,35 +345,41 @@ importers:
       '@flareling/config':
         specifier: workspace:*
         version: link:../../tooling/config
+      '@flareling/scripts':
+        specifier: workspace:*
+        version: link:../../tooling/scripts
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.63.0
       '@tailwindcss/vite':
-        specifier: ^4.3.3
+        specifier: 'catalog:'
         version: 4.3.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.1))
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1
       '@types/react':
-        specifier: ^19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: ^19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
-        specifier: ^6.1.2
+        specifier: 'catalog:'
         version: 6.1.2(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.1))
       tailwindcss:
-        specifier: ^4.3.3
+        specifier: 'catalog:'
         version: 4.3.3
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
       vite:
-        specifier: ^8.3.2
+        specifier: 'catalog:'
         version: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.1))
       wrangler:
-        specifier: ^4.147.0
+        specifier: 'catalog:'
         version: 4.147.0(@types/node@24.19.1)
 
   infra/cloudflare:
@@ -359,7 +443,24 @@ importers:
 
   tooling/config: {}
 
+  tooling/scripts:
+    devDependencies:
+      '@flareling/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
 packages:
+
+  '@axe-core/playwright@4.13.0':
+    resolution: {integrity: sha512-6YLx+kxXu5GJceG4ozFg+33a2EMTdjYwWGloJ3sb9Kta5pp+ZNS53uxGVog5JetIY8s++P5UrtX+cri+u0VAVg==}
+    peerDependencies:
+      playwright-core: '>= 1.0.0'
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -1336,6 +1437,11 @@ packages:
   '@oxc-project/types@0.152.0':
     resolution: {integrity: sha512-oM/5rLBm2tPkg0iBgkH/FOeR3PCDpY19GTgAZjMFM8h9WI9VW7cLgzp6nwtarYKmovavIQZ+Fe/RKX/8C8O/Rw==}
 
+  '@playwright/test@1.63.0':
+    resolution: {integrity: sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   '@poppinss/colors@4.1.6':
     resolution: {integrity: sha512-H9xkIdFswbS8n1d6vmRd8+c10t2Qe+rZITbbDHHkQixH5+2x1FDGmi/0K+WgWiqQFKPSlIYB7jlH6Kpfn6Fleg==}
 
@@ -2043,6 +2149,10 @@ packages:
   at-least-node@1.0.0:
     resolution: {integrity: sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==}
     engines: {node: '>= 4.0.0'}
+
+  axe-core@4.13.0:
+    resolution: {integrity: sha512-UzGt8zg7Ny8djbYMhxl2zuEevVa7r2gJjYY5Lwr1xM7+XU2nd6CkIWFTVcCIbAP63vSz71NaVyyuSk9lHKcy0A==}
+    engines: {node: '>=4'}
 
   babel-dead-code-elimination@1.0.12:
     resolution: {integrity: sha512-GERT7L2TiYcYDtYk1IpD+ASAYXjKbLTDPhBtYj7X1NuRMDTMtAx9kyBenub1Ev41lo91OHCKdmP+egTDmfQ7Ig==}
@@ -3054,6 +3164,16 @@ packages:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
 
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   postcss-selector-parser@7.1.6:
     resolution: {integrity: sha512-7qASPzhKF2l2KLboRZux8CCTRMdGiV08vWmyKzPz22qZ7ZjQBOeY7rNzNoCLSUiftJ7HUq0GERHmxw/t0dCdMw==}
     engines: {node: '>=4'}
@@ -3197,6 +3317,54 @@ packages:
   shebang-regex@3.0.0:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
+
+  sherif-darwin-arm64@1.13.0:
+    resolution: {integrity: sha512-k38jpGpZIEWS5dpSRLSvVi53LZuGO3hDqB88jgdLMDN11LZM6yTDcP0GytnQ8OpE6Br/Js6bDCLsdWDarZdV9g==}
+    cpu: [arm64]
+    os: [darwin]
+
+  sherif-darwin-x64@1.13.0:
+    resolution: {integrity: sha512-W2bOj0Ya9A0fPSWzbeaaNg2RRRr48l2lArN8sGbfc9SZuJSJWXcdWkTVC3sEUiiXwpxNeLY/CsGNyQz5Izbfig==}
+    cpu: [x64]
+    os: [darwin]
+
+  sherif-linux-arm64-musl@1.13.0:
+    resolution: {integrity: sha512-9IDAlwYT5Ay2nex9Da3R98cvnPKVveT57i7pJXnnY/DC90qdqqz6Twlp7STRv+7qo4k4ES+2J9zQ0k6SDe888A==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  sherif-linux-arm64@1.13.0:
+    resolution: {integrity: sha512-Z94SgKNClWarVJj4LsayOmL7zccCUAvy3ugZnIO860FoJofh812KAyF8CdWrSho8qfmmoAzNcqSSc1OZh7+ckQ==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  sherif-linux-x64-musl@1.13.0:
+    resolution: {integrity: sha512-2L+A8jF5ylojFwl7eAePR1h3Bzx24IcMgEoWObXgD70k6xF+GOJaM/n+q4MQ9YDntAKbJfMDr6ETjt6Bt/hosA==}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  sherif-linux-x64@1.13.0:
+    resolution: {integrity: sha512-xGB9iiet8l/i8/YLZje8icpZyt4pVgoxB2+SoC6JCB8iDWsCVSuixebwX2t9yeGqXBXO1kphaW0TLf8Tmwy9JQ==}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  sherif-windows-arm64@1.13.0:
+    resolution: {integrity: sha512-jHzJ/EcG4HuNLf/3AEDzbRkAofLPBHRJKJJMjAosampAe9861atu4q+Z2IZ1/sHg5oVnNgaNg/Xc5DDhGcQ/3w==}
+    cpu: [arm64]
+    os: [win32]
+
+  sherif-windows-x64@1.13.0:
+    resolution: {integrity: sha512-KyMqQY62Eb3O+wePlw433mH2XBPVPLXdDjWPneg9pB6jeK0B1sgEzM2yks+aAP5asZ1Y8Q7C7iR7ZtbJKdsAtA==}
+    cpu: [x64]
+    os: [win32]
+
+  sherif@1.13.0:
+    resolution: {integrity: sha512-Ld2nUOlwW1nmYDA2Q/5o7SC8WcCzVS7XjImmzW4a4z1o8DXJnt+2xYLvI42N5UYlNb/EevPahdC/XxIP6C38TQ==}
+    hasBin: true
 
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
@@ -3693,6 +3861,11 @@ packages:
     resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
 
 snapshots:
+
+  '@axe-core/playwright@4.13.0(playwright-core@1.63.0)':
+    dependencies:
+      axe-core: 4.13.0
+      playwright-core: 1.63.0
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -4653,6 +4826,10 @@ snapshots:
 
   '@oxc-project/types@0.152.0': {}
 
+  '@playwright/test@1.63.0':
+    dependencies:
+      playwright: 1.63.0
+
   '@poppinss/colors@4.1.6':
     dependencies:
       kleur: 4.1.5
@@ -5306,6 +5483,8 @@ snapshots:
   assertion-error@2.0.1: {}
 
   at-least-node@1.0.0: {}
+
+  axe-core@4.13.0: {}
 
   babel-dead-code-elimination@1.0.12(supports-color@7.2.0):
     dependencies:
@@ -6298,6 +6477,12 @@ snapshots:
 
   picomatch@4.0.7: {}
 
+  playwright-core@1.63.0: {}
+
+  playwright@1.63.0:
+    dependencies:
+      playwright-core: 1.63.0
+
   postcss-selector-parser@7.1.6:
     dependencies:
       cssesc: 3.0.0
@@ -6460,6 +6645,41 @@ snapshots:
       shebang-regex: 3.0.0
 
   shebang-regex@3.0.0: {}
+
+  sherif-darwin-arm64@1.13.0:
+    optional: true
+
+  sherif-darwin-x64@1.13.0:
+    optional: true
+
+  sherif-linux-arm64-musl@1.13.0:
+    optional: true
+
+  sherif-linux-arm64@1.13.0:
+    optional: true
+
+  sherif-linux-x64-musl@1.13.0:
+    optional: true
+
+  sherif-linux-x64@1.13.0:
+    optional: true
+
+  sherif-windows-arm64@1.13.0:
+    optional: true
+
+  sherif-windows-x64@1.13.0:
+    optional: true
+
+  sherif@1.13.0:
+    optionalDependencies:
+      sherif-darwin-arm64: 1.13.0
+      sherif-darwin-x64: 1.13.0
+      sherif-linux-arm64: 1.13.0
+      sherif-linux-arm64-musl: 1.13.0
+      sherif-linux-x64: 1.13.0
+      sherif-linux-x64-musl: 1.13.0
+      sherif-windows-arm64: 1.13.0
+      sherif-windows-x64: 1.13.0
 
   siginfo@2.0.0: {}
 

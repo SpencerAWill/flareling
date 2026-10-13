@@ -20,6 +20,19 @@ packages:
 # which this setting does not cover.
 minimumReleaseAge: 10080
 
+# Fails install when a package's new version has weaker publish provenance
+# than an earlier one (e.g. a release that lost trusted publishing, the
+# signature of a hijacked maintainer token). Complements the quarantine above,
+# which catches compromises by age; this catches them by how they were
+# published.
+trustPolicy: no-downgrade
+# Exact versions only, each with its reason, so a new downgrade still fails.
+trustPolicyExclude:
+  # A 6.x maintenance release published in July 2023 without provenance, after
+  # 7.5.4 had it. pnpm judges trust by publish date, so the older line reads as
+  # a downgrade. Pulled in through @babel/core by TanStack's router plugin.
+  - semver@6.3.1
+
 # pnpm 12 hard-fails on unrecognized keys in this file (the repo pins its pnpm
 # version), so a typo here breaks install instead of being silently ignored.
 
@@ -38,18 +51,58 @@ allowBuilds:
   # accessors used for gRPC to the Pulumi engine.
   protobufjs: true
 
-# Shared dependency versions. Packages reference these with `"catalog:"` so one
-# edit here upgrades every app and lib together.
+# Every external dependency's version lives here, and packages reference it
+# with `"catalog:"`, so each dependency has one version across the workspace
+# and one edit upgrades every app and lib together. `catalogMode: strict` makes
+# `pnpm add` write new dependencies here too, and refuse a version outside the
+# catalog's range instead of adding a second one.
+catalogMode: strict
 catalog:
+  # Language and types
   typescript: ^7.0.2
+  "@types/node": ^24.19.1
+  "@types/react": ^19.3.0
+  "@types/react-dom": ^19.3.0
+
+  # App framework
+  "@tanstack/react-router": ^1.170.41
+  "@tanstack/react-start": ^1.168.60
+  react: ^19.3.0
+  react-dom: ^19.3.0
+  vite: ^8.3.2
+  "@vitejs/plugin-react": ^6.1.2
+  tailwindcss: ^4.3.3
+  "@tailwindcss/vite": ^4.3.3
+
+  # Cloudflare
+  "@cloudflare/vite-plugin": ^1.62.5
+  wrangler: ^4.147.0
+
+  # Testing
+  # Held on 4.x: @cloudflare/vitest-plugin 1.3.x peers on vitest ^4.1. Plugin
+  # 1.4.0 adds Vitest 5 and clears the release-age window on 2026-10-15, after
+  # which both move together (Dependabot groups them).
+  vitest: ^4.1.11
+  "@cloudflare/vitest-plugin": ^1.3.6
+  "@playwright/test": ^1.63.0
+  "@axe-core/playwright": ^4.13.0
+
+  # Infrastructure
   "@pulumi/pulumi": ^3.267.0
   "@pulumi/cloudflare": ^6.21.0
   "@pulumi/github": ^6.15.0
-  "@types/node": ^24.19.1
-  # Held on 4.x: @cloudflare/vitest-plugin peers on vitest ^4.1, so Vitest 5
-  # waits until the plugin supports it.
-  vitest: ^4.1.11
-  "@cloudflare/vitest-plugin": ^1.3.6
+
+  # Repo tooling
+  "@biomejs/biome": ^2.5.15
+  "@commitlint/cli": ^21.2.3
+  "@commitlint/config-conventional": ^21.2.3
+  "@commitlint/cz-commitlint": ^21.2.3
+  commitizen: ^4.3.2
+  husky: ^9.1.7
+  inquirer: ^12.11.1
+  lint-staged: ^17.6.0
+  sherif: ^1.13.0
+  turbo: ^2.11.7
 
 peerDependencyRules:
   allowedVersions:
