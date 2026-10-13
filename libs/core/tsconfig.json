@@ -1,0 +1,4 @@
+{
+  "extends": "@flareling/config/tsconfig/base.json",
+  "include": ["src"]
+}

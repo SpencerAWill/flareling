@@ -115,7 +115,7 @@ Key principles:
 │   ├── cloudflare/         # Pulumi: zones, DNS, D1, R2, KV, Queues, Access, WAF (dev/prod stacks)
 │   └── github/             # Pulumi: repo settings, rulesets, environments, CI secrets (one stack)
 ├── tooling/                # Dev-time only, never bundled
-│   ├── config/             # Shared tsconfig, Biome, Vitest, and Wrangler presets
+│   ├── config/             # Shared tsconfig presets (Vitest and Wrangler presets to come)
 │   └── scripts/            # Bootstrap, type generation, Pulumi → Wrangler sync
 ├── .claude/                # Agent rules, subagents, skills, and hooks (see below)
 ├── .devcontainer/          # Dev container with Mailpit sidecar

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "build": {
+      "dependsOn": ["^build", "transit"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["transit"]
+    },
+    "test": {
+      "dependsOn": ["transit"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "deploy": {
+      "dependsOn": ["build"],
+      "cache": false
+    }
+  },
+  "boundaries": {
+    "tags": {
+      "app": {
+        "dependencies": {
+          "deny": ["app"]
+        }
+      },
+      "lib": {
+        "dependencies": {
+          "deny": ["app"]
+        }
+      },
+      "tooling": {
+        "dependencies": {
+          "deny": ["app", "lib"]
+        }
+      }
+    }
+  }
+}

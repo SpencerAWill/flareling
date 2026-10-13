@@ -1,0 +1,16 @@
+{
+  "name": "@flareling/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "devDependencies": {
+    "@flareling/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

@@ -24,3 +24,8 @@ minimumReleaseAge: 10080
 # version), so a typo here breaks install instead of being silently ignored.
 # Native install scripts are opt-in: add packages to `allowBuilds` here, at the
 # workspace root, when they need one (esbuild, workerd, and so on).
+
+# Shared dependency versions. Packages reference these with `"catalog:"` so one
+# edit here upgrades every app and lib together.
+catalog:
+  typescript: ^7.0.2

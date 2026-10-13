@@ -11,6 +11,12 @@
     "node": ">=24"
   },
   "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "boundaries": "turbo boundaries",
+    "verify": "biome check && turbo run typecheck test && turbo boundaries",
     "check": "biome check",
     "check:fix": "biome check --write",
     "format": "biome format --write",
@@ -31,6 +37,7 @@
     "commitizen": "^4.3.2",
     "husky": "^9.1.7",
     "inquirer": "^12.11.1",
-    "lint-staged": "^17.6.0"
+    "lint-staged": "^17.6.0",
+    "turbo": "^2.11.7"
   }
 }
