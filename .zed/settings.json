@@ -1,0 +1,60 @@
+// Zed settings for this repo, the counterpart to the VS Code customizations in
+// .devcontainer/devcontainer.json. Indentation, line endings, and whitespace
+// come from .editorconfig, which Zed reads natively, so none of that is here.
+{
+  "format_on_save": "on",
+
+  // Biome is the whole toolchain (lint, format, import sorting), so every
+  // language it owns is pointed at its language server explicitly.
+  // `require_config_file` keeps it from silently formatting with built-in
+  // defaults anywhere a config is missing.
+  "lsp": {
+    "biome": {
+      "settings": {
+        "require_config_file": true
+      }
+    }
+  },
+
+  "languages": {
+    "TypeScript": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "code_actions_on_format": { "source.organizeImports.biome": true }
+    },
+    "TSX": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "code_actions_on_format": { "source.organizeImports.biome": true }
+    },
+    "JavaScript": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "code_actions_on_format": { "source.organizeImports.biome": true }
+    },
+    "JSON": {
+      "formatter": { "language_server": { "name": "biome" } }
+    },
+    "JSONC": {
+      "formatter": { "language_server": { "name": "biome" } }
+    },
+    "CSS": {
+      "formatter": { "language_server": { "name": "biome" } }
+    }
+  },
+
+  // Load-bearing in the dev container, not just tidiness. /workspace is a slow
+  // bind mount, and scanning node_modules and build output turns every install,
+  // build, and test run into a file-event storm. That storm makes the editor's
+  // git integration refresh and briefly take .git/index.lock, so concurrent
+  // `git commit`s fail with "Unable to create '.git/index.lock': File exists"
+  // (seen repeatedly in ucmc.spencerwill.com).
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/node_modules",
+    "**/dist",
+    "**/.turbo",
+    "**/.wrangler",
+    "**/test-results",
+    "**/playwright-report",
+    "**/.DS_Store",
+    "**/*.gen.ts"
+  ]
+}

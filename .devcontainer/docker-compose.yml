@@ -1,0 +1,92 @@
+# Compose rather than a single image so dev-only services (Mailpit today) run
+# beside the workspace container. The project name namespaces the containers
+# and named volumes, so they never collide with another repo's dev container.
+# `pnpm bootstrap` renames it for projects created from the template.
+name: flareling
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_VARIANT: 24-bookworm
+        USERNAME: dev
+    # Gives `docker ps` and the shell prompt something meaningful to show
+    # instead of a container id.
+    hostname: flareling-dev
+    # Published here rather than listed in devcontainer.json's `forwardPorts`.
+    # Forwarding is a VS Code client feature: it only works while a VS Code
+    # window is attached, and Zed and a headless `devcontainer up` do not
+    # implement it. Publishing reaches the host in every case. Dev servers must
+    # bind 0.0.0.0 (Vite `server.host: true`) for this to work.
+    #
+    # Do not also list these in `forwardPorts`: VS Code then finds the host port
+    # taken and silently remaps it to a random one, which looks like "port
+    # forwarding is broken" (microsoft/vscode-remote-release#3025).
+    #
+    # Container start fails outright if one of these is already taken on the
+    # host, which beats a silent no-op mapping.
+    ports:
+      - "3000:3000" # apps/web
+      - "3001:3001" # apps/marketing
+      - "3002:3002" # apps/admin
+      - "4173:4173" # vite preview: the built Worker running in workerd
+    volumes:
+      - ..:/workspace:cached
+      # node_modules on a container-native named volume rather than the macOS
+      # bind mount, where bulk metadata operations are roughly 90x slower
+      # (measured in ucmc). Source stays bind-mounted and host-visible;
+      # node_modules does not.
+      #
+      # pnpm 12 notices that its default store (in $HOME, on the container's
+      # own filesystem) cannot hardlink into this volume, and moves the store
+      # to node_modules/.pnpm-store automatically, so no storeDir override is
+      # needed.
+      - node-modules:/workspace/node_modules
+      # Claude Code state: transcripts, prompt history, and (via
+      # CLAUDE_CONFIG_DIR in the Dockerfile) .claude.json. Survives rebuilds,
+      # so `claude --resume` still works.
+      - claude-data:/home/dev/.claude
+      - command-history:/commandhistory
+      # Pulumi login and provider plugin cache. Persisting it avoids
+      # re-downloading providers (hundreds of MB) on every rebuild. It does
+      # keep the Pulumi token in a local volume; run `pulumi logout` before
+      # deleting the container if that matters.
+      - pulumi-config:/home/dev/.pulumi
+      # Inherit the host's `gh auth login`. This only carries a token if the
+      # host stored it in hosts.yml. On macOS, run
+      # `gh auth login --insecure-storage` on the host once, since Keychain
+      # tokens do not cross the mount. initialize.sh pre-creates the source.
+      - ${HOME}/.config/gh:/home/dev/.config/gh:cached
+    command: sleep infinity
+    depends_on:
+      - mailpit
+
+  # Mailpit catches outbound dev email so magic links land in a real inbox UI
+  # instead of the terminal. It has two addresses, both correct from their own
+  # side: http://localhost:8025 from a host browser, and http://mailpit:8025
+  # from inside the dev container, where compose DNS resolves the service name.
+  # Code and tests running in the container want the latter.
+  mailpit:
+    # Pinned to a release at least 7 days old, matching the dependency
+    # quarantine in pnpm-workspace.yaml.
+    image: axllent/mailpit:v1.31.4
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # Web UI + REST API
+      - "1025:1025" # SMTP intake
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+      # Bound the inbox so a long-running container cannot grow without limit.
+      MP_MAX_MESSAGES: "500"
+    volumes:
+      - mailpit-data:/data
+
+volumes:
+  node-modules:
+  claude-data:
+  command-history:
+  pulumi-config:
+  mailpit-data:

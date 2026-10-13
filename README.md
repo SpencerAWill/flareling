@@ -64,7 +64,7 @@ Flareling gives you a working monorepo from day one: web apps, APIs, background 
 | Env validation | `@t3-oss/env-core` |
 | Tests | Vitest in the Workers runtime (`@cloudflare/vitest-plugin`), Playwright for E2E |
 | Dependency updates | Dependabot with cooldowns and grouping |
-| Dev environment | Dev container (Node 24, Wrangler, Pulumi, gh, Claude Code, Mailpit) |
+| Dev environment | Dev container via docker-compose (Node 24, pnpm via corepack, Pulumi, gh, Claude Code, zsh + Powerlevel10k) with a Mailpit sidecar. Settings for both VS Code and Zed. |
 
 ## Architecture
 
