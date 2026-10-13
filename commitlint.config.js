@@ -8,6 +8,12 @@
  */
 export default {
   extends: ["@commitlint/config-conventional"],
+  // Dependabot capitalizes "Bump" after a configured prefix, which fails
+  // subject-case, and documents no option to change it. Matched narrowly on the
+  // prefixes set in .github/dependabot.yml, so other titles are still checked.
+  ignores: [
+    (message) => /^(build|chore|ci)(\(deps(-dev)?\))?: Bump /.test(message),
+  ],
   rules: {
     // "scope" is the app, lib, or area touched, e.g. feat(web): or fix(db):.
     // Left unrestricted until apps/ and libs/ exist. Then pin it to an enum
