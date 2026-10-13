@@ -2,6 +2,25 @@
 # command after it.
 set -e
 
+# Refuse a commit that deletes an implausible number of files. That is what a
+# truncated index looks like: under Zed, git's index writes can lose a race
+# with the editor's lock polling (see the --no-stash note below), and the index
+# is left listing only some files, so every other tracked file shows as staged
+# for deletion. This happened twice in this repo, once from a plain `git add`,
+# which --no-stash does not cover. The files are still on disk when it happens,
+# so `git reset` (mixed, never --hard) restores the index.
+#
+# For a deletion that really is this large: ALLOW_MASS_DELETE=1 git commit ...
+max_deletions=20
+deletions=$(git diff --cached --diff-filter=D --name-only | wc -l | tr -d ' ')
+if [ "$deletions" -gt "$max_deletions" ] && [ "${ALLOW_MASS_DELETE:-}" != "1" ]; then
+  echo "pre-commit: this commit deletes $deletions files (limit $max_deletions)." >&2
+  echo "  If you did not mean to delete them, the index is probably truncated:" >&2
+  echo "  run 'git reset' (keeps your files), then stage again." >&2
+  echo "  If you did, commit with ALLOW_MASS_DELETE=1." >&2
+  exit 1
+fi
+
 # Secret scan of the staged diff. gitleaks is a standalone binary installed by
 # the dev container's Dockerfile, so a commit made from a host without it warns
 # and continues; the gitleaks job in ci.yml scans every push and PR regardless.
