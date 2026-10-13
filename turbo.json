@@ -40,6 +40,11 @@
         "dependencies": {
           "deny": ["app", "lib"]
         }
+      },
+      "infra": {
+        "dependencies": {
+          "deny": ["app"]
+        }
       }
     }
   }

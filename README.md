@@ -222,7 +222,7 @@ Each deploy runs in a fixed order:
 4. **`wrangler deploy`** deploys affected Workers only (Turborepo affected detection).
 5. **Smoke E2E** runs Playwright against the deployed URL, and a failure blocks promotion.
 
-Production deploys use a GitHub environment with required reviewers and `concurrency` set to `cancel-in-progress: false` so a deploy is never cut off halfway. They also use Workers gradual deployments for percentage rollouts and instant rollback.
+Production deploys use the `prod` GitHub environment (with required reviewers where the plan allows; see [plan limits](#github-as-code)) and `concurrency` set to `cancel-in-progress: false` so a deploy is never cut off halfway. They also use Workers gradual deployments for percentage rollouts and instant rollback.
 
 ### GitHub Actions workflows 🚧
 
@@ -235,7 +235,7 @@ Production deploys use a GitHub environment with required reviewers and `concurr
 | `deploy.yml` | Merge to `main` (dev), dispatch (prod) | The five-step deploy above |
 | `quality.yml` | Weekly schedule | Coverage and mutation testing reports (informational, not gates) |
 
-CI secrets are scoped per GitHub environment. `infra/github` creates and writes all of them except `PULUMI_ACCESS_TOKEN`, which is set by hand once. See [GitHub as code](#github-as-code).
+CI secrets are scoped per GitHub environment where the plan allows, and fall back to repository secrets otherwise. `infra/github` creates and writes all of them except `PULUMI_ACCESS_TOKEN`, which is set by hand once. See [GitHub as code](#github-as-code).
 
 ## Infrastructure (Pulumi)
 
@@ -270,11 +270,14 @@ Guidelines:
 
 It manages:
 
-- **Repo settings:** squash-only merges, delete branches after merge, vulnerability alerts, and secret scanning with push protection.
-- **A ruleset on `main`:** required status checks, linear history, and no force pushes, with a bypass for repository admins so nobody is locked out.
-- **Environments:** `dev` and `prod`. Both accept deploys from `main` only, and `prod` requires reviewer approval.
-- **CI secrets and variables per environment.** Pulumi creates least-privilege Cloudflare API tokens (`cloudflare.ApiToken`) and writes them directly into environment secrets. One token is for Wrangler code deploys and a separate one is for `infra/cloudflare`. Nobody sees or copies a token. `pulumi up` rotates them, and destroying the stack revokes them.
-- **Labels,** so issues and PRs look the same in every repo.
+- **The repository itself:** description, visibility, template flag, squash-only merges titled from the PR (so `main` keeps Conventional Commits), delete branches after merge, and Dependabot alerts. The repo is `protect`ed in Pulumi and archived rather than deleted if it ever leaves the program.
+- **A ruleset on the default branch:** no deletion or force pushes, linear history, PRs with resolved review threads, and required status checks once CI exists (`requiredChecks` in stack config). Repository admins can bypass, which keeps direct pushes working during setup and means nobody can be locked out.
+- **Environments:** `dev` and `prod`, each deployable from `main` only. `prod` gets required reviewers (`prodReviewerIds`) where the plan allows.
+- **CI secrets.** When `cloudflareAccountId` is set, Pulumi creates two least-privilege Cloudflare account tokens and writes them straight into GitHub. Nobody sees or copies a token, and destroying the stack revokes them. To rotate, run `pnpm up --replace` on the token resources.
+  - `CLOUDFLARE_API_TOKEN` is for Wrangler code deploys: Worker scripts, D1 migrations, routes.
+  - `CLOUDFLARE_INFRA_API_TOKEN` is for `pulumi up` on `infra/cloudflare`.
+  - `CLOUDFLARE_ACCOUNT_ID` is a plain repository variable.
+  - The exact permissions live in `infra/github/src/cloudflare-tokens.ts`.
 
 It does not manage:
 
@@ -282,20 +285,39 @@ It does not manage:
 - **`PULUMI_ACCESS_TOKEN`.** This is the one secret set by hand, because CI needs it before Pulumi can run.
 - **Personal or organization settings.**
 
-Running it:
+#### Plan limits
+
+GitHub gates several of these features by plan and visibility. Set `plan` and `visibility` in the stack config, and the program decides what it can manage (`src/config.ts`). Anything unavailable is skipped instead of failing the run.
+
+| Feature | Public repo | Private, Free | Private, Pro or Team | Private, Enterprise |
+| --- | --- | --- | --- | --- |
+| Repo settings, Dependabot alerts | ✓ | ✓ | ✓ | ✓ |
+| Default-branch ruleset | ✓ | – | ✓ | ✓ |
+| Environments, environment secrets, branch policies | ✓ | – (secrets go to repo level) | ✓ | ✓ |
+| Required reviewers on `prod` | ✓ | – | – | ✓ (org repos) |
+| Secret scanning and push protection | ✓ | – | – | With Secret Protection |
+
+On a private personal repo, nothing can require a second person to approve `prod`. The practical safeguard there is that only `main` can deploy, and only collaborators with write access can trigger the dispatch.
+
+#### Running it
+
+The first time, create the stack and adopt the existing repository into it. `adopt` only imports into Pulumi state and changes nothing on GitHub.
 
 ```sh
 cd infra/github
-export GITHUB_TOKEN=...          # fine-grained PAT or GitHub App with repo admin
-export CLOUDFLARE_API_TOKEN=...  # a token allowed to create API tokens
-pulumi up
+pulumi stack init main      # once per repo
+pnpm adopt                  # once per repo: imports the existing repository
+pnpm preview                # show the diff
+pnpm up                     # apply it
 ```
+
+The scripts take the GitHub token from `gh auth token`, so a `gh auth login` with repo admin rights is all you need. To mint Cloudflare tokens, also run `pulumi config set cloudflareAccountId <id>` and `pulumi config set --secret cloudflare:apiToken <token>`, using a token that is allowed to create account API tokens.
 
 Notes:
 
 - **It runs locally by a repo admin, not in CI.** The Actions `GITHUB_TOKEN` cannot change repo settings or write secrets. CI should also never hold a credential that can loosen its own rules.
-- **Changes made in the GitHub UI are reverted** on the next `pulumi up`. Change the code instead.
-- **Plan limits:** on private repos, rulesets and required reviewers on environments need GitHub Pro, Team, or Enterprise. Set the plan in stack config (`pulumi config set plan free`), and on the free plan those resources are skipped instead of failing the run.
+- **Changes made in the GitHub UI are reverted** on the next `pnpm up`. Change the code instead.
+- **Every repository setting is declared explicitly**, even ones that match GitHub's defaults. The provider treats an omitted optional field as "clear it."
 
 ## Data and storage
 
@@ -355,8 +377,8 @@ Defaults that keep the bill small:
 - **Hardened Actions.** All actions are pinned to commit SHAs. `${{ }}` expressions never appear inside `run:` bodies; values pass through `env:`. zizmor and actionlint gate workflow changes.
 - **Auth defaults.** `__Host-` cookies, Turnstile on public forms, rate-limiting bindings on auth routes, and RBAC permissions stored as data.
 - `apps/admin` sits behind **Cloudflare Access**. WAF managed rules are declared in Pulumi.
-- Secrets never touch the repo. Locally they live in gitignored `.env.local`. In CI they come from GitHub environment secrets that `infra/github` creates and rotates, or from Pulumi outputs.
-- **Repo safeguards are code.** The `main` ruleset, required checks, protection on the `prod` environment, and secret scanning are declared in `infra/github`.
+- Secrets never touch the repo. Locally they live in gitignored `.env.local`. In CI they come from GitHub secrets that `infra/github` creates, or from Pulumi outputs.
+- **Repo safeguards are code.** The default-branch ruleset, required checks, `prod` environment protection, and secret scanning are declared in `infra/github`, gated by what the GitHub plan supports.
 - See [SECURITY.md](./SECURITY.md) for how to report vulnerabilities.
 
 ## Observability
@@ -426,7 +448,7 @@ Still being decided. Feedback welcome.
 - **Public third-party API:** if the suite needs one, add `apps/public-api` with [Hono](https://hono.dev) and `@hono/zod-openapi` for versioned routes, API keys, and generated OpenAPI docs. Internal callers still use RPC.
 - **Billing:** Stripe integration pattern (webhooks into Queues, entitlements in D1 or KV).
 - **Multi-tenancy model:** shared D1 with tenant columns, or a D1 database per tenant.
-- **Pulumi state backend:** Pulumi Cloud or self-managed R2. Either way, `PULUMI_ACCESS_TOKEN` (or the R2 backend credentials) is the one CI secret set by hand.
+- **Pulumi state backend:** Pulumi Cloud for now (the `infra/github` stack lives there). Self-managed R2 is still an option. Either way, `PULUMI_ACCESS_TOKEN` (or the R2 backend credentials) is the one CI secret set by hand.
 
 ## Contributing
 

@@ -1,0 +1,16 @@
+# One stack per repository. Repos created from the template replace these
+# values (pnpm bootstrap will do it for you).
+config:
+  github:owner: SpencerAWill
+  flareling-github:repository: flareling
+  flareling-github:description: GitHub template for shipping a multi-app SaaS suite on Cloudflare
+  flareling-github:visibility: private
+  # free | pro | team | enterprise. Decides which gated GitHub features are
+  # managed; see src/config.ts.
+  flareling-github:plan: free
+  flareling-github:isTemplate: "true"
+  # Uncomment once CI exists, listing check names exactly as they appear on PRs.
+  # flareling-github:requiredChecks: '["verify"]'
+  # Uncomment to mint Cloudflare CI tokens (also set cloudflare:apiToken as a
+  # secret: a token allowed to create account API tokens).
+  # flareling-github:cloudflareAccountId: <account id>

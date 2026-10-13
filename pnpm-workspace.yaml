@@ -22,8 +22,13 @@ minimumReleaseAge: 10080
 
 # pnpm 12 hard-fails on unrecognized keys in this file (the repo pins its pnpm
 # version), so a typo here breaks install instead of being silently ignored.
-# Native install scripts are opt-in: add packages to `allowBuilds` here, at the
-# workspace root, when they need one (esbuild, workerd, and so on).
+
+# Install scripts are opt-in, and pnpm only reads the allowlist from the
+# workspace root. Each entry says who needs it and why.
+allowBuilds:
+  # Pulled in by @pulumi/pulumi. Its postinstall generates the static protobuf
+  # accessors used for gRPC to the Pulumi engine.
+  protobufjs: true
 
 # Shared dependency versions. Packages reference these with `"catalog:"` so one
 # edit here upgrades every app and lib together.

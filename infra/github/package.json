@@ -1,0 +1,24 @@
+{
+  "name": "@flareling/infra-github",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pulumi program for this repo's GitHub settings and CI secrets",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc",
+    "adopt": "GITHUB_TOKEN=$(gh auth token) pulumi import github:index/repository:Repository repository \"$(pulumi config get repository)\" --protect --generate-code=false --yes",
+    "preview": "GITHUB_TOKEN=$(gh auth token) pulumi preview --diff",
+    "up": "GITHUB_TOKEN=$(gh auth token) pulumi up --diff"
+  },
+  "dependencies": {
+    "@pulumi/cloudflare": "^6.21.0",
+    "@pulumi/github": "^6.15.0",
+    "@pulumi/pulumi": "^3.267.0"
+  },
+  "devDependencies": {
+    "@flareling/config": "workspace:*",
+    "@types/node": "^24.19.1",
+    "typescript": "catalog:"
+  }
+}
