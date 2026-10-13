@@ -32,6 +32,7 @@ services:
       - "3001:3001" # apps/marketing
       - "3002:3002" # apps/admin
       - "4173:4173" # vite preview: the built Worker running in workerd
+      - "9323:9323" # Playwright UI mode and `playwright show-report`
     volumes:
       - ..:/workspace:cached
       # node_modules on a container-native named volume rather than the macOS
@@ -39,9 +40,9 @@ services:
       # (measured in ucmc). Source stays bind-mounted and host-visible;
       # node_modules does not.
       #
-      # The pnpm store lives on this volume too, so packages hardlink into it.
-      # The Dockerfile pins it with PNPM_CONFIG_STORE_DIR: pnpm 12 only picks
-      # node_modules/.pnpm-store by itself when run from the repo root.
+      # pnpm's store lives inside this volume too (`storeDir:
+      # node_modules/.store` in pnpm-workspace.yaml), so its hardlinks stay on
+      # one filesystem.
       - node-modules:/workspace/node_modules
       # Claude Code state: transcripts, prompt history, and (via
       # CLAUDE_CONFIG_DIR in the Dockerfile) .claude.json. Survives rebuilds,
@@ -53,6 +54,9 @@ services:
       # keep the Pulumi token in a local volume; run `pulumi logout` before
       # deleting the container if that matters.
       - pulumi-config:/home/dev/.pulumi
+      # Playwright's browser binaries (several hundred MB), so a rebuild does
+      # not download them again. update-content installs into it.
+      - playwright-browsers:/home/dev/.cache/ms-playwright
       # Inherit the host's `gh auth login`. This only carries a token if the
       # host stored it in hosts.yml. On macOS, run
       # `gh auth login --insecure-storage` on the host once, since Keychain
@@ -88,4 +92,5 @@ volumes:
   claude-data:
   command-history:
   pulumi-config:
+  playwright-browsers:
   mailpit-data:

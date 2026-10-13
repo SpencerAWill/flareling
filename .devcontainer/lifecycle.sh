@@ -17,6 +17,7 @@ CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 HISTORY_DIR=/commandhistory
 NODE_MODULES=/workspace/node_modules
 PULUMI_DIR="$HOME/.pulumi"
+PLAYWRIGHT_DIR="$HOME/.cache/ms-playwright"
 ZSHRC="$HOME/.zshrc"
 MARKER="# >>> devcontainer history <<<"
 
@@ -29,7 +30,7 @@ log() { printf '\033[1;34m[%s]\033[0m %s\n' "$STAGE" "$*"; }
 # install. Cheap and idempotent: `-O` skips anything already owned by dev.
 claim_volumes() {
   local d
-  for d in "$CLAUDE_DIR" "$HISTORY_DIR" "$NODE_MODULES" "$PULUMI_DIR"; do
+  for d in "$CLAUDE_DIR" "$HISTORY_DIR" "$NODE_MODULES" "$PULUMI_DIR" "$PLAYWRIGHT_DIR"; do
     [ -d "$d" ] || continue
     [ -O "$d" ] && continue
     log "claiming $d"
@@ -88,6 +89,11 @@ configure_git() {
       gh auth setup-git 2>/dev/null || log "WARN: gh auth setup-git failed"
     fi
   fi
+
+  # Background gc repacks the object store and takes the same locks that
+  # commits and the editor's git integration compete for, which is already a
+  # tight race under Zed (see .husky/pre-commit). Run `git gc` by hand instead.
+  git config --global gc.auto 0
 }
 
 on_create() {
@@ -122,6 +128,17 @@ update_content() {
     pnpm install
   else
     log "no package.json yet -- skipping dependency install"
+    return 0
+  fi
+
+  # Browsers for `pnpm test:e2e`, matched to the installed Playwright version.
+  # The binaries land in the playwright-browsers volume, so after the first
+  # create this is a version check. `--with-deps` apt-installs the system
+  # libraries, which live in the container filesystem and so are reinstalled
+  # after each rebuild.
+  if [ -d apps/web ]; then
+    log "playwright install --with-deps chromium webkit"
+    pnpm --filter @flareling/web exec playwright install --with-deps chromium webkit
   fi
 }
 
@@ -145,7 +162,7 @@ post_start() {
 }
 
 post_attach() {
-  log "workspace $PWD -- apps on :3000-3002, preview :4173, Mailpit http://localhost:8025"
+  log "workspace $PWD -- apps on :3000-3002, preview :4173, Playwright UI :9323, Mailpit http://localhost:8025"
 }
 
 case "$STAGE" in

@@ -40,12 +40,16 @@
     }
   },
 
-  // Load-bearing in the dev container, not just tidiness. /workspace is a slow
-  // bind mount, and scanning node_modules and build output turns every install,
-  // build, and test run into a file-event storm. That storm makes the editor's
-  // git integration refresh and briefly take .git/index.lock, so concurrent
-  // `git commit`s fail with "Unable to create '.git/index.lock': File exists"
-  // (seen repeatedly in ucmc.spencerwill.com).
+  // Keeps the editor responsive: scanning node_modules and build output on the
+  // bind mount turns every install, build, and test run into a file-event
+  // storm.
+  //
+  // This does NOT fix the .git/index.lock collisions seen under Zed. In
+  // ucmc.spencerwill.com, Zed's git integration took the lock ~3 times a second
+  // while idle (VS Code: 0), and these exclusions did not change the rate. The
+  // mitigations are `lint-staged --no-stash` in .husky/pre-commit and
+  // `gc.auto 0` in lifecycle.sh. If a commit leaves every file showing as
+  // deleted, `git reset` (mixed, never --hard) restores the index.
   //
   // Exclusions remove paths from the file panel and search entirely, so only
   // uncommitted output and caches belong here. Committed generated files

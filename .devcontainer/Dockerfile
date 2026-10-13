@@ -55,16 +55,9 @@ RUN set -eux; \
 # COREPACK_ENABLE_DOWNLOAD_PROMPT=0: corepack otherwise asks "Do you want to
 # continue?" before downloading the pinned pnpm, which hangs the unattended
 # `pnpm install` in update-content.
-#
-# PNPM_CONFIG_STORE_DIR pins the pnpm store to the node_modules volume. pnpm 12
-# finds that spot on its own only when run from the repo root. Run from a
-# package (`cd apps/web && pnpm add ...`), it places the store next to that
-# package's node_modules, on the slow bind mount, and fills a second full store
-# at /workspace/.pnpm-store.
 ENV CLAUDE_CONFIG_DIR=/home/${USERNAME}/.claude \
     PNPM_HOME=/home/${USERNAME}/.local/share/pnpm \
     PATH=/home/${USERNAME}/.local/share/pnpm:${PATH} \
-    PNPM_CONFIG_STORE_DIR=/workspace/node_modules/.pnpm-store \
     NODE_OPTIONS=--max-old-space-size=4096 \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     DEVCONTAINER=true
@@ -83,12 +76,14 @@ RUN mkdir -p \
       "/home/${USERNAME}/.config/gh" \
       "/home/${USERNAME}/.local/share/pnpm" \
       "/home/${USERNAME}/.pulumi" \
+      "/home/${USERNAME}/.cache/ms-playwright" \
       /commandhistory \
     && chown -R "${USERNAME}:${USERNAME}" \
       "/home/${USERNAME}/.claude" \
       "/home/${USERNAME}/.config" \
       "/home/${USERNAME}/.local" \
       "/home/${USERNAME}/.pulumi" \
+      "/home/${USERNAME}/.cache" \
       /commandhistory
 
 # Prompt and completion plugins, pinned to tags. The zsh-plugins feature is not

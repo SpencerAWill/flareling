@@ -10,6 +10,17 @@ packages:
   # `@pulumi/*` from the node_modules that pnpm links into each project.
   - infra/*
 
+# Keep pnpm's content-addressable store inside node_modules, so the store and
+# the packages it hardlinks into share one filesystem. In the dev container
+# node_modules is a named volume, and on Docker Desktop every volume and bind
+# mount is a separate filesystem (hardlinks across them fail with EXDEV). Left
+# alone, pnpm finds a spot on its own only when run from the repo root; from a
+# package directory it creates a second, full store at /workspace/.pnpm-store
+# on the slow bind mount. Relative on purpose: it resolves against the
+# workspace root from any directory, in the container, on the host, and in CI.
+# Same setting as www.spencerwill.com and ucmc.spencerwill.com.
+storeDir: node_modules/.store
+
 # Quarantine window for newly published versions: refuses to install anything
 # released in the last 7 days. This is the primary supply-chain defense, and it
 # catches publish-compromise incidents before they reach the tree. A

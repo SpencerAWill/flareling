@@ -18,4 +18,4 @@ End-to-end tests use Playwright against `vite preview`, which serves the product
 - Tests exercise the same runtime and artifact as production, at the cost of slower startup than Node-only unit tests.
 - Vitest's version is tied to the range `@cloudflare/vitest-plugin` supports, so the two are upgraded together.
 - Coverage has to use Istanbul, since V8 coverage doesn't work in workerd. Storage is isolated per test file, so every response body has to be consumed.
-- Playwright needs browser binaries locally (`pnpm --filter @flareling/web test:e2e:install`) and costs CI minutes, so it runs in the same job as the build.
+- Playwright needs browser binaries: the dev container installs them into a volume, and elsewhere `pnpm --filter @flareling/web test:e2e:install` does. It also costs CI minutes, so it runs in the same job as the build.

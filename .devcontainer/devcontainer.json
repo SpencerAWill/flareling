@@ -45,6 +45,10 @@
     "3001": { "label": "apps/marketing", "onAutoForward": "silent" },
     "3002": { "label": "apps/admin", "onAutoForward": "silent" },
     "4173": { "label": "vite preview", "onAutoForward": "silent" },
+    "9323": {
+      "label": "Playwright (UI mode / report)",
+      "onAutoForward": "silent"
+    },
     "8025": { "label": "Mailpit (dev inbox)", "onAutoForward": "silent" }
   },
 

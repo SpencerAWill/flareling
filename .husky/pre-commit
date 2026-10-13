@@ -1,3 +1,7 @@
+# Without this, a failing secret scan would be masked by the exit status of the
+# command after it.
+set -e
+
 # Secret scan of the staged diff. gitleaks is a standalone binary installed by
 # the dev container's Dockerfile, so a commit made from a host without it warns
 # and continues; the gitleaks job in ci.yml scans every push and PR regardless.
@@ -7,4 +11,16 @@ else
   echo "pre-commit: gitleaks not found, skipping the secret scan (CI still runs it)" >&2
 fi
 
-pnpm exec lint-staged
+# `--no-stash` is deliberate. lint-staged's default backup stash does several
+# index writes per commit (stash create, write-tree, checkout-index, apply).
+# With Zed attached to the dev container, its git integration takes
+# .git/index.lock about three times a second (measured in ucmc.spencerwill.com,
+# 0 times with VS Code), so one of those writes loses the race often. Losing
+# partway through leaves a truncated index that shows every tracked file as
+# deleted: seen here, and in ucmc once in a commit that removed 827 files.
+#
+# The trade-off: if Biome fails, the working tree keeps whatever it already
+# rewrote instead of being reverted, which is recoverable by fixing and
+# committing again. `--hide-partially-staged` stays on (the default), so
+# unstaged edits are still kept out of the commit.
+pnpm exec lint-staged --no-stash

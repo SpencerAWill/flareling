@@ -195,7 +195,7 @@ Rules:
 | `pnpm build` | Builds every package, cached by Turborepo |
 | `pnpm verify` | Biome, sherif, typecheck, tests, and boundaries (knip to come): the same gate CI runs |
 | `pnpm test` | Runs unit and integration tests in the Workers runtime |
-| `pnpm test:e2e` | Builds, then runs Playwright with axe against the production build (desktop and mobile projects). Install browsers once with `pnpm --filter @flareling/web test:e2e:install` |
+| `pnpm test:e2e` | Builds, then runs Playwright with axe against the production build (desktop and mobile projects). The dev container installs the browsers; elsewhere run `pnpm --filter @flareling/web test:e2e:install` once. UI mode: `pnpm --filter @flareling/web test:e2e:ui`, on port 9323 |
 | `pnpm size` | Builds, then fails if any Worker's gzip upload is over its budget (below the Free plan's 3 MB cap) |
 | `pnpm lint` / `pnpm format` | Runs Biome |
 | `pnpm cf-typegen` | Regenerates binding types from each `wrangler.jsonc` (`wrangler types`) |
@@ -430,7 +430,7 @@ Lessons learned the hard way:
 - **Drizzle snapshots can drift** from the migrations directory. The schema-drift test catches this. If snapshots are already broken, write the migration SQL by hand rather than trusting `drizzle-kit generate`.
 - **`wrangler-action` needs `environment: production`** for production. Without it, production secrets are uploaded to the default (dev) Worker.
 - **pnpm 11 and later ignore `.npmrc`** for workspace settings. Put them in `pnpm-workspace.yaml`. Since pnpm 12, an unrecognized key there is a hard error (`ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS`) because the repo pins its pnpm version, so typos fail fast instead of being silently ignored.
-- **The pnpm store in dev containers.** pnpm 12 puts the store in `node_modules/.pnpm-store` automatically, but only when it runs from the repo root. Run from a package directory, it creates a second full store at `/workspace/.pnpm-store` on the slow bind mount. The dev container pins the store with `PNPM_CONFIG_STORE_DIR` in its Dockerfile.
+- **The pnpm store in dev containers.** `storeDir: node_modules/.store` in `pnpm-workspace.yaml` keeps the store on the `node_modules` volume, so packages hardlink instead of copying. pnpm 12 finds that spot on its own only when run from the repo root; run from a package directory, it would create a second full store at `/workspace/.pnpm-store` on the slow bind mount. The setting is relative, so it works from any directory, on the host, and in CI.
 - **Upgrading from pnpm 11:** use `--no-frozen-lockfile` (`--frozen-lockfile false` was removed). Expect the first install to re-key some peer variants of cyclic dependencies once.
 
 ## Adding an app or lib

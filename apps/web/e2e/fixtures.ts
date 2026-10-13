@@ -47,3 +47,26 @@ export async function expectNoA11yViolations(page: Page) {
     .analyze();
   expect(results.violations).toEqual([]);
 }
+
+/**
+ * Waits for TanStack Start to finish hydrating. Interacting earlier hits the
+ * server-rendered HTML before React has attached its handlers: a link click
+ * becomes a full page load, and input typed into a controlled field is wiped
+ * when React reconciles. Adapted from ucmc.spencerwill.com, where premature
+ * interaction was the source of every E2E flake.
+ *
+ * Start serializes a `window.$_TSR` object into the page, sets `hydrated` on it
+ * once React has reconciled, and deletes it when the stream ends, so either
+ * state means hydration is done. Call it after `page.goto()` and before the
+ * first interaction.
+ */
+export async function waitForHydration(page: Page, timeoutMs = 10_000) {
+  await page.waitForFunction(
+    () => {
+      const tsr = (window as { $_TSR?: { hydrated?: boolean } }).$_TSR;
+      return tsr === undefined || tsr.hydrated === true;
+    },
+    null,
+    { timeout: timeoutMs },
+  );
+}
