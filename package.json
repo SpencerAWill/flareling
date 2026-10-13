@@ -1,0 +1,36 @@
+{
+  "name": "flareling",
+  "version": "0.0.0",
+  "description": "GitHub template for shipping a multi-app SaaS suite on Cloudflare",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "Spencer Will",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "check": "biome check",
+    "check:fix": "biome check --write",
+    "format": "biome format --write",
+    "lint": "biome lint",
+    "commit": "cz",
+    "prepare": "husky"
+  },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cz-commitlint": "^21.2.3",
+    "commitizen": "^4.3.2",
+    "husky": "^9.1.7",
+    "inquirer": "^12.11.1",
+    "lint-staged": "^17.6.0"
+  }
+}

@@ -1,0 +1,26 @@
+packages:
+  # Deployables: each is a Worker with its own wrangler.jsonc.
+  - apps/*
+  # Source-only internal packages, bundled into the apps that import them.
+  - libs/*
+  # Dev-time config presets and scripts. Never bundled.
+  - tooling/*
+  # The Pulumi program is a workspace package so it shares the root lockfile and
+  # toolchain. Pulumi's nodejs runtime resolves `@pulumi/*` from the
+  # node_modules that pnpm links into infra/.
+  - infra
+
+# Quarantine window for newly published versions: refuses to install anything
+# released in the last 7 days. This is the primary supply-chain defense, and it
+# catches publish-compromise incidents before they reach the tree. A
+# just-released version is refused until it ages out. The escape hatch is
+# `minimumReleaseAgeExclude`.
+#
+# The same rule applies by hand to the `packageManager` pin in package.json,
+# which this setting does not cover.
+minimumReleaseAge: 10080
+
+# pnpm 12 hard-fails on unrecognized keys in this file (the repo pins its pnpm
+# version), so a typo here breaks install instead of being silently ignored.
+# Native install scripts are opt-in: add packages to `allowBuilds` here, at the
+# workspace root, when they need one (esbuild, workerd, and so on).
