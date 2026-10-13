@@ -1,0 +1,9 @@
+name: flareling-cloudflare
+description: Long-lived Cloudflare resources for one environment per stack
+runtime:
+  name: nodejs
+  options:
+    # Node 24 strips TypeScript types natively, so Pulumi runs index.ts
+    # directly with no ts-node (see infra/github/Pulumi.yaml for why).
+    typescript: false
+    packagemanager: pnpm

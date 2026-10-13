@@ -1,0 +1,22 @@
+{
+  "name": "@flareling/infra-cloudflare",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pulumi program for long-lived Cloudflare resources (dev and prod stacks)",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc",
+    "preview": "./with-infra-token.sh pulumi preview --diff",
+    "apply": "./with-infra-token.sh pulumi up --diff"
+  },
+  "dependencies": {
+    "@pulumi/cloudflare": "catalog:",
+    "@pulumi/pulumi": "catalog:"
+  },
+  "devDependencies": {
+    "@flareling/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

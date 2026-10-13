@@ -48,7 +48,11 @@ const environments = features.environments
     })
   : [];
 
-if (cloudflareAccountId) {
+const tokens = cloudflareAccountId
+  ? createCiTokens(cloudflareAccountId, repositoryName)
+  : undefined;
+
+if (cloudflareAccountId && tokens) {
   // Not a secret, so it is a plain repository variable on every plan.
   new github.ActionsVariable("cloudflare-account-id", {
     repository: repository.name,
@@ -56,7 +60,6 @@ if (cloudflareAccountId) {
     value: cloudflareAccountId,
   });
 
-  const tokens = createCiTokens(cloudflareAccountId, repositoryName);
   const secrets = {
     CLOUDFLARE_API_TOKEN: tokens.deploy,
     CLOUDFLARE_INFRA_API_TOKEN: tokens.infra,
@@ -90,3 +93,10 @@ if (cloudflareAccountId) {
 
 export const repositoryUrl = repository.htmlUrl;
 export const enabledFeatures = features;
+
+/**
+ * The infra token, so local runs of infra/cloudflare use the same scoped token
+ * as CI (infra/cloudflare/with-infra-token.sh reads it). Encrypted in state and
+ * shown only with --show-secrets.
+ */
+export const cloudflareInfraToken = tokens?.infra;

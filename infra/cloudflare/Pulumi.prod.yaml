@@ -1,0 +1,10 @@
+config:
+  # Same account and zone as www.spencerwill.com and ucmc.spencerwill.com.
+  # The zone is shared, so this program manages only its own hostnames and
+  # never zone-wide settings (see src/config.ts).
+  flareling-cloudflare:accountId: d57880630b3277f59331318b53f323b6
+  flareling-cloudflare:zoneId: 6bfb4d1d3134e6d765aef413094cd28f
+  flareling-cloudflare:zoneName: spencerwill.com
+  flareling-cloudflare:hostname: flareling.spencerwill.com
+  flareling-cloudflare:resourcePrefix: flareling-prod
+  flareling-cloudflare:protectData: "true"

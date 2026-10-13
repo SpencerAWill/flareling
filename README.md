@@ -243,26 +243,39 @@ CI secrets are scoped per GitHub environment where the plan allows, and fall bac
 
 | Project | Manages | Stacks | Runs from |
 | --- | --- | --- | --- |
-| `infra/cloudflare` | Zones, DNS, D1, R2, KV, Queues, Access, WAF, budget alerts | `dev`, `prod` | CI (`pulumi up` in the deploy workflow) |
+| `infra/cloudflare` | D1, R2, KV, Queues, and this suite's own hostnames (zone-wide settings and WAF only when the zone is dedicated) | `dev`, `prod` | CI (`pulumi up` in the deploy workflow) |
 | `infra/github` | Repo settings, rulesets, environments, CI secrets, Cloudflare API tokens for CI | one per repo | A repo admin, locally. CI only previews it. |
 
 ### Cloudflare
 
+Each stack (`dev`, `prod`) gets a baseline set of resources, all free at rest:
+
+| Resource | Name | Purpose |
+| --- | --- | --- |
+| D1 database | `<prefix>` | Primary relational data |
+| KV namespace | `<prefix>` | Config, flags, cached lookups |
+| R2 bucket | `<prefix>-files` | Private uploads and exports |
+| Queue | `<prefix>-jobs` | Background work for `apps/jobs` |
+| Queue | `<prefix>-jobs-dlq` | Jobs that exhausted their retries |
+
+`<prefix>` is `resourcePrefix` in the stack config (`flareling-dev`, `flareling-prod`). Data resources are `protect`ed in prod (`protectData`). The stack outputs (`d1DatabaseId`, `kvNamespaceId`, `r2FilesBucketName`, `jobsQueueName`, and so on) are the contract with Wrangler.
+
 ```sh
 cd infra/cloudflare
-pulumi stack select dev
-pulumi preview
-pulumi up
+pulumi stack init dev       # once; repeat for prod
+pnpm preview
+pnpm apply
 ```
 
-Shared resources, such as an email provider account, can be referenced across stacks with `StackReference`.
+The scripts run through `with-infra-token.sh`, which uses the same scoped infra token as CI by reading it from the `infra/github` stack. Nobody creates or copies a Cloudflare token for day-to-day work. An exported `CLOUDFLARE_API_TOKEN` takes precedence.
 
 Guidelines:
 
-- Declare every stateful resource in Pulumi, not in the dashboard and not through Wrangler auto-provisioning.
-- Mark production data resources (D1, R2) with `protect: true`.
-- Commit Wrangler configs with placeholder IDs. `tooling/scripts/sync-env` replaces them with stack outputs at deploy time, so real IDs never need hand-editing. 🚧 This replaces the `sed` step used in ucmc with a typed script.
-- A `WorkersCustomDomain` needs the Worker script to exist first. For a brand-new Worker, deploy the code once before the first `pulumi up` that attaches its domain.
+- **Declare every stateful resource here,** not in the dashboard and not through Wrangler auto-provisioning.
+- **Respect a shared zone.** flareling's hostnames are subdomains of `spencerwill.com`, a zone shared with other projects. In a shared zone this program only declares its own hostnames. A `ZoneSetting`, WAF rule, or other zone-wide resource would change behavior for every site in the zone, so those belong only in a repo that owns a dedicated zone.
+- **Commit Wrangler configs with placeholder IDs.** `tooling/scripts/sync-env` replaces them with stack outputs at deploy time, so real IDs never need hand-editing. 🚧 This replaces the `sed` step used in ucmc with a typed script.
+- **Deploy a Worker before attaching its domain.** A `WorkersCustomDomain` needs the Worker script to exist first, so a new app's hostname is added after its first Wrangler deploy.
+- **Share across stacks with `StackReference`,** for example an email provider account owned by `prod`.
 
 ### GitHub as code
 
