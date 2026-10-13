@@ -26,6 +26,14 @@ minimumReleaseAge: 10080
 # Install scripts are opt-in, and pnpm only reads the allowlist from the
 # workspace root. Each entry says who needs it and why.
 allowBuilds:
+  # Vite and Wrangler bundle with esbuild. Its postinstall selects the
+  # prebuilt binary for the current platform.
+  esbuild: true
+  # workerd is the Workers runtime itself: @cloudflare/vite-plugin runs server
+  # code inside it during `pnpm dev`, and Wrangler runs it for local preview.
+  # Blocked, the package installs "successfully" and every invocation then
+  # fails on a missing binary.
+  workerd: true
   # Pulled in by @pulumi/pulumi. Its postinstall generates the static protobuf
   # accessors used for gRPC to the Pulumi engine.
   protobufjs: true

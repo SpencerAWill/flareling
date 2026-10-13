@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Cloudflare / TanStack Start local state
+# Miniflare's local D1/KV/R2 data and the deploy config the Vite plugin writes.
+.wrangler/
+# TanStack Start build temp files.
+.tanstack/

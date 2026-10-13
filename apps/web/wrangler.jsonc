@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Script name in the Cloudflare account. infra/cloudflare attaches custom
+  // domains to the Worker by this name, so renaming it means renaming there
+  // too.
+  "name": "flareling-web",
+
+  // Pinned rather than tracking "today". The compatibility date is the runtime
+  // behavior contract, so moving it is a deliberate, tested upgrade. It is set
+  // to the build date of the bundled workerd, since local dev cannot emulate
+  // dates past the runtime it ships.
+  "compatibility_date": "2026-10-01",
+
+  // TanStack Start's server entry uses Node built-ins (node:async_hooks among
+  // them) that workerd only exposes behind this flag. Without it the Worker
+  // fails at module load, so a deploy succeeds and every request then 500s.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Resolved from the installed @tanstack/react-start package: Start owns the
+  // fetch handler. This becomes a local module only if the app ever needs a
+  // `scheduled` or `queue` handler alongside Start's `fetch`.
+  "main": "@tanstack/react-start/server-entry",
+
+  // No `assets` block on purpose. @cloudflare/vite-plugin derives the assets
+  // directory from the Vite build and writes the resolved config into the
+  // build output, which is what `wrangler deploy` reads.
+
+  // Only the custom domain should serve this app, so the workers.dev URL is
+  // off (it would be a second, indexable origin). Preview URLs stay on: they
+  // are per-version URLs that PR preview deploys rely on.
+  "workers_dev": false,
+  "preview_urls": true,
+
+  // Structured logs and traces in the dashboard, and `wrangler tail`.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

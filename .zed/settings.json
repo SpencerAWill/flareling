@@ -46,15 +46,19 @@
   // git integration refresh and briefly take .git/index.lock, so concurrent
   // `git commit`s fail with "Unable to create '.git/index.lock': File exists"
   // (seen repeatedly in ucmc.spencerwill.com).
+  //
+  // Exclusions remove paths from the file panel and search entirely, so only
+  // uncommitted output and caches belong here. Committed generated files
+  // (routeTree.gen.ts, worker-configuration.d.ts) stay visible.
   "file_scan_exclusions": [
     "**/.git",
     "**/node_modules",
     "**/dist",
     "**/.turbo",
     "**/.wrangler",
+    "**/.tanstack",
     "**/test-results",
     "**/playwright-report",
-    "**/.DS_Store",
-    "**/*.gen.ts"
+    "**/.DS_Store"
   ]
 }
