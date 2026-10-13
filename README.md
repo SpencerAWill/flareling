@@ -273,7 +273,7 @@ It manages:
 - **The repository itself:** description, visibility, template flag, squash-only merges titled from the PR (so `main` keeps Conventional Commits), delete branches after merge, and Dependabot alerts. The repo is `protect`ed in Pulumi and archived rather than deleted if it ever leaves the program.
 - **A ruleset on the default branch:** no deletion or force pushes, linear history, PRs with resolved review threads, and required status checks once CI exists (`requiredChecks` in stack config). Repository admins can bypass, which keeps direct pushes working during setup and means nobody can be locked out.
 - **Environments:** `dev` and `prod`, each deployable from `main` only. `prod` gets required reviewers (`prodReviewerIds`) where the plan allows.
-- **CI secrets.** When `cloudflareAccountId` is set, Pulumi creates two least-privilege Cloudflare account tokens and writes them straight into GitHub. Nobody sees or copies a token, and destroying the stack revokes them. To rotate, run `pnpm up --replace` on the token resources.
+- **CI secrets.** When `cloudflareAccountId` is set, Pulumi creates two least-privilege Cloudflare account tokens and writes them straight into GitHub. Nobody sees or copies a token, and destroying the stack revokes them. To rotate, run `pnpm apply --replace <token URN>`.
   - `CLOUDFLARE_API_TOKEN` is for Wrangler code deploys: Worker scripts, D1 migrations, routes.
   - `CLOUDFLARE_INFRA_API_TOKEN` is for `pulumi up` on `infra/cloudflare`.
   - `CLOUDFLARE_ACCOUNT_ID` is a plain repository variable.
@@ -308,7 +308,7 @@ cd infra/github
 pulumi stack init main      # once per repo
 pnpm adopt                  # once per repo: imports the existing repository
 pnpm preview                # show the diff
-pnpm up                     # apply it
+pnpm apply                  # apply it
 ```
 
 The scripts take the GitHub token from `gh auth token`, so a `gh auth login` with repo admin rights is all you need. To mint Cloudflare tokens, also run `pulumi config set cloudflareAccountId <id>` and `pulumi config set --secret cloudflare:apiToken <token>`, using a token that is allowed to create account API tokens.
@@ -316,7 +316,7 @@ The scripts take the GitHub token from `gh auth token`, so a `gh auth login` wit
 Notes:
 
 - **It runs locally by a repo admin, not in CI.** The Actions `GITHUB_TOKEN` cannot change repo settings or write secrets. CI should also never hold a credential that can loosen its own rules.
-- **Changes made in the GitHub UI are reverted** on the next `pnpm up`. Change the code instead.
+- **Changes made in the GitHub UI are reverted** on the next `pnpm apply`. Change the code instead.
 - **Every repository setting is declared explicitly**, even ones that match GitHub's defaults. The provider treats an omitted optional field as "clear it."
 
 ## Data and storage
