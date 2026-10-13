@@ -162,7 +162,7 @@ post_start() {
 }
 
 post_attach() {
-  log "workspace $PWD -- apps on :3000-3002, preview :4173, Playwright UI :9323, Mailpit http://localhost:8025"
+  log "workspace $PWD -- apps on :3000-3002, preview :4173, Storybook :6006, Playwright UI :9323, Mailpit http://localhost:8025"
 }
 
 case "$STAGE" in

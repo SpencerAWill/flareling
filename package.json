@@ -26,7 +26,10 @@
     "sherif": "sherif",
     "size": "turbo run size",
     "test:e2e": "turbo run test:e2e",
-    "knip": "knip"
+    "knip": "knip",
+    "test:coverage": "turbo run test:coverage",
+    "test:mutation": "stryker run",
+    "storybook": "pnpm --filter @flareling/ui storybook"
   },
   "config": {
     "commitizen": {
@@ -38,12 +41,16 @@
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
     "@commitlint/cz-commitlint": "catalog:",
+    "@stryker-mutator/api": "catalog:",
+    "@stryker-mutator/core": "catalog:",
+    "@stryker-mutator/vitest-runner": "catalog:",
     "commitizen": "catalog:",
     "husky": "catalog:",
     "inquirer": "catalog:",
     "knip": "catalog:",
     "lint-staged": "catalog:",
     "sherif": "catalog:",
-    "turbo": "catalog:"
+    "turbo": "catalog:",
+    "vitest": "catalog:"
   }
 }

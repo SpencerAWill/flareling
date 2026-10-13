@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./tsconfig/base.json": "./tsconfig/base.json",
-    "./tsconfig/react.json": "./tsconfig/react.json"
+    "./tsconfig/react.json": "./tsconfig/react.json",
+    "./vitest/coverage": "./vitest/coverage.ts"
   }
 }

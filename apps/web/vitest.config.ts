@@ -1,4 +1,5 @@
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
+import { coverage } from "@flareling/config/vitest/coverage";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { configDefaults, defineConfig } from "vitest/config";
@@ -26,5 +27,6 @@ export default defineConfig({
   test: {
     // e2e/ is Playwright's (playwright.config.ts), run by `test:e2e`.
     exclude: [...configDefaults.exclude, "e2e/**"],
+    coverage,
   },
 });

@@ -9,12 +9,14 @@
   "scripts": {
     "typecheck": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@flareling/config": "workspace:*",
     "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

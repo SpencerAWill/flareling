@@ -1,0 +1,7 @@
+{
+  "extends": "@flareling/config/tsconfig/react.json",
+  "compilerOptions": {
+    "types": ["vite/client"]
+  },
+  "include": ["src", ".storybook", "vitest.config.ts"]
+}

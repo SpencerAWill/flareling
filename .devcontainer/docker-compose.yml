@@ -32,6 +32,7 @@ services:
       - "3001:3001" # apps/marketing
       - "3002:3002" # apps/admin
       - "4173:4173" # vite preview: the built Worker running in workerd
+      - "6006:6006" # Storybook (libs/ui)
       - "9323:9323" # Playwright UI mode and `playwright show-report`
     volumes:
       - ..:/workspace:cached

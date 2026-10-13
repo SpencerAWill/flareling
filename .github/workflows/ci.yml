@@ -113,7 +113,7 @@ jobs:
         run: ./gitleaks git --redact --no-banner --verbose .
 
   # The same gate as `pnpm verify` locally (Biome, sherif, knip, typecheck,
-  # tests in workerd, boundaries), then a production build, the Worker size budget, and
+  # tests in workerd and Chromium, boundaries), then a production build, the Worker size budget, and
   # Playwright against that build. One job rather than several so the install
   # and build are paid for once.
   verify:
@@ -148,17 +148,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm verify
-
-      - run: pnpm build
-
-      # Fails when a Worker's gzip upload passes its budget (below the Workers
-      # Free plan's 3 MB cap). Sizes go to the run summary.
-      - run: pnpm size
-
-      # Browser binaries are cached by Playwright version rather than by the
-      # lockfile, which changes on every dependency bump. A cache hit still has
-      # to install the system packages, which cannot be cached.
+      # Installed before `pnpm verify`, which runs libs/ui's stories in
+      # Chromium (Vitest browser mode), and used again by the E2E step. The
+      # binaries are cached by Playwright version rather than by the lockfile,
+      # which changes on every dependency bump. A cache hit still has to
+      # install the system packages, which cannot be cached.
       - name: Resolve Playwright version
         id: playwright
         run: echo "version=$(pnpm --filter @flareling/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
@@ -177,6 +171,14 @@ jobs:
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter @flareling/web exec playwright install-deps chromium webkit
+
+      - run: pnpm verify
+
+      - run: pnpm build
+
+      # Fails when a Worker's gzip upload passes its budget (below the Workers
+      # Free plan's 3 MB cap). Sizes go to the run summary.
+      - run: pnpm size
 
       # Against `vite preview`, which serves the production build through
       # workerd. The build step above is a turbo cache hit here.

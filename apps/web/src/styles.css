@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Workspace libs aren't scanned automatically (Tailwind skips anything under
+   node_modules, where they are linked), so each one that ships classes is
+   listed. */
+@source "../../../libs/ui/src";
+
 @layer base {
   :root {
     color-scheme: light dark;

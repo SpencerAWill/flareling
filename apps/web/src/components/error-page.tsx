@@ -1,3 +1,4 @@
+import { Button } from "@flareling/ui";
 import { type ErrorComponentProps, useRouter } from "@tanstack/react-router";
 
 /**
@@ -16,9 +17,9 @@ export function ErrorPage({ error, reset }: ErrorComponentProps) {
           {error instanceof Error ? error.message : String(error)}
         </pre>
       )}
-      <button
-        type="button"
-        className="self-start rounded border px-4 py-2"
+      <Button
+        variant="secondary"
+        className="self-start"
         onClick={() => {
           reset();
           // Fire and forget: a failed reload lands back in this boundary.
@@ -26,7 +27,7 @@ export function ErrorPage({ error, reset }: ErrorComponentProps) {
         }}
       >
         Try again
-      </button>
+      </Button>
     </main>
   );
 }

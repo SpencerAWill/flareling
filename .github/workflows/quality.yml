@@ -1,0 +1,112 @@
+name: Quality
+
+# Coverage and mutation testing reports. Informational, never a gate: neither
+# job fails on a number (see tooling/config/vitest/coverage.ts and
+# stryker.config.mjs for why). Weekly, plus on demand from the Actions tab.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: quality
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: Coverage report
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # libs/ui's stories run in Chromium. Same cache key as ci.yml, so a
+      # browser download from a CI run on main is reused here.
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(pnpm --filter @flareling/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @flareling/web exec playwright install --with-deps chromium webkit
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @flareling/web exec playwright install-deps chromium
+
+      - run: pnpm test:coverage
+
+      # One line per package in the run summary, from Istanbul's json-summary.
+      - name: Summarize coverage
+        run: |
+          {
+            echo "| Package | Statements | Branches | Functions | Lines |"
+            echo "| --- | --- | --- | --- | --- |"
+            for summary in apps/*/coverage/coverage-summary.json libs/*/coverage/coverage-summary.json; do
+              [ -f "$summary" ] || continue
+              node -e '
+                const { total } = require(require("node:path").resolve(process.argv[1]));
+                const pct = (k) => `${total[k].pct}%`;
+                const pkg = process.argv[1].split("/coverage/")[0];
+                console.log(`| ${pkg} | ${pct("statements")} | ${pct("branches")} | ${pct("functions")} | ${pct("lines")} |`);
+              ' "$summary"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage
+          path: |
+            apps/*/coverage/
+            libs/*/coverage/
+          retention-days: 30
+
+  mutation:
+    name: Mutation report
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm test:mutation
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 30

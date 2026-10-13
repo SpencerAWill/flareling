@@ -106,7 +106,7 @@ Key principles:
 ├── libs/                   # Shared code, bundled into apps at build time, never deployed alone
 │   ├── core/               # Domain logic, called from server functions, jobs, and RPC entrypoints
 │   ├── db/                 # Drizzle schema, D1 migrations, query helpers
-│   ├── ui/                 # Shared React components and Tailwind preset
+│   ├── ui/                 # Shared React components, with Storybook
 │   ├── auth/               # Session, passkey, and RBAC utilities
 │   ├── contracts/          # Shared zod schemas, types, and RPC interfaces
 │   ├── env/                # Typed, validated env schemas per app
@@ -115,7 +115,7 @@ Key principles:
 │   ├── cloudflare/         # Pulumi: zones, DNS, D1, R2, KV, Queues, Access, WAF (dev/prod stacks)
 │   └── github/             # Pulumi: repo settings, rulesets, environments, CI secrets (one stack)
 ├── tooling/                # Dev-time only, never bundled
-│   ├── config/             # Shared tsconfig presets (Vitest and Wrangler presets to come)
+│   ├── config/             # Shared tsconfig presets and the Vitest coverage preset
 │   └── scripts/            # Worker size check; bootstrap and Pulumi → Wrangler sync to come
 ├── .claude/                # Agent rules, subagents, skills, and hooks (see below)
 ├── .devcontainer/          # Dev container with Mailpit sidecar
@@ -202,6 +202,9 @@ Rules:
 | `pnpm db:generate` | Generates a D1 migration from schema changes |
 | `pnpm db:migrate:local` | Applies migrations to the local D1 database |
 | `pnpm db:studio` | Opens Drizzle Studio against local data |
+| `pnpm test:coverage` | Runs the unit and integration tests with Istanbul coverage (a report, with no thresholds) |
+| `pnpm test:mutation` | Runs Stryker over the pure modules listed in `stryker.config.mjs` (a report, never a gate) |
+| `pnpm storybook` | Starts Storybook for `libs/ui` on port 6006 |
 | `pnpm commit` | Guided Conventional Commit prompt (commitizen) |
 
 Local configuration lives in each deployable's `.env.local`, copied from a committed `.env.example`. Wrangler v4 reads `.env` files natively. Every deployable validates its env at startup with a schema from `libs/env`, so a missing variable fails loudly instead of at the first request that needs it.
@@ -236,7 +239,7 @@ Production deploys use the `prod` GitHub environment (with required reviewers wh
 | `lint-pr.yml` | PR opened, edited, or updated | Runs commitlint on the PR title, which becomes the squash commit on `main` |
 | `preview.yml` 🚧 | PR opened or updated | Uploads preview versions of affected Workers and comments URLs |
 | `deploy.yml` 🚧 | Merge to `main` (dev), dispatch (prod) | The five-step deploy above |
-| `quality.yml` 🚧 | Weekly schedule | Coverage and mutation testing reports (informational, not gates) |
+| `quality.yml` | Weekly schedule, and manual dispatch | Coverage and mutation testing reports as artifacts, with coverage in the run summary (informational, not gates) |
 
 CI secrets are scoped per GitHub environment where the plan allows, and fall back to repository secrets otherwise. `infra/github` creates and writes all of them except `PULUMI_ACCESS_TOKEN`, which is set by hand once. See [GitHub as code](#github-as-code).
 
@@ -378,12 +381,12 @@ Defaults that keep the bill small:
 | Layer | Tooling | Notes |
 | --- | --- | --- |
 | Unit and integration | Vitest with `@cloudflare/vitest-plugin` | Runs in workerd with real D1, KV, R2, Queues, and DOs. Migrations are applied with `readD1Migrations`. Storage is isolated per test file. |
-| Component | Vitest (DOM config), Storybook | For `libs/ui` and app components |
+| Component | Storybook with `@storybook/addon-vitest` | Each story in `libs/ui` runs as a Vitest browser test in Chromium, with `play` interactions and an axe check (WCAG 2.1 A and AA) |
 | Property-based | fast-check (`*.property.test.ts`) | For parsers, permissions, and anything with a large input space |
 | E2E | Playwright, desktop and mobile projects | Runs against `vite preview` (the production build in workerd) in CI, and against a deployed URL with `E2E_BASE_URL`. Fails on console errors and uncaught exceptions. |
 | Accessibility | `@axe-core/playwright` | Every E2E page check includes an axe scan against WCAG 2.1 A and AA |
 | Contract | Vitest | Checks that internal apps satisfy the RPC interfaces their callers depend on (once any exist) |
-| Mutation | Stryker (weekly) | Measures test quality and reports only |
+| Mutation | Stryker (weekly, in `quality.yml`) | Pure modules only, in a plain-Node Vitest project (`vitest.mutation.config.ts`). Measures test quality and reports only |
 
 ## Security and supply chain
 
@@ -431,6 +434,7 @@ Lessons learned the hard way:
 - **`wrangler-action` needs `environment: production`** for production. Without it, production secrets are uploaded to the default (dev) Worker.
 - **pnpm 11 and later ignore `.npmrc`** for workspace settings. Put them in `pnpm-workspace.yaml`. Since pnpm 12, an unrecognized key there is a hard error (`ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS`) because the repo pins its pnpm version, so typos fail fast instead of being silently ignored.
 - **The pnpm store in dev containers.** `storeDir: node_modules/.store` in `pnpm-workspace.yaml` keeps the store on the `node_modules` volume, so packages hardlink instead of copying. pnpm 12 finds that spot on its own only when run from the repo root; run from a package directory, it would create a second full store at `/workspace/.pnpm-store` on the slow bind mount. The setting is relative, so it works from any directory, on the host, and in CI.
+- **`catalogMode: strict` catalogs workspace packages too.** `pnpm add @flareling/config@workspace:*` writes `workspace:*` into the catalog and `"catalog:"` into `package.json`. Add workspace dependencies by editing `package.json` instead.
 - **Upgrading from pnpm 11:** use `--no-frozen-lockfile` (`--frozen-lockfile false` was removed). Expect the first install to re-key some peer variants of cyclic dependencies once.
 
 ## Adding an app or lib

@@ -84,6 +84,8 @@ catalog:
   "@vitejs/plugin-react": ^6.1.2
   tailwindcss: ^4.3.3
   "@tailwindcss/vite": ^4.3.3
+  clsx: ^2.1.1
+  tailwind-merge: ^3.7.0
 
   # Cloudflare
   "@cloudflare/vite-plugin": ^1.62.5
@@ -95,8 +97,23 @@ catalog:
   # which both move together (Dependabot groups them).
   vitest: ^4.1.11
   "@cloudflare/vitest-plugin": ^1.3.6
+  # The @vitest/* companions peer on the exact Vitest version, so they move
+  # with `vitest` above (Dependabot groups them).
+  "@vitest/coverage-istanbul": ^4.1.11
+  "@vitest/browser-playwright": ^4.1.11
+  fast-check: ^4.10.2
+  # `playwright` is the browser driver Vitest's browser mode uses; keep it on
+  # the same version as @playwright/test.
   "@playwright/test": ^1.63.0
+  playwright: ^1.63.0
   "@axe-core/playwright": ^4.13.0
+  storybook: ^10.6.1
+  "@storybook/react-vite": ^10.6.1
+  "@storybook/addon-vitest": ^10.6.1
+  "@storybook/addon-a11y": ^10.6.1
+  "@stryker-mutator/api": ^10.0.0
+  "@stryker-mutator/core": ^10.0.0
+  "@stryker-mutator/vitest-runner": ^10.0.0
 
   # Infrastructure
   "@pulumi/pulumi": ^3.267.0

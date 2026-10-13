@@ -19,6 +19,10 @@
     "test": {
       "dependsOn": ["transit"]
     },
+    "test:coverage": {
+      "dependsOn": ["transit"],
+      "outputs": ["coverage/**"]
+    },
     "test:e2e": {
       "dependsOn": ["build"],
       "cache": false,

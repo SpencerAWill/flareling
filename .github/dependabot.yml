@@ -39,6 +39,10 @@ updates:
           - "@vitest/*"
       pulumi:
         patterns: ["@pulumi/*"]
+      storybook:
+        patterns: ["storybook", "@storybook/*"]
+      stryker:
+        patterns: ["@stryker-mutator/*"]
       tooling:
         patterns:
           - "@biomejs/*"

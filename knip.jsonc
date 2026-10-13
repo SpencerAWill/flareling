@@ -22,6 +22,12 @@
   "ignoreDependencies": ["cloudflare"],
 
   "workspaces": {
+    ".": {
+      // Stryker's test project. stryker.config.mjs names it as a string
+      // (`vitest.configFile`), which knip can't follow. An entry rather than
+      // an ignore, so knip still follows its imports.
+      "entry": ["vitest.mutation.config.ts"]
+    },
     // Libs are internal, so their public exports are not an API for outside
     // consumers: an export no app or lib imports is dead code. knip skips a
     // package's entry exports by default, which would hide exactly that.
