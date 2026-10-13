@@ -56,7 +56,7 @@ Flareling gives you a working monorepo from day one: web apps, APIs, background 
 | Object storage | R2 |
 | Config, flags, cache | KV |
 | Async work | Queues + Workflows |
-| Infrastructure as code | Pulumi (TypeScript) with the Cloudflare provider |
+| Infrastructure as code | Pulumi (TypeScript) with the Cloudflare and GitHub providers |
 | Code deploys | Wrangler (via `cloudflare/wrangler-action` in CI) |
 | CI/CD | GitHub Actions |
 | Lint / format | Biome, plus knip for unused code and dependencies |
@@ -111,7 +111,9 @@ Key principles:
 │   ├── contracts/          # Shared zod schemas, types, and RPC interfaces
 │   ├── env/                # Typed, validated env schemas per app
 │   └── log/                # Structured logger with redaction
-├── infra/                  # Pulumi program: zones, DNS, D1, R2, KV, Queues, Access, WAF
+├── infra/
+│   ├── cloudflare/         # Pulumi: zones, DNS, D1, R2, KV, Queues, Access, WAF (dev/prod stacks)
+│   └── github/             # Pulumi: repo settings, rulesets, environments, CI secrets (one stack)
 ├── tooling/                # Dev-time only, never bundled
 │   ├── config/             # Shared tsconfig, Biome, Vitest, and Wrangler presets
 │   └── scripts/            # Bootstrap, type generation, Pulumi → Wrangler sync
@@ -147,7 +149,7 @@ Rules:
 - **Libs never import from apps,** and should not read bindings at module scope. Bindings are passed in by the app.
 - **Boundaries are enforced in CI** with Turborepo boundaries and package tags (`app`, `lib`), so a disallowed import fails the build. 🚧
 - **Every workspace package uses one npm scope** (`@flareling/web`, `@flareling/core`, and so on). `pnpm bootstrap` renames the scope for your project.
-- `infra/` and `tooling/` sit outside this split. Infra is a Pulumi program, not a Worker. Tooling is dev-time configuration and scripts that never ship.
+- `infra/` and `tooling/` sit outside this split. Infra holds Pulumi programs, not Workers. Tooling is dev-time configuration and scripts that never ship.
 
 ## Getting started
 
@@ -156,6 +158,7 @@ Rules:
 - Node.js 24 (see `.nvmrc`) and Corepack (`corepack enable`), or just the dev container
 - A Cloudflare account
 - Pulumi CLI (only if you manage infrastructure)
+- Repo admin access (only to run `infra/github`)
 
 ### Create your project
 
@@ -213,7 +216,7 @@ Pre-commit hooks run `biome check --write --error-on-warnings` on staged files, 
 
 Each deploy runs in a fixed order:
 
-1. **`pulumi up`** creates or updates long-lived resources.
+1. **`pulumi up`** on `infra/cloudflare` creates or updates long-lived resources.
 2. **Sync IDs.** Pulumi stack outputs (D1 IDs, KV namespace IDs, bucket names) are written into each deployable's Wrangler config. Non-secret values are passed as `--var`, and secrets go through `wrangler-action`'s `secrets:`.
 3. **`wrangler d1 migrations apply --remote`** runs migrations before any code that depends on them.
 4. **`wrangler deploy`** deploys affected Workers only (Turborepo affected detection).
@@ -225,25 +228,34 @@ Production deploys use a GitHub environment with required reviewers and `concurr
 
 | Workflow | Runs on | Does |
 | --- | --- | --- |
-| `ci.yml` | PRs (skips drafts) | Path filtering, `pnpm audit --prod`, `pnpm verify`, build, Playwright, `pulumi preview` commented on the PR (skipped for forks) |
+| `ci.yml` | PRs (skips drafts) | Path filtering, `pnpm audit --prod`, `pnpm verify`, build, Playwright, `pulumi preview` of `infra/cloudflare` commented on the PR (skipped for forks) |
 | `workflow-lint` job | Changes under `.github/` | actionlint and zizmor |
 | `lint-pr.yml` | PR opened or edited | Enforces a semantic PR title |
 | `preview.yml` | PR opened or updated | Uploads preview versions of affected Workers and comments URLs |
 | `deploy.yml` | Merge to `main` (dev), dispatch (prod) | The five-step deploy above |
 | `quality.yml` | Weekly schedule | Coverage and mutation testing reports (informational, not gates) |
 
-Required secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `PULUMI_ACCESS_TOKEN`, scoped per GitHub environment.
+CI secrets are scoped per GitHub environment. `infra/github` creates and writes all of them except `PULUMI_ACCESS_TOKEN`, which is set by hand once. See [GitHub as code](#github-as-code).
 
 ## Infrastructure (Pulumi)
 
-The `infra/` package is a TypeScript Pulumi program with `dev` and `prod` stacks (`infra/Pulumi.<stack>.yaml`). Shared resources, such as an email provider account, can be referenced across stacks with `StackReference`.
+`infra/` holds two Pulumi projects, both in TypeScript. They are kept separate because they need different credentials and change at different rates. Keeping them apart also means a mistake in one cannot touch the other.
+
+| Project | Manages | Stacks | Runs from |
+| --- | --- | --- | --- |
+| `infra/cloudflare` | Zones, DNS, D1, R2, KV, Queues, Access, WAF, budget alerts | `dev`, `prod` | CI (`pulumi up` in the deploy workflow) |
+| `infra/github` | Repo settings, rulesets, environments, CI secrets, Cloudflare API tokens for CI | one per repo | A repo admin, locally. CI only previews it. |
+
+### Cloudflare
 
 ```sh
-cd infra
+cd infra/cloudflare
 pulumi stack select dev
 pulumi preview
 pulumi up
 ```
+
+Shared resources, such as an email provider account, can be referenced across stacks with `StackReference`.
 
 Guidelines:
 
@@ -251,7 +263,39 @@ Guidelines:
 - Mark production data resources (D1, R2) with `protect: true`.
 - Commit Wrangler configs with placeholder IDs. `tooling/scripts/sync-env` replaces them with stack outputs at deploy time, so real IDs never need hand-editing. 🚧 This replaces the `sed` step used in ucmc with a typed script.
 - A `WorkersCustomDomain` needs the Worker script to exist first. For a brand-new Worker, deploy the code once before the first `pulumi up` that attaches its domain.
-- Use separate least-privilege API tokens for code deploys and for infrastructure.
+
+### GitHub as code
+
+`infra/github` uses the Pulumi GitHub provider so every repo created from this template gets the same safeguards, set up by code and reviewed in PRs rather than clicked together in the settings UI.
+
+It manages:
+
+- **Repo settings:** squash-only merges, delete branches after merge, vulnerability alerts, and secret scanning with push protection.
+- **A ruleset on `main`:** required status checks, linear history, and no force pushes, with a bypass for repository admins so nobody is locked out.
+- **Environments:** `dev` and `prod`. Both accept deploys from `main` only, and `prod` requires reviewer approval.
+- **CI secrets and variables per environment.** Pulumi creates least-privilege Cloudflare API tokens (`cloudflare.ApiToken`) and writes them directly into environment secrets. One token is for Wrangler code deploys and a separate one is for `infra/cloudflare`. Nobody sees or copies a token. `pulumi up` rotates them, and destroying the stack revokes them.
+- **Labels,** so issues and PRs look the same in every repo.
+
+It does not manage:
+
+- **Workflow files or `dependabot.yml`.** They already live in the repo.
+- **`PULUMI_ACCESS_TOKEN`.** This is the one secret set by hand, because CI needs it before Pulumi can run.
+- **Personal or organization settings.**
+
+Running it:
+
+```sh
+cd infra/github
+export GITHUB_TOKEN=...          # fine-grained PAT or GitHub App with repo admin
+export CLOUDFLARE_API_TOKEN=...  # a token allowed to create API tokens
+pulumi up
+```
+
+Notes:
+
+- **It runs locally by a repo admin, not in CI.** The Actions `GITHUB_TOKEN` cannot change repo settings or write secrets. CI should also never hold a credential that can loosen its own rules.
+- **Changes made in the GitHub UI are reverted** on the next `pulumi up`. Change the code instead.
+- **Plan limits:** on private repos, rulesets and required reviewers on environments need GitHub Pro, Team, or Enterprise. Set the plan in stack config (`pulumi config set plan free`), and on the free plan those resources are skipped instead of failing the run.
 
 ## Data and storage
 
@@ -311,7 +355,8 @@ Defaults that keep the bill small:
 - **Hardened Actions.** All actions are pinned to commit SHAs. `${{ }}` expressions never appear inside `run:` bodies; values pass through `env:`. zizmor and actionlint gate workflow changes.
 - **Auth defaults.** `__Host-` cookies, Turnstile on public forms, rate-limiting bindings on auth routes, and RBAC permissions stored as data.
 - `apps/admin` sits behind **Cloudflare Access**. WAF managed rules are declared in Pulumi.
-- Secrets never touch the repo. Locally they live in gitignored `.env.local`, and in CI they come from GitHub environment secrets or Pulumi outputs.
+- Secrets never touch the repo. Locally they live in gitignored `.env.local`. In CI they come from GitHub environment secrets that `infra/github` creates and rotates, or from Pulumi outputs.
+- **Repo safeguards are code.** The `main` ruleset, required checks, protection on the `prod` environment, and secret scanning are declared in `infra/github`.
 - See [SECURITY.md](./SECURITY.md) for how to report vulnerabilities.
 
 ## Observability
@@ -361,7 +406,7 @@ Until then, copy the closest existing app or lib.
 For a new **app**:
 
 1. Rename it in `package.json` and `wrangler.jsonc`, and tag it `app`.
-2. Add any new resources to the Pulumi program, and placeholder IDs to `wrangler.jsonc`.
+2. Add any new resources to `infra/cloudflare`, and placeholder IDs to `wrangler.jsonc`.
 3. Add an env schema in `libs/env` and an `.env.example`.
 4. Run `pnpm cf-typegen`.
 5. Add it to the deploy matrix in `.github/workflows/deploy.yml`.
@@ -381,7 +426,7 @@ Still being decided. Feedback welcome.
 - **Public third-party API:** if the suite needs one, add `apps/public-api` with [Hono](https://hono.dev) and `@hono/zod-openapi` for versioned routes, API keys, and generated OpenAPI docs. Internal callers still use RPC.
 - **Billing:** Stripe integration pattern (webhooks into Queues, entitlements in D1 or KV).
 - **Multi-tenancy model:** shared D1 with tenant columns, or a D1 database per tenant.
-- **Pulumi state backend:** Pulumi Cloud or self-managed R2.
+- **Pulumi state backend:** Pulumi Cloud or self-managed R2. Either way, `PULUMI_ACCESS_TOKEN` (or the R2 backend credentials) is the one CI secret set by hand.
 
 ## Contributing
 

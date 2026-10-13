@@ -5,10 +5,10 @@ packages:
   - libs/*
   # Dev-time config presets and scripts. Never bundled.
   - tooling/*
-  # The Pulumi program is a workspace package so it shares the root lockfile and
-  # toolchain. Pulumi's nodejs runtime resolves `@pulumi/*` from the
-  # node_modules that pnpm links into infra/.
-  - infra
+  # Pulumi programs (infra/cloudflare, infra/github) are workspace packages so
+  # they share the root lockfile and toolchain. Pulumi's nodejs runtime resolves
+  # `@pulumi/*` from the node_modules that pnpm links into each project.
+  - infra/*
 
 # Quarantine window for newly published versions: refuses to install anything
 # released in the last 7 days. This is the primary supply-chain defense, and it
