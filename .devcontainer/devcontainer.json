@@ -54,11 +54,19 @@
 
   // Every in-container hook routes through lifecycle.sh so the ordering and the
   // reason each step lives at its stage stay readable in one file.
-  "onCreateCommand": ".devcontainer/lifecycle.sh on-create",
-  "updateContentCommand": ".devcontainer/lifecycle.sh update-content",
-  "postCreateCommand": ".devcontainer/lifecycle.sh post-create",
-  "postStartCommand": ".devcontainer/lifecycle.sh post-start",
-  "postAttachCommand": ".devcontainer/lifecycle.sh post-attach",
+  //
+  // Array form, not strings, because of a Zed bug (zed-industries/zed#62964):
+  // Zed wraps a string command as `/bin/sh -c <script>` and then joins that
+  // array with spaces into another `sh -c`, so the stage argument lands in $0
+  // and lifecycle.sh sees no $1. Zed joins an array into the correct
+  // `sh -c ".devcontainer/lifecycle.sh on-create"`, and VS Code and the
+  // devcontainer CLI exec it directly. Keep arguments free of spaces: Zed's
+  // join does no quoting.
+  "onCreateCommand": [".devcontainer/lifecycle.sh", "on-create"],
+  "updateContentCommand": [".devcontainer/lifecycle.sh", "update-content"],
+  "postCreateCommand": [".devcontainer/lifecycle.sh", "post-create"],
+  "postStartCommand": [".devcontainer/lifecycle.sh", "post-start"],
+  "postAttachCommand": [".devcontainer/lifecycle.sh", "post-attach"],
 
   "customizations": {
     "vscode": {
