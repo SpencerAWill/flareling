@@ -23,7 +23,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.62.5",
+    "@cloudflare/vite-plugin": "^1.63.0",
     "@cloudflare/vitest-plugin": "catalog:",
     "@flareling/config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
@@ -33,7 +33,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "tailwindcss": "^4.3.3",
     "typescript": "catalog:",
-    "vite": "^8.3.2",
+    "vite": "^8.3.3",
     "vitest": "catalog:",
     "wrangler": "^4.147.0"
   }
