@@ -1,4 +1,8 @@
-export { openBillingPortal, startCheckout } from "./checkout.ts";
+export {
+  type BillingContext,
+  openBillingPortal,
+  startCheckout,
+} from "./checkout.ts";
 export { workspacePlan } from "./entitlements.ts";
 export {
   processStripeEvent,

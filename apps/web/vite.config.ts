@@ -17,7 +17,14 @@ export default defineConfig({
   // a Node-only API fails locally instead of after deploy. The React plugin
   // must come after Start.
   plugins: [
-    cloudflare({ viteEnvironment: { name: "ssr" } }),
+    cloudflare({
+      viteEnvironment: { name: "ssr" },
+      // apps/jobs runs beside the app in `pnpm dev` and `vite preview`, so
+      // messages the app queues (Stripe webhooks) are consumed locally too.
+      // Each Worker still deploys on its own; this only shares a local
+      // runtime (and its local D1 and queues) between them.
+      auxiliaryWorkers: [{ configPath: "../jobs/wrangler.jsonc" }],
+    }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { test as base, expect, type Page } from "@playwright/test";
+import { latestLinkTo } from "./mailpit.ts";
 
 /**
  * Every test fails if the page logs a console error or throws. That is how a
@@ -69,4 +70,24 @@ export async function waitForHydration(page: Page, timeoutMs = 10_000) {
     null,
     { timeout: timeoutMs },
   );
+}
+
+/**
+ * Signs in as `email` with a magic link from Mailpit, ending on /my/account
+ * with its requests finished: leaving a page mid-request aborts them, which
+ * WebKit reports as "TypeError: Load failed".
+ */
+export async function signInByEmail(page: Page, email: string) {
+  await page.goto("/sign-in");
+  await waitForHydration(page);
+  await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await expect(page.getByRole("status")).toBeVisible();
+  const link = await latestLinkTo(email);
+  await page.goto(link.pathname + link.search);
+  await waitForHydration(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page).toHaveURL(/\/my\/account$/);
+  await waitForHydration(page);
+  await page.waitForLoadState("networkidle");
 }

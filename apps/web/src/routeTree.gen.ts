@@ -15,6 +15,7 @@ import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as MyAccountRouteImport } from './routes/my/account'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as WWorkspaceIdBillingRouteImport } from './routes/w/$workspaceId/billing'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   path: '/api/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WWorkspaceIdBillingRoute = WWorkspaceIdBillingRouteImport.update({
+  id: '/w/$workspaceId/billing',
+  path: '/w/$workspaceId/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/my/account': typeof MyAccountRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/my/account': typeof MyAccountRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/my/account': typeof MyAccountRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/my/account'
     | '/api/stripe/webhook'
+    | '/w/$workspaceId/billing'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +99,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/my/account'
     | '/api/stripe/webhook'
+    | '/w/$workspaceId/billing'
   id:
     | '__root__'
     | '/'
@@ -97,6 +108,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/my/account'
     | '/api/stripe/webhook'
+    | '/w/$workspaceId/billing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +118,7 @@ export interface RootRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   MyAccountRoute: typeof MyAccountRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
+  WWorkspaceIdBillingRoute: typeof WWorkspaceIdBillingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/w/$workspaceId/billing': {
+      id: '/w/$workspaceId/billing'
+      path: '/w/$workspaceId/billing'
+      fullPath: '/w/$workspaceId/billing'
+      preLoaderRoute: typeof WWorkspaceIdBillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -162,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   MyAccountRoute: MyAccountRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
+  WWorkspaceIdBillingRoute: WWorkspaceIdBillingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

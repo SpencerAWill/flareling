@@ -1,6 +1,7 @@
-# Compose rather than a single image so dev-only services (Mailpit today) run
-# beside the workspace container. The project name namespaces the containers
-# and named volumes, so they never collide with another repo's dev container.
+# Compose rather than a single image so dev-only services (Mailpit,
+# stripe-mock) run beside the workspace container. The project name namespaces
+# the containers and named volumes, so they never collide with another repo's
+# dev container.
 # `pnpm bootstrap` renames it for projects created from the template.
 name: flareling
 
@@ -70,6 +71,7 @@ services:
     command: sleep infinity
     depends_on:
       - mailpit
+      - stripe-mock
 
   # Mailpit catches outbound dev email so magic links land in a real inbox UI
   # instead of the terminal. It has two addresses, both correct from their own
@@ -91,6 +93,17 @@ services:
       MP_MAX_MESSAGES: "500"
     volumes:
       - mailpit-data:/data
+
+  # stripe-mock answers the Stripe API locally, so billing works with no
+  # Stripe account: http://stripe-mock:12111 from the dev container (set as
+  # STRIPE_API_BASE in apps/*/.env.local), any sk_test_ key. It's stateless:
+  # every response is a fixture shaped by the request, so it checks that
+  # requests are valid, not that billing state changes (libs/billing's tests
+  # cover that). Not published to the host; nothing there needs it.
+  stripe-mock:
+    # Pinned to a release at least 7 days old, as Mailpit above.
+    image: stripe/stripe-mock:v0.206.0
+    restart: unless-stopped
 
 volumes:
   node-modules:

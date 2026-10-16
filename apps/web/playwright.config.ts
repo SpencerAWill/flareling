@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { STRIPE_WEBHOOK_SECRET } from "./e2e/stripe.ts";
 
 // Same port as `preview` in vite.config.ts, published by the dev container.
 const PREVIEW_PORT = 4173;
@@ -43,14 +44,19 @@ export default defineConfig({
           url: `http://localhost:${PREVIEW_PORT}/api/health`,
           reuseExistingServer: !isCI,
           timeout: 60_000,
-          // Passed into the Worker (CLOUDFLARE_INCLUDE_PROCESS_ENV): the
-          // origin it's served from, where to send email, and the rate-limit
-          // bypass, since the suite signs in more often than the limit allows.
+          // Passed into the Workers (CLOUDFLARE_INCLUDE_PROCESS_ENV): the
+          // origin the app is served from, where to send email, the rate-limit
+          // bypass, since the suite signs in more often than the limit allows,
+          // and Stripe pointed at stripe-mock (apps/jobs reads the same vars).
           env: {
             CLOUDFLARE_INCLUDE_PROCESS_ENV: "true",
             APP_BASE_URL: `http://localhost:${PREVIEW_PORT}`,
             MAILPIT_URL: process.env.MAILPIT_URL ?? "http://mailpit:8025",
             E2E_BYPASS_RATE_LIMIT: "1",
+            STRIPE_SECRET_KEY: "sk_test_e2e",
+            STRIPE_WEBHOOK_SECRET,
+            STRIPE_API_BASE:
+              process.env.STRIPE_API_BASE ?? "http://stripe-mock:12111",
           },
         },
       }),

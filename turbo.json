@@ -26,7 +26,7 @@
     "test:e2e": {
       "dependsOn": ["build"],
       "cache": false,
-      "passThroughEnv": ["CI", "E2E_BASE_URL", "MAILPIT_URL"]
+      "passThroughEnv": ["CI", "E2E_BASE_URL", "MAILPIT_URL", "STRIPE_API_BASE"]
     },
     "dev": {
       "cache": false,
