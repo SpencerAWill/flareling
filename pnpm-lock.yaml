@@ -419,6 +419,9 @@ importers:
 
   apps/jobs:
     dependencies:
+      '@flareling/auth':
+        specifier: workspace:*
+        version: link:../../libs/auth
       '@flareling/billing':
         specifier: workspace:*
         version: link:../../libs/billing
@@ -428,6 +431,9 @@ importers:
       '@flareling/log':
         specifier: workspace:*
         version: link:../../libs/log
+      temporal-polyfill:
+        specifier: 'catalog:'
+        version: 1.0.5
       zod:
         specifier: 'catalog:'
         version: 4.6.5

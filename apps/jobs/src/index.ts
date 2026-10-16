@@ -4,7 +4,18 @@ import {
   type StripeEventMessage,
 } from "@flareling/billing";
 import { errorMessage, log, runWithLogContext } from "@flareling/log";
+import { Temporal } from "temporal-polyfill";
 import { getEnv } from "./env.ts";
+import { runRetentionSweeps } from "./retention.ts";
+
+/**
+ * Cron expressions, as in wrangler.jsonc's `triggers.crons`. The two must
+ * agree: a trigger with no case here fails loudly in `scheduled`.
+ */
+export const CRONS = {
+  /** Daily, 03:17 UTC: off the hour, when scheduled work bunches up. */
+  retention: "17 3 * * *",
+} as const;
 
 /** Every message this Worker accepts, told apart by `kind`. */
 export type JobMessage = StripeEventMessage;
@@ -49,6 +60,20 @@ async function handle(body: JobMessage): Promise<void> {
 }
 
 export default {
+  async scheduled(controller: ScheduledController): Promise<void> {
+    await runWithLogContext({ cron: controller.cron }, async () => {
+      switch (controller.cron) {
+        case CRONS.retention:
+          await runRetentionSweeps(
+            Temporal.Instant.fromEpochMilliseconds(controller.scheduledTime),
+          );
+          return;
+        default:
+          throw new Error(`No handler for cron "${controller.cron}"`);
+      }
+    });
+  },
+
   async queue(batch: MessageBatch<JobMessage>): Promise<void> {
     // One message at a time: each is a few subrequests, and acking or
     // retrying each separately means one bad message never redelivers the

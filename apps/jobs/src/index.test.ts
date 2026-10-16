@@ -1,8 +1,10 @@
 import {
   createExecutionContext,
   createMessageBatch,
+  createScheduledController,
   getQueueResult,
 } from "cloudflare:test";
+import { env } from "cloudflare:workers";
 import { getDb, schema } from "@flareling/db";
 import { setupNetwork } from "@msw/cloudflare";
 import { HttpResponse, http } from "msw";
@@ -15,7 +17,7 @@ import {
   it,
   vi,
 } from "vitest";
-import worker, { type JobMessage, retryDelaySeconds } from "./index.ts";
+import worker, { CRONS, type JobMessage, retryDelaySeconds } from "./index.ts";
 
 const network = setupNetwork();
 network.configure({ onUnhandledFrame: "error" });
@@ -120,5 +122,42 @@ describe("retryDelaySeconds", () => {
       30, 60, 120, 240, 480,
     ]);
     expect(retryDelaySeconds(100)).toBe(12 * 60 * 60);
+  });
+});
+
+describe("the scheduled handler", () => {
+  it("handles exactly the crons wrangler.jsonc declares", () => {
+    expect(Object.values(CRONS).sort()).toEqual([...env.TEST_CRONS].sort());
+  });
+
+  it("runs the retention sweeps on the daily cron and logs what they did", async () => {
+    await getDb()
+      .insert(schema.stripeEvents)
+      .values({
+        id: "evt_ancient",
+        type: "invoice.paid",
+        processedAt: new Date("2020-01-01T00:00:00Z"),
+      });
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    await worker.scheduled(
+      createScheduledController({
+        cron: CRONS.retention,
+        scheduledTime: new Date("2026-10-16T03:17:00Z"),
+      }),
+    );
+
+    const done = { deleted: 0, complete: true };
+    expect(info).toHaveBeenCalledWith("retention.sweeps_complete", {
+      cron: CRONS.retention,
+      auth: { sessions: done, magicLinks: done, webauthnChallenges: done },
+      stripeEvents: { deleted: 1, complete: true },
+    });
+  });
+
+  it("fails loudly on a cron it has no handler for", async () => {
+    await expect(
+      worker.scheduled(createScheduledController({ cron: "0 0 * * *" })),
+    ).rejects.toThrow('No handler for cron "0 0 * * *"');
   });
 });

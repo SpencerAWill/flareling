@@ -328,8 +328,8 @@ Sources: https://developers.cloudflare.com/kv/platform/limits/ , https://develop
 **R10. D1 daily writes and table growth (now, low→medium).**
 - *Exposed:* the sign-in path writes about 12–16 rows-written. Examples: a magic_links insert (+2 indexes), a sessions insert (+3), audit_log (+4 indexes), session deletes, user/email/role inserts for new users. `loadSession` refreshes `expires_at` (indexed). `magic_links`, `sessions`, `webauthn_challenges` and `audit_log` grow without cleanup, toward the 500 MB per DB on Free.
 - *Protection:*
-  - Add a cleanup Cron in apps/jobs (counts against **5 crons per account** on Free, shared by dev and prod).
-  - Keep the `expires_at` indexes (present).
+  - ✅ A daily cleanup Cron in apps/jobs (`17 3 * * *`, `runRetentionSweeps`) deletes expired sessions, magic links and WebAuthn ceremonies, and Stripe event ids older than 30 days, in bounded batches. One trigger per deployed Worker (Free allows 5 per account).
+  - ✅ Keep the `expires_at` indexes (present); `libs/db/src/retention.test.ts` checks each sweep's delete uses its index (`EXPLAIN QUERY PLAN`).
   - Add a test that every query on hot paths uses an index (`EXPLAIN QUERY PLAN` in vitest-pool-workers asserts no `SCAN`). This catches full-scan rows-read blowups locally.
 
 **R11. D1 queries per invocation (50 Free) and subrequests (50 fetch on Free) (later, low now).**

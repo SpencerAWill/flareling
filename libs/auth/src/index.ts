@@ -21,3 +21,4 @@ export {
   UnauthorizedError,
 } from "./rbac.ts";
 export { revokeUserSessions } from "./session.ts";
+export { sweepExpiredAuthRows } from "./sweep.ts";

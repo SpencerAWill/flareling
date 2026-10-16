@@ -15,3 +15,4 @@ export {
   runBatch,
 } from "./d1.ts";
 export { newId } from "./id.ts";
+export { type DeleteBeforeResult, deleteBefore } from "./retention.ts";

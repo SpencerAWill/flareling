@@ -10,4 +10,5 @@ export {
   verifyWebhook,
 } from "./events.ts";
 export { PLANS } from "./plans.ts";
+export { sweepStripeEvents } from "./retention.ts";
 export { createStripe } from "./stripe.ts";

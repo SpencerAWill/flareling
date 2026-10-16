@@ -18,6 +18,14 @@
 
   "main": "src/index.ts",
 
+  // Scheduled work, dispatched in src/index.ts (CRONS), which must list the
+  // same expressions. UTC, no DST. Each expression is one Cron Trigger per
+  // deployed Worker, so per environment; Paid allows 250 per account. A
+  // change takes up to 15 minutes to reach the edge after a deploy. To run one
+  // locally, start `pnpm --filter @flareling/jobs dev` and
+  // `curl "localhost:8787/cdn-cgi/local/scheduled?cron=17+3+*+*+*"`.
+  "triggers": { "crons": ["17 3 * * *"] },
+
   // No HTTP surface: nothing should reach this Worker except its queue.
   "workers_dev": false,
   "preview_urls": false,
