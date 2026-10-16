@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@flareling/auth": "workspace:*",
+    "@flareling/core": "workspace:*",
     "@flareling/email": "workspace:*",
     "@flareling/env": "workspace:*",
     "@flareling/log": "workspace:*",

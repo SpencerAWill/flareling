@@ -419,6 +419,9 @@ importers:
       '@flareling/auth':
         specifier: workspace:*
         version: link:../../libs/auth
+      '@flareling/core':
+        specifier: workspace:*
+        version: link:../../libs/core
       '@flareling/email':
         specifier: workspace:*
         version: link:../../libs/email
@@ -593,6 +596,16 @@ importers:
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-istanbul@5.0.3)(@vitest/ui@5.0.3)(msw@3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   libs/core:
+    dependencies:
+      '@flareling/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@flareling/db':
+        specifier: workspace:*
+        version: link:../db
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@opentelemetry/api@1.9.1)
     devDependencies:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'

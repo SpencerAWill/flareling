@@ -134,3 +134,18 @@ export const removePasskeyFn = createServerFn({ method: "POST" })
     if (!principal) return { ok: false as const };
     return { ok: await removePasskey(principal.userId, data.id) };
   });
+
+// ── Workspaces ──────────────────────────────────────────────────────────────
+
+/** The signed-in account's workspaces, creating its personal one on first use. */
+export const listWorkspacesFn = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { ensurePersonalWorkspace, listWorkspaces } = await import(
+      "@flareling/core"
+    );
+    const { principal } = await signedIn();
+    if (!principal) return [];
+    await ensurePersonalWorkspace(principal.userId);
+    return listWorkspaces(principal.userId);
+  },
+);

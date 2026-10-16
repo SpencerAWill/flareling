@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { assertNever } from "./index.ts";
+import { assertNever } from "./assert.ts";
 
 it("assertNever throws with the unhandled value", () => {
   expect(() => assertNever({ kind: "unknown" } as never)).toThrow(

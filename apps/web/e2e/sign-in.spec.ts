@@ -21,6 +21,10 @@ test("signs in with an emailed link, and out again", async ({
 
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
+  // A new account gets a personal workspace, which it owns.
+  await expect(
+    page.getByRole("listitem").filter({ hasText: "Personal" }),
+  ).toHaveText("Personal (owner)");
 
   await page.getByRole("button", { name: "Sign out" }).click();
   // Wait for the home page to finish loading before leaving it: navigating

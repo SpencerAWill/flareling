@@ -277,3 +277,50 @@ export const userRoles = sqliteTable(
     index("user_roles_role_idx").on(t.roleId),
   ],
 );
+
+// ── Workspaces ──────────────────────────────────────────────────────────────
+//
+// The tenant: what's billed, and what product data belongs to. Tenancy is a
+// `workspace_id` column on every product table in the shared database
+// (docs/adr/0017-workspaces-as-tenants.md). Workspace roles say what a member
+// may do inside one workspace; the global roles above are for running the
+// platform itself.
+
+export const workspaces = sqliteTable(
+  "workspaces",
+  {
+    id: text("id").primaryKey().$defaultFn(newId),
+    name: text("name").notNull(),
+    // Set for the workspace created automatically for a new account. Unique,
+    // so two concurrent first requests can't create two.
+    personalUserId: text("personal_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [uniqueIndex("workspaces_personal_user_unique").on(t.personalUserId)],
+);
+
+export const workspaceMembers = sqliteTable(
+  "workspace_members",
+  {
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // owner: everything, including billing and deleting the workspace.
+    // admin: manage members and billing. member: use the product.
+    role: text("role", { enum: ["owner", "admin", "member"] }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.userId] }),
+    index("workspace_members_user_idx").on(t.userId),
+  ],
+);

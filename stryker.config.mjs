@@ -25,7 +25,7 @@ export default {
   // Pure modules only; see vitest.mutation.config.ts for why. Adding a module
   // here means adding its tests there.
   mutate: [
-    "libs/core/src/index.ts",
+    "libs/core/src/assert.ts",
     "libs/log/src/redact.ts",
     "libs/ui/src/cn.ts",
   ],

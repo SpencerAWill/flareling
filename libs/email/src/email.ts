@@ -73,9 +73,8 @@ function mailpitSender(baseUrl: string, config: EmailConfig): EmailSender {
   const endpoint = new URL("/api/v1/send", baseUrl);
   return {
     async send(message) {
-      let response: Response;
-      try {
-        response = await fetch(endpoint, {
+      const post = () =>
+        fetch(endpoint, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -86,6 +85,12 @@ function mailpitSender(baseUrl: string, config: EmailConfig): EmailSender {
             ...(message.html === undefined ? {} : { HTML: message.html }),
           }),
         });
+      let response: Response;
+      try {
+        // One retry on a network error: Mailpit is a local sidecar, and a
+        // dropped connection under parallel E2E load isn't worth failing a
+        // sign-in over. A real outage fails the second attempt too.
+        response = await post().catch(() => post());
       } catch {
         log.error("email.send_failed", {
           kind: message.kind,

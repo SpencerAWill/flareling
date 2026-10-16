@@ -474,7 +474,6 @@ Still being decided. Feedback welcome.
 - **Preview deploys:** neither reference repo has per-PR previews yet. Decide whether they use Workers version preview URLs or a dedicated `preview` stack.
 - **Public third-party API:** if the suite needs one, add `apps/public-api` with [Hono](https://hono.dev) and `@hono/zod-openapi` for versioned routes, API keys, and generated OpenAPI docs. Internal callers still use RPC.
 - **Billing:** Stripe integration pattern (webhooks into Queues, entitlements in D1 or KV).
-- **Multi-tenancy model:** shared D1 with tenant columns, or a D1 database per tenant.
 - **Pulumi state backend:** Pulumi Cloud for now (the `infra/github` stack lives there). Self-managed R2 is still an option. Either way, `PULUMI_ACCESS_TOKEN` (or the R2 backend credentials) is the one CI secret set by hand.
 
 ## Contributing

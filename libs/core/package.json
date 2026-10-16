@@ -19,5 +19,10 @@
     "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@flareling/auth": "workspace:*",
+    "@flareling/db": "workspace:*",
+    "drizzle-orm": "catalog:"
   }
 }
