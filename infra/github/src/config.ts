@@ -52,6 +52,21 @@ export const prodReviewerIds =
 export const cloudflareAccountId = config.get("cloudflareAccountId");
 
 /**
+ * The zone this suite's hostnames live in (infra/cloudflare's `zoneId`). The
+ * CI tokens' zone permissions are scoped to it alone, never to every zone in
+ * the account. Required with cloudflareAccountId.
+ */
+export const cloudflareZoneId = config.get("cloudflareZoneId");
+
+/**
+ * Whether the zone belongs to this suite alone. Only then does the infra token
+ * get zone-wide write (Zone Settings, WAF): in a shared zone those would
+ * change every other site in it. Defaults to false; spencerwill.com is shared.
+ */
+export const cloudflareZoneDedicated =
+  config.getBoolean("cloudflareZoneDedicated") ?? false;
+
+/**
  * Which GitHub features this repo can use, derived from visibility and plan.
  *
  * A private repo on the free plan gets none of the gated features, so the

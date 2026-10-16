@@ -7,7 +7,10 @@ import * as pulumi from "@pulumi/pulumi";
  * and an unknown name fails the run rather than silently granting less.
  *
  * Account-scoped groups apply to the whole account. Zone-scoped groups apply
- * to every zone in the account.
+ * only to this suite's zone (`zoneId`), never to every zone in the account:
+ * the zone may be shared with other sites (spencerwill.com is), and a leaked
+ * token shouldn't reach them. Zone-wide write (settings, WAF) is granted only
+ * when the zone is dedicated to this suite (`zoneDedicated`).
  */
 const tokenPermissions = {
   // Used by Wrangler in the deploy workflow: upload Worker versions and apply
@@ -27,22 +30,25 @@ const tokenPermissions = {
       "Queues Write",
       "Access: Apps and Policies Write",
     ],
-    zone: [
-      "Zone Read",
-      "Zone Settings Write",
-      "DNS Write",
-      "Workers Routes Write",
-      "Zone WAF Write",
-    ],
+    zone: ["Zone Read", "DNS Write", "Workers Routes Write"],
+    // Only for a zone dedicated to this suite.
+    dedicatedZone: ["Zone Settings Write", "Zone WAF Write"],
   },
 } as const;
 
 export type TokenKind = keyof typeof tokenPermissions;
 
-export function createCiTokens(
-  accountId: string,
-  repositoryName: string,
-): Record<TokenKind, pulumi.Output<string>> {
+export function createCiTokens({
+  accountId,
+  zoneId,
+  zoneDedicated,
+  repositoryName,
+}: {
+  readonly accountId: string;
+  readonly zoneId: string;
+  readonly zoneDedicated: boolean;
+  readonly repositoryName: string;
+}): Record<TokenKind, pulumi.Output<string>> {
   const groups = cloudflare.getAccountApiTokenPermissionGroupsListOutput({
     accountId,
     maxItems: 1000,
@@ -72,8 +78,19 @@ export function createCiTokens(
 
   const accountResource = `com.cloudflare.api.account.${accountId}`;
 
+  const zoneResource = JSON.stringify({
+    [accountResource]: { [`com.cloudflare.api.account.zone.${zoneId}`]: "*" },
+  });
+
   const mint = (kind: TokenKind) => {
-    const { account, zone } = tokenPermissions[kind];
+    const permissions = tokenPermissions[kind];
+    const zone = [
+      ...permissions.zone,
+      ...(zoneDedicated && "dedicatedZone" in permissions
+        ? permissions.dedicatedZone
+        : []),
+    ];
+    const { account } = permissions;
     const token = new cloudflare.AccountToken(`${kind}-token`, {
       accountId,
       name: `${repositoryName} CI (${kind})`,
@@ -86,9 +103,7 @@ export function createCiTokens(
         {
           effect: "allow",
           permissionGroups: idsFor("zone", zone),
-          resources: JSON.stringify({
-            [accountResource]: { "com.cloudflare.api.account.zone.*": "*" },
-          }),
+          resources: zoneResource,
         },
       ],
     });

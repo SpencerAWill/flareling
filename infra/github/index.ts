@@ -2,6 +2,8 @@ import * as github from "@pulumi/github";
 import { createCiTokens } from "./src/cloudflare-tokens.ts";
 import {
   cloudflareAccountId,
+  cloudflareZoneDedicated,
+  cloudflareZoneId,
   features,
   prodReviewerIds,
   repositoryName,
@@ -48,9 +50,20 @@ const environments = features.environments
     })
   : [];
 
-const tokens = cloudflareAccountId
-  ? createCiTokens(cloudflareAccountId, repositoryName)
-  : undefined;
+if (cloudflareAccountId && !cloudflareZoneId) {
+  throw new Error(
+    "cloudflareZoneId is required with cloudflareAccountId: the CI tokens' zone permissions are scoped to that zone.",
+  );
+}
+const tokens =
+  cloudflareAccountId && cloudflareZoneId
+    ? createCiTokens({
+        accountId: cloudflareAccountId,
+        zoneId: cloudflareZoneId,
+        zoneDedicated: cloudflareZoneDedicated,
+        repositoryName,
+      })
+    : undefined;
 
 if (cloudflareAccountId && tokens) {
   // Not a secret, so it is a plain repository variable on every plan.
