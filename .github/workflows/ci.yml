@@ -145,9 +145,13 @@ jobs:
           cache: pnpm
 
       # Turborepo's local cache, carried between runs (the GitHub Actions
-      # recipe in turbo's bundled docs). The key is unique per commit, so each
-      # run saves a fresh entry and restores the newest one by prefix.
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # recipe in turbo's bundled docs), restored by prefix. Only runs on main
+      # save it (at the end of the job): the key is unique per commit, and a
+      # PR's caches can't be read by other PRs, so saving from PRs would only
+      # fill the repo's 10 GB cache and evict the useful entries (see
+      # docs/platform-limits.md).
+      - name: Restore the turbo cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ github.sha }}
@@ -157,35 +161,45 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # Installed before `pnpm verify`, which runs libs/ui's stories in
-      # Chromium (Vitest browser mode), and used again by the E2E step. The
-      # binaries are cached by Playwright version rather than by the lockfile,
-      # which changes on every dependency bump. A cache hit still has to
-      # install the system packages, which cannot be cached.
+      # Chromium (Vitest browser mode), and used again by the E2E step. PRs run
+      # E2E in desktop Chromium only, so they install only Chromium; runs on
+      # main install WebKit too, for the mobile Safari project. The binaries
+      # are cached by Playwright version (saved only from main, with both
+      # browsers). A cache hit still installs the system packages, which can't
+      # be cached.
       - name: Resolve Playwright version
         id: playwright
         run: echo "version=$(pnpm --filter @flareling/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
-      - name: Cache Playwright browsers
+      - name: Restore Playwright browsers
         id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
 
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+      - name: Install Playwright browsers (main)
+        if: github.event_name == 'push'
         run: pnpm --filter @flareling/web exec playwright install --with-deps chromium webkit
 
-      - name: Install Playwright system dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter @flareling/web exec playwright install-deps chromium webkit
+      - name: Install Playwright browsers (PR)
+        if: github.event_name != 'push'
+        run: pnpm --filter @flareling/web exec playwright install --with-deps chromium
+
+      - name: Save Playwright browsers
+        if: github.event_name == 'push' && steps.playwright-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
 
       - run: pnpm verify
 
       - run: pnpm build
 
-      # Fails when a Worker's gzip upload passes its budget (below the Workers
-      # Free plan's 3 MB cap). Sizes go to the run summary.
+      # Fails when a Worker passes Workers' 64 MiB uncompressed limit, or its
+      # gzip budget (a proxy for the 1 s startup limit). Sizes go to the run
+      # summary.
       - run: pnpm size
 
       # The Worker under `vite preview` can't reach a service on loopback
@@ -203,8 +217,23 @@ jobs:
           echo "MAILPIT_URL=$mailpit" >> "$GITHUB_ENV"
 
       # Against `vite preview`, which serves the production build through
-      # workerd. The build step above is a turbo cache hit here.
-      - run: pnpm test:e2e
+      # workerd. The build step above is a turbo cache hit here. PRs run the
+      # desktop Chromium project only, to save Actions minutes; main runs
+      # every browser project.
+      - name: E2E (main, every browser)
+        if: github.event_name == 'push'
+        run: pnpm test:e2e
+
+      - name: E2E (PR, desktop Chromium)
+        if: github.event_name != 'push'
+        run: pnpm test:e2e -- --project=desktop-chromium
+
+      - name: Save the turbo cache
+        if: github.event_name == 'push'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.sha }}
 
       - name: Upload Playwright report
         if: failure()

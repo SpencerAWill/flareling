@@ -2,7 +2,8 @@ name: Quality
 
 # Coverage and mutation testing reports. Informational, never a gate: neither
 # job fails on a number (see tooling/config/vitest/coverage.ts and
-# stryker.config.mjs for why). Weekly, plus on demand from the Actions tab.
+# stryker.config.mjs for why). Coverage runs weekly; both run on demand from
+# the Actions tab.
 on:
   schedule:
     - cron: "0 6 * * 1" # Mondays, 06:00 UTC
@@ -70,8 +71,11 @@ jobs:
             libs/*/coverage/
           retention-days: 30
 
+  # On demand only: Stryker runs the tests once per mutant, so it is the most
+  # expensive job in the repo, and its report changes slowly.
   mutation:
     name: Mutation report
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

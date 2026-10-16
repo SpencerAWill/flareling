@@ -13,7 +13,8 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,
+  // One retry in CI absorbs a rare flake without tripling a failing run.
+  retries: isCI ? 1 : 0,
   reporter: isCI ? [["github"], ["html", { open: "never" }]] : "list",
 
   use: {

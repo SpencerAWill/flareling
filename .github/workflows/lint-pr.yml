@@ -5,7 +5,9 @@ name: Lint PR
 on:
   pull_request:
     branches: [main]
-    types: [opened, edited, reopened, synchronize]
+    # Not `synchronize`: pushing commits doesn't change the title, and each
+    # run costs a full install's worth of Actions minutes.
+    types: [opened, edited, reopened]
 
 permissions: {}
 
