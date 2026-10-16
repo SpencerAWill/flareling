@@ -14,6 +14,10 @@ export default defineConfig({
   ],
   test: {
     include: ["src/**/*.test.ts"],
+    // fast-check's first `unit: "binary"` string costs about 250 ms to set up
+    // here, and over Vitest's 5 s default on a CI runner busy with every
+    // other package's tests (as in apps/web).
+    testTimeout: 30_000,
     coverage,
   },
 });
