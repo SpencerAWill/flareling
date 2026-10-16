@@ -1,12 +1,13 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { currentPrincipal } from "#/lib/auth.ts";
 import { getSessionFn } from "#/server/auth/fns.ts";
 import appCss from "#/styles.css?url";
 
 export const Route = createRootRoute({
   // Who's signed in, for every route's guards and UI (context.principal).
   // Server functions still check for themselves; this is for navigation.
-  beforeLoad: async () => ({ principal: await getSessionFn() }),
+  beforeLoad: async () => ({ principal: await currentPrincipal(getSessionFn) }),
   head: () => ({
     meta: [
       { charSet: "utf-8" },

@@ -39,10 +39,16 @@ test("adds a passkey, then signs in with it", async ({ page }, testInfo) => {
 
   // Signed out, the passkey alone gets back in.
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("link", { name: "Your account" })).toBeVisible();
   await page.goto("/sign-in");
   await waitForHydration(page);
-  await page.getByRole("button", { name: "Sign in with a passkey" }).click();
+  // The virtual authenticator answers the page's autofill ceremony on its
+  // own, so the passkey often signs in before the button can be pressed.
+  // Either way is a passkey sign-in; press it if it's still there.
+  await page
+    .getByRole("button", { name: "Sign in with a passkey" })
+    .click({ timeout: 2000 })
+    .catch(() => {});
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
 });

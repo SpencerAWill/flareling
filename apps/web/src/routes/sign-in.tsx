@@ -6,7 +6,7 @@ import {
 } from "@simplewebauthn/browser";
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { afterSessionChange } from "#/lib/auth.ts";
 import {
@@ -35,9 +35,18 @@ function SignIn() {
   );
   const [passkeyError, setPasskeyError] = useState(false);
 
+  // The autofill ceremony's first request, while it's in flight. The button
+  // waits for it before beginning its own: each begin sets the ceremony
+  // cookie, and if the autofill's answer arrived second it would replace the
+  // button's challenge, and the button's sign-in would fail verification.
+  const autofillBegin = useRef<Promise<unknown> | null>(null);
+
   /** One passkey ceremony. With `autofill`, it waits for the field's offer. */
   async function signInWithPasskey(autofill: boolean) {
-    const started = await beginPasskey();
+    if (!autofill) await autofillBegin.current?.catch(() => {});
+    const begin = beginPasskey();
+    if (autofill) autofillBegin.current = begin;
+    const started = await begin;
     if (!started.ok) throw new Error(started.reason);
     const response = await startAuthentication({
       optionsJSON: JSON.parse(started.optionsJSON),
