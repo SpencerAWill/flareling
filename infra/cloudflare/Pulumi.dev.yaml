@@ -14,4 +14,4 @@ config:
   # provider is chosen (docs/adr/0022-dev-email-outbox.md). Never in prod.
   flareling-cloudflare:emailOutbox: "true"
   flareling-cloudflare:outboxViewers: '["spencer.a.will@gmail.com"]'
-  # flareling-cloudflare:accessTeamDomain: <team>.cloudflareaccess.com
+  flareling-cloudflare:accessTeamDomain: late-hat-fec1.cloudflareaccess.com
