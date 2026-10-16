@@ -8,6 +8,7 @@
  */
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { newId } from "./id.ts";
 
 /**
  * Security-relevant actions, kept for investigation (who changed what, when).
@@ -19,9 +20,7 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const auditLog = sqliteTable(
   "audit_log",
   {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
+    id: text("id").primaryKey().$defaultFn(newId),
     // Who did it. Plain text for now; it becomes a foreign key to the users
     // table once authentication exists (ON DELETE SET NULL, so the row
     // outlives the account). Null for system actions such as a cron job.

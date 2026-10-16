@@ -87,6 +87,13 @@ catalog:
   clsx: ^2.1.1
   tailwind-merge: ^3.7.0
 
+  # Data, validation and ids
+  drizzle-orm: ^0.45.4
+  drizzle-kit: ^0.31.11
+  zod: ^4.6.5
+  "@t3-oss/env-core": ^0.13.11
+  uuidv7: ^1.2.1
+
   # Cloudflare
   # Kept on the wrangler version @cloudflare/vitest-plugin and vite-plugin pin,
   # so the workspace has one wrangler.
@@ -133,10 +140,6 @@ catalog:
   sherif: ^1.13.0
   turbo: ^2.11.7
   knip: ^6.39.0
-  drizzle-orm: ^0.45.4
-  drizzle-kit: ^0.31.11
-  '@t3-oss/env-core': ^0.13.11
-  zod: ^4.6.5
 
 # Named catalogs: deliberate, temporary exceptions to one-version-per-dependency.
 catalogs:

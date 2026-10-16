@@ -32,3 +32,6 @@ Small, easily reversed choices don't need one. When in doubt, write the short ve
 | [0008](./0008-test-in-the-workers-runtime.md) | Test in the Workers runtime and against the production build | Accepted |
 | [0009](./0009-conventional-commits-and-squash-merges.md) | Conventional Commits, squash merges, linted PR titles | Accepted |
 | [0010](./0010-biome-for-lint-and-format.md) | Biome for linting and formatting | Proposed |
+| [0011](./0011-uuidv7-primary-keys.md) | UUIDv7 primary keys | Accepted |
+| [0012](./0012-temporal-for-dates-and-times.md) | Temporal for dates and times, imported as a ponyfill | Accepted |
+| [0013](./0013-shadcn-on-base-ui.md) | shadcn/ui on Base UI for components | Accepted |

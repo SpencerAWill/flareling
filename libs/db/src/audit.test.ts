@@ -24,7 +24,7 @@ describe("recordAudit", () => {
       targetId: "user_member",
       metadataJson: '{"role":"editor","via":"admin_ui"}',
     });
-    expect(row?.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(row?.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7/);
     // unixepoch() has second precision, so allow the clock to have just ticked.
     expect(row?.createdAt.getTime()).toBeGreaterThanOrEqual(before - 1000);
   });

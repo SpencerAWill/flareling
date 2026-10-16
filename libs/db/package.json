@@ -25,6 +25,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "uuidv7": "catalog:"
   }
 }

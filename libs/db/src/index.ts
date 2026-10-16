@@ -14,3 +14,4 @@ export {
   rowsPerInsertStatement,
   runBatch,
 } from "./d1.ts";
+export { newId } from "./id.ts";
