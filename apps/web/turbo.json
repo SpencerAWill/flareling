@@ -1,5 +1,13 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "extends": ["//"],
-  "tags": ["app"]
+  "tags": ["app"],
+  "tasks": {
+    "build": {
+      // The Cloudflare Vite plugin also writes .wrangler/deploy/config.json,
+      // which points `vite preview` and `wrangler deploy` at dist/. Without
+      // it in the cache, a cache hit restores dist/ and both fail to start.
+      "outputs": ["$TURBO_EXTENDS$", ".wrangler/deploy/**"]
+    }
+  }
 }
