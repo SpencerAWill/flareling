@@ -280,7 +280,7 @@ Guidelines:
 
 - **Declare every stateful resource here,** not in the dashboard and not through Wrangler auto-provisioning.
 - **Respect a shared zone.** flareling's hostnames are subdomains of `spencerwill.com`, a zone shared with other projects. In a shared zone this program only declares its own hostnames. A `ZoneSetting`, WAF rule, or other zone-wide resource would change behavior for every site in the zone, so those belong only in a repo that owns a dedicated zone.
-- **Commit Wrangler configs with placeholder IDs.** `tooling/scripts/sync-env` replaces them with stack outputs at deploy time, so real IDs never need hand-editing. 🚧 This replaces the `sed` step used in ucmc with a typed script.
+- **Commit Wrangler configs with the dev stack's names and placeholder IDs.** Before a deploy builds, `pnpm sync-env --outputs <file>` (fed `pulumi stack output --json`) rewrites each `apps/*/wrangler.jsonc` for the target stack: Worker names (`<resourcePrefix>-<app>`, so dev and prod in one account are separate Workers), D1 ids and names, queue names, and Rate Limiting namespace ids. It fails on any binding it hasn't been taught, rather than deploying one pointed at dev. This replaces the `sed` step used in ucmc with a typed script (`tooling/scripts/src/wrangler-env.ts`). Vars and secrets are passed to `wrangler deploy` separately.
 - **Deploy a Worker before attaching its domain.** A `WorkersCustomDomain` needs the Worker script to exist first, so a new app's hostname is added after its first Wrangler deploy.
 - **Share across stacks with `StackReference`,** for example an email provider account owned by `prod`.
 

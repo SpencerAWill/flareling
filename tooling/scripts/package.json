@@ -6,14 +6,19 @@
   "type": "module",
   "bin": {
     "check-worker-size": "./src/check-worker-size.ts",
-    "check-migration-drift": "./src/check-migration-drift.ts"
+    "check-migration-drift": "./src/check-migration-drift.ts",
+    "sync-env": "./src/sync-env.ts"
   },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "node --test \"src/**/*.test.ts\""
   },
   "devDependencies": {
     "@flareling/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
+  },
+  "dependencies": {
+    "jsonc-parser": "catalog:"
   }
 }

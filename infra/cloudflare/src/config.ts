@@ -31,3 +31,13 @@ export const zone = {
  * after the app's first Wrangler deploy.
  */
 export const hostname = config.require("hostname");
+
+/**
+ * The Rate Limiting namespace id the apps' AUTH_RATE_LIMITER uses in this
+ * stack. Namespace ids are account-wide, and Workers that share one share
+ * counters, so dev and prod (same account) need different ones. Not a
+ * resource: Wrangler creates the namespace on deploy; this only picks its id.
+ */
+export const authRateLimitNamespaceId = config.requireNumber(
+  "authRateLimitNamespaceId",
+);

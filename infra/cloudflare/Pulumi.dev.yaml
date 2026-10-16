@@ -8,3 +8,5 @@ config:
   flareling-cloudflare:hostname: dev.flareling.spencerwill.com
   flareling-cloudflare:resourcePrefix: flareling-dev
   flareling-cloudflare:protectData: "false"
+  # AUTH_RATE_LIMITER's namespace; unique per stack (see src/config.ts).
+  flareling-cloudflare:authRateLimitNamespaceId: "1001"

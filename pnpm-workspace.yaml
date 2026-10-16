@@ -152,6 +152,8 @@ catalog:
   sherif: ^1.13.0
   turbo: ^2.11.7
   knip: ^6.41.0
+  # tooling/scripts/sync-env: edits wrangler.jsonc keeping its comments.
+  jsonc-parser: ^3.3.1
 
 # Named catalogs: deliberate, temporary exceptions to one-version-per-dependency.
 catalogs:

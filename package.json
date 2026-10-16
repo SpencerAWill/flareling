@@ -31,7 +31,8 @@
     "test:mutation": "stryker run",
     "storybook": "pnpm --filter @flareling/ui storybook",
     "db:generate": "pnpm --filter @flareling/db db:generate",
-    "cf-typegen": "pnpm -r run cf-typegen"
+    "cf-typegen": "pnpm -r run cf-typegen",
+    "sync-env": "node tooling/scripts/src/sync-env.ts"
   },
   "config": {
     "commitizen": {

@@ -1,4 +1,10 @@
-import { accountId, hostname, zone } from "./src/config.ts";
+import {
+  accountId,
+  authRateLimitNamespaceId,
+  hostname,
+  resourcePrefix,
+  zone,
+} from "./src/config.ts";
 import {
   database,
   files,
@@ -13,8 +19,12 @@ import {
  * outlives a deploy. See the "Infrastructure (Pulumi)" section of the README.
  *
  * The stack outputs below are the contract with Wrangler: the deploy workflow
- * reads them to fill in each app's placeholder binding IDs.
+ * passes them (`pulumi stack output --json`) to tooling/scripts' sync-env,
+ * which rewrites each app's wrangler.jsonc for this stack. Renaming one means
+ * renaming it there too.
  */
+
+export { authRateLimitNamespaceId, resourcePrefix };
 
 export const cloudflareAccountId = accountId;
 export const zoneName = zone.name;
