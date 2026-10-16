@@ -52,6 +52,6 @@
     "lint-staged": "catalog:",
     "sherif": "catalog:",
     "turbo": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:mutation"
   }
 }

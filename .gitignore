@@ -162,3 +162,6 @@ blob-report/
 # Stryker: mutation reports and its sandbox.
 reports/
 .stryker-tmp/
+
+# Vitest 5 report output (json, junit, html, blob, attachments).
+.vitest/

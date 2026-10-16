@@ -88,19 +88,20 @@ catalog:
   tailwind-merge: ^3.7.0
 
   # Cloudflare
-  "@cloudflare/vite-plugin": ^1.62.5
-  wrangler: ^4.147.0
+  # Kept on the wrangler version @cloudflare/vitest-plugin and vite-plugin pin,
+  # so the workspace has one wrangler.
+  "@cloudflare/vite-plugin": ^1.63.1
+  wrangler: ^4.149.0
 
   # Testing
-  # Held on 4.x: @cloudflare/vitest-plugin 1.3.x peers on vitest ^4.1. Plugin
-  # 1.4.0 adds Vitest 5 and clears the release-age window on 2026-10-15, after
-  # which both move together (Dependabot groups them).
-  vitest: ^4.1.11
-  "@cloudflare/vitest-plugin": ^1.3.6
+  # Vitest and @cloudflare/vitest-plugin move together: the plugin peers on a
+  # Vitest range (1.4.0 added Vitest 5). Dependabot groups them.
+  vitest: ^5.0.3
+  "@cloudflare/vitest-plugin": ^1.4.0
   # The @vitest/* companions peer on the exact Vitest version, so they move
   # with `vitest` above (Dependabot groups them).
-  "@vitest/coverage-istanbul": ^4.1.11
-  "@vitest/browser-playwright": ^4.1.11
+  "@vitest/coverage-istanbul": ^5.0.3
+  "@vitest/browser-playwright": ^5.0.3
   fast-check: ^4.10.2
   # `playwright` is the browser driver Vitest's browser mode uses; keep it on
   # the same version as @playwright/test.
@@ -136,6 +137,19 @@ catalog:
   drizzle-kit: ^0.31.11
   '@t3-oss/env-core': ^0.13.11
   zod: ^4.6.5
+
+# Named catalogs: deliberate, temporary exceptions to one-version-per-dependency.
+catalogs:
+  # Stryker's test project (vitest.mutation.config.ts, run from the root) stays
+  # on Vitest 4. @stryker-mutator/vitest-runner 10.0.0 filters tests by name,
+  # and Vitest 5 joins nested names with " > ", so nothing inside a describe
+  # block matches and every mutant those tests cover survives
+  # (stryker-mutator/stryker-js#6210, fixes pending in #6214/#6220/#6247).
+  # Remove this catalog, and the root's `vitest: catalog:mutation`, once a
+  # runner release fixes it: then `pnpm test:mutation` kills every mutant on
+  # Vitest 5 as well.
+  mutation:
+    vitest: ^4.1.11
 
 # Security overrides for transitive dependencies, each pinned above the
 # vulnerable range and capped at the major its consumers expect. Every target
