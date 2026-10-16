@@ -11,7 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc",
-    "cf-typegen": "wrangler types",
+    "cf-typegen": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false wrangler types",
     "deploy": "wrangler deploy",
     "test": "vitest run",
     "test:watch": "vitest",
