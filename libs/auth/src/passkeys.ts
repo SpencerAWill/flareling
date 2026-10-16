@@ -15,7 +15,7 @@
  * the inbox; attestation "none", so no certificate chains are fetched or
  * parsed.
  */
-import { getDb, recordAudit, schema } from "@flareling/db";
+import { getDb, isUniqueViolation, recordAudit, schema } from "@flareling/db";
 import {
   type AuthenticationResponseJSON,
   generateAuthenticationOptions,
@@ -37,6 +37,7 @@ import {
 import { ipKey, withinRateLimit } from "./guards.ts";
 import { signIn } from "./principal.ts";
 import type { Principal } from "./rbac.ts";
+import { loadSession } from "./session.ts";
 import { randomToken } from "./tokens.ts";
 
 const { passkeyCredentials, users, webauthnChallenges } = schema;
@@ -98,6 +99,20 @@ function expectedOrigin(ctx: AuthContext): string {
 }
 
 // ── Registration (signed in) ────────────────────────────────────────────────
+//
+// Adding a passkey needs a recent sign-in, not just a live session: a passkey
+// outlives the session it was added from, so a stolen session cookie must not
+// be able to turn itself into a permanent way back in.
+
+async function signedInRecently(ctx: AuthContext, principal: Principal) {
+  const session = await loadSession(ctx);
+  if (!session || session.userId !== principal.userId) return false;
+  const window = ctx.config.recentSignIn ?? DEFAULTS.recentSignIn;
+  return (
+    nowOf(ctx).epochMilliseconds - session.createdAt.getTime() <=
+    window.total("milliseconds")
+  );
+}
 
 export async function beginPasskeyRegistration(
   ctx: AuthContext,
@@ -105,6 +120,9 @@ export async function beginPasskeyRegistration(
 ) {
   if (!(await withinRateLimit(ctx, ipKey(ctx)))) {
     return { ok: false as const, reason: "rate_limited" as const };
+  }
+  if (!(await signedInRecently(ctx, principal))) {
+    return { ok: false as const, reason: "reauthenticate" as const };
   }
   const existing = await getDb()
     .select({ credentialId: passkeyCredentials.credentialId })
@@ -136,6 +154,9 @@ export async function finishPasskeyRegistration(
   if (!(await withinRateLimit(ctx, ipKey(ctx)))) {
     return { ok: false as const, reason: "rate_limited" as const };
   }
+  if (!(await signedInRecently(ctx, principal))) {
+    return { ok: false as const, reason: "reauthenticate" as const };
+  }
   const ceremony = await claimCeremony(ctx, "register");
   if (!ceremony) return { ok: false as const, reason: "no_ceremony" as const };
   // A ceremony begun by one account can't finish on another's session.
@@ -157,7 +178,10 @@ export async function finishPasskeyRegistration(
 
   const info = verification.registrationInfo;
   const nickname = input.nickname?.trim().slice(0, 60) || null;
-  const [row] = await getDb()
+  // With attestation "none" a client chooses the credential id, so a
+  // duplicate (another account's, or a replay) is a failed registration, not
+  // a server error.
+  const inserted = await getDb()
     .insert(passkeyCredentials)
     .values({
       userId: principal.userId,
@@ -171,7 +195,19 @@ export async function finishPasskeyRegistration(
       backedUp: info.credentialBackedUp,
       nickname,
     })
-    .returning({ id: passkeyCredentials.id });
+    .returning({ id: passkeyCredentials.id })
+    .then(
+      (rows) => rows,
+      (err: unknown) => {
+        if (isUniqueViolation(err, "passkey_credentials.credential_id"))
+          return null;
+        throw err;
+      },
+    );
+  if (!inserted) {
+    return { ok: false as const, reason: "verification_failed" as const };
+  }
+  const [row] = inserted;
   await recordAudit({
     action: "passkey.added",
     actorId: principal.userId,
@@ -253,7 +289,7 @@ export async function finishPasskeyAuthentication(
   if (newCounter !== 0 && newCounter <= credential.counter) {
     return { ok: false as const, reason: "invalid" as const };
   }
-  await getDb()
+  const claimed = await getDb()
     .update(passkeyCredentials)
     .set({ counter: newCounter, lastUsedAt: toDate(nowOf(ctx)) })
     .where(
@@ -262,7 +298,14 @@ export async function finishPasskeyAuthentication(
         // Conditional, so a concurrent sign-in can't move the counter back.
         eq(passkeyCredentials.counter, credential.counter),
       ),
-    );
+    )
+    .returning({ id: passkeyCredentials.id });
+  // Matched nothing: a concurrent sign-in with this credential moved the
+  // counter first. Only one of two uses of the same counter value may win,
+  // which is what makes a cloned authenticator detectable.
+  if (claimed.length === 0) {
+    return { ok: false as const, reason: "invalid" as const };
+  }
 
   await signIn(ctx, credential.userId);
   await recordAudit({

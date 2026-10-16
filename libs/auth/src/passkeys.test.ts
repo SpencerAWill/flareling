@@ -16,6 +16,7 @@ import {
   loadPrincipal,
   type Principal,
   removePasskey,
+  signIn,
 } from "./index.ts";
 import { loadSession } from "./session.ts";
 
@@ -55,13 +56,16 @@ beforeEach(() => {
 });
 afterEach(() => vi.clearAllMocks());
 
+/** An account that has just signed in, and a context for its next request. */
 async function signedInUser(
   email: string,
 ): Promise<{ principal: Principal; ctx: TestContext }> {
   const userId = await createUser(email);
   const principal = await loadPrincipal(userId);
   if (!principal) throw new Error("no principal");
-  return { principal, ctx: testContext() };
+  const signInRequest = testContext();
+  await signIn(signInRequest, userId);
+  return { principal, ctx: nextRequest(signInRequest) };
 }
 
 async function register(email: string) {
@@ -153,11 +157,13 @@ describe("registering a passkey", () => {
     const { principal: mallory } = await signedInUser("mallory@example.com");
     await beginPasskeyRegistration(ctx, alice);
 
+    // Refused either way: the session isn't Mallory's (reauthenticate), and
+    // the ceremony isn't hers (verification_failed). It never gets verified.
     expect(
       await finishPasskeyRegistration(nextRequest(ctx), mallory, {
         response: {},
       }),
-    ).toEqual({ ok: false, reason: "verification_failed" });
+    ).toMatchObject({ ok: false });
     expect(verifyRegistration).not.toHaveBeenCalled();
   });
 
@@ -174,11 +180,54 @@ describe("registering a passkey", () => {
     });
   });
 
+  it("answers verification_failed, not a server error, for a duplicate credential id", async () => {
+    verifyRegistration.mockImplementation(
+      async () =>
+        ({
+          verified: true,
+          registrationInfo: {
+            credential: {
+              id: "cred-duplicate",
+              publicKey: new Uint8Array([1]),
+              counter: 0,
+            },
+            credentialDeviceType: "singleDevice",
+            credentialBackedUp: false,
+          },
+        }) as never,
+    );
+    expect((await register("dup-first@example.com")).result).toMatchObject({
+      ok: true,
+    });
+    expect((await register("dup-second@example.com")).result).toEqual({
+      ok: false,
+      reason: "verification_failed",
+    });
+  });
+
   it("excludes the account's existing passkeys", async () => {
-    const { principal } = await register("second@example.com");
-    const again = testContext();
-    const result = await beginPasskeyRegistration(again, principal);
+    const { principal, ctx } = await register("second@example.com");
+    const result = await beginPasskeyRegistration(nextRequest(ctx), principal);
     expect(result.ok && result.options.excludeCredentials).toHaveLength(1);
+  });
+});
+
+describe("adding a passkey needs a recent sign-in", () => {
+  it("refuses once the sign-in is more than 15 minutes old", async () => {
+    const { principal, ctx } = await signedInUser("stale@example.com");
+    ctx.advance({ minutes: 16 });
+    expect(await beginPasskeyRegistration(ctx, principal)).toEqual({
+      ok: false,
+      reason: "reauthenticate",
+    });
+  });
+
+  it("refuses a context with no session at all", async () => {
+    const { principal } = await signedInUser("nosession@example.com");
+    expect(await beginPasskeyRegistration(testContext(), principal)).toEqual({
+      ok: false,
+      reason: "reauthenticate",
+    });
   });
 });
 
@@ -248,6 +297,25 @@ describe("signing in with a passkey", () => {
     const zeroId = await storedCredentialId(modern.userId);
     expect((await authenticate(zeroId, 0)).result).toMatchObject({ ok: true });
     expect((await authenticate(zeroId, 0)).result).toMatchObject({ ok: true });
+  });
+
+  it("lets only one of two concurrent sign-ins with the same counter win", async () => {
+    const { principal } = await register("pk-race@example.com");
+    const id = await storedCredentialId(principal.userId);
+    // While this sign-in is being verified, another one (the clone) moves the
+    // counter. This one's conditional update then matches nothing.
+    verifyAuthentication.mockImplementation(async () => {
+      await getDb()
+        .update(schema.passkeyCredentials)
+        .set({ counter: 7 })
+        .where(eq(schema.passkeyCredentials.credentialId, id));
+      return { verified: true, authenticationInfo: { newCounter: 7 } } as never;
+    });
+    const ctx = testContext();
+    await beginPasskeyAuthentication(ctx);
+    expect(
+      await finishPasskeyAuthentication(nextRequest(ctx), { response: { id } }),
+    ).toEqual({ ok: false, reason: "invalid" });
   });
 
   it("refuses a disabled account", async () => {

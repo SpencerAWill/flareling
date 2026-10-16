@@ -35,6 +35,8 @@ export interface AuthConfig {
   readonly sessionRefreshAfter?: Temporal.Duration;
   readonly magicLinkTtl?: Temporal.Duration;
   readonly challengeTtl?: Temporal.Duration;
+  /** How recent a sign-in must be to add a passkey (default 15 minutes). */
+  readonly recentSignIn?: Temporal.Duration;
   /** Turnstile secret. When set, every magic-link request must carry a
    *  valid token; unset skips the check (local development). */
   readonly turnstileSecret?: string;
@@ -69,6 +71,7 @@ export const DEFAULTS = {
   sessionRefreshAfter: Temporal.Duration.from({ hours: 1 }),
   magicLinkTtl: Temporal.Duration.from({ minutes: 15 }),
   challengeTtl: Temporal.Duration.from({ minutes: 5 }),
+  recentSignIn: Temporal.Duration.from({ minutes: 15 }),
 } as const;
 
 export function nowOf(ctx: AuthContext): Temporal.Instant {

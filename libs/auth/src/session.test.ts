@@ -63,6 +63,16 @@ describe("loading a session", () => {
     expect(await loadSession(nextRequest(ctx))).toMatchObject({ userId });
   });
 
+  it("clears an unknown token's cookie without writing to the database", async () => {
+    const ctx = testContext();
+    ctx.cookies.values.set("session", "not-a-real-token");
+    // A junk cookie must not turn every request into a D1 write.
+    const before = (await getDb().select().from(sessions)).length;
+    expect(await loadSession(ctx)).toBeNull();
+    expect((await getDb().select().from(sessions)).length).toBe(before);
+    expect(ctx.cookies.deleted).toContain("session");
+  });
+
   it("is null, and clears the cookie, for an unknown token", async () => {
     const ctx = testContext();
     ctx.cookies.values.set("session", "not-a-real-token");

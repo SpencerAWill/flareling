@@ -9,7 +9,7 @@
  * cookie, so active users were still signed out 30 days after signing in.
  */
 import { getDb, schema } from "@flareling/db";
-import { and, eq, gt, ne } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import {
   type AuthContext,
@@ -26,6 +26,8 @@ const SESSION_COOKIE = "session";
 export interface Session {
   readonly sessionId: string;
   readonly userId: string;
+  /** When this browser signed in. Rotation resets it; extending doesn't. */
+  readonly createdAt: Date;
 }
 
 const toDate = (instant: Temporal.Instant) =>
@@ -67,6 +69,9 @@ async function openSession(ctx: AuthContext, userId: string): Promise<string> {
     .values({
       tokenHash: await hashToken(token),
       userId,
+      // From the same clock as the expiry, not the database default, so the
+      // recent-sign-in check compares like with like.
+      createdAt: toDate(now),
       lastSeenAt: toDate(now),
       expiresAt: toDate(now.add(ttl(ctx))),
     })
@@ -109,20 +114,26 @@ export async function loadSession(ctx: AuthContext): Promise<Session | null> {
     .select({
       sessionId: sessions.id,
       userId: sessions.userId,
+      createdAt: sessions.createdAt,
       lastSeenAt: sessions.lastSeenAt,
+      expiresAt: sessions.expiresAt,
       disabledAt: users.disabledAt,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
-    .where(
-      and(
-        eq(sessions.tokenHash, tokenHash),
-        gt(sessions.expiresAt, toDate(now)),
-      ),
-    );
+    .where(eq(sessions.tokenHash, tokenHash));
 
-  if (!row || row.disabledAt !== null) {
-    await getDb().delete(sessions).where(eq(sessions.tokenHash, tokenHash));
+  // An unknown token (a stale or made-up cookie) costs no write: only a real
+  // row that's expired, or belongs to a disabled account, is deleted.
+  if (!row) {
+    clearSessionCookie(ctx);
+    return null;
+  }
+  if (
+    row.expiresAt.getTime() <= now.epochMilliseconds ||
+    row.disabledAt !== null
+  ) {
+    await getDb().delete(sessions).where(eq(sessions.id, row.sessionId));
     clearSessionCookie(ctx);
     return null;
   }
@@ -139,7 +150,11 @@ export async function loadSession(ctx: AuthContext): Promise<Session | null> {
       .where(eq(sessions.id, row.sessionId));
     setSessionCookie(ctx, token);
   }
-  return { sessionId: row.sessionId, userId: row.userId };
+  return {
+    sessionId: row.sessionId,
+    userId: row.userId,
+    createdAt: row.createdAt,
+  };
 }
 
 /** Signs this browser out: deletes its session row and cookie. */
