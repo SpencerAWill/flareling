@@ -24,6 +24,12 @@ const getVars = defineEnv({
    *  skips the check (local only). */
   TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+  /** Stripe billing (libs/billing). Set the key and the webhook signing
+   *  secret together, or neither; unset turns billing off. */
+  STRIPE_SECRET_KEY: z.string().startsWith("sk_").optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional(),
+  /** Local development and tests: stripe-mock (`http://stripe-mock:12111`). */
+  STRIPE_API_BASE: z.url().optional(),
   /** E2E suites only. libs/auth ignores it on https. */
   E2E_BYPASS_RATE_LIMIT: z.literal("1").optional(),
 });
@@ -39,7 +45,15 @@ type Vars = ReturnType<typeof getVars>;
 export function configurationProblems(
   vars: Pick<Vars, "APP_BASE_URL"> &
     Partial<
-      Pick<Vars, "MAILPIT_URL" | "TURNSTILE_SITE_KEY" | "TURNSTILE_SECRET_KEY">
+      Pick<
+        Vars,
+        | "MAILPIT_URL"
+        | "TURNSTILE_SITE_KEY"
+        | "TURNSTILE_SECRET_KEY"
+        | "STRIPE_SECRET_KEY"
+        | "STRIPE_WEBHOOK_SECRET"
+        | "STRIPE_API_BASE"
+      >
     >,
 ): string[] {
   const problems: string[] = [];
@@ -50,6 +64,13 @@ export function configurationProblems(
       "Set TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY together, or neither.",
     );
   }
+  // A key without the webhook secret would take payments and never record
+  // them; a webhook secret without a key could verify events but not fetch them.
+  if (Boolean(vars.STRIPE_SECRET_KEY) !== Boolean(vars.STRIPE_WEBHOOK_SECRET)) {
+    problems.push(
+      "Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET together, or neither.",
+    );
+  }
   const deployed = vars.APP_BASE_URL.startsWith("https://");
   if (deployed && !vars.MAILPIT_URL) {
     problems.push(
@@ -58,6 +79,9 @@ export function configurationProblems(
   }
   if (deployed && vars.MAILPIT_URL) {
     problems.push("MAILPIT_URL is for local development only.");
+  }
+  if (deployed && vars.STRIPE_API_BASE) {
+    problems.push("STRIPE_API_BASE is for local development only.");
   }
   return problems;
 }

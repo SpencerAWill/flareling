@@ -417,11 +417,63 @@ importers:
         specifier: catalog:mutation
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
+  apps/jobs:
+    dependencies:
+      '@flareling/billing':
+        specifier: workspace:*
+        version: link:../../libs/billing
+      '@flareling/env':
+        specifier: workspace:*
+        version: link:../../libs/env
+      '@flareling/log':
+        specifier: workspace:*
+        version: link:../../libs/log
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@cloudflare/vitest-plugin':
+        specifier: 'catalog:'
+        version: 1.4.0(@types/node@24.19.1)(vitest@5.0.3)
+      '@flareling/config':
+        specifier: workspace:*
+        version: link:../../tooling/config
+      '@flareling/db':
+        specifier: workspace:*
+        version: link:../../libs/db
+      '@flareling/scripts':
+        specifier: workspace:*
+        version: link:../../tooling/scripts
+      '@msw/cloudflare':
+        specifier: 'catalog:'
+        version: 0.2.0(msw@3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(supports-color@10.2.2)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.1
+      '@vitest/coverage-istanbul':
+        specifier: 'catalog:'
+        version: 5.0.3(vitest@5.0.3)
+      msw:
+        specifier: 'catalog:'
+        version: 3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-istanbul@5.0.3)(@vitest/ui@5.0.3)(msw@3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.149.0(@types/node@24.19.1)
+
   apps/web:
     dependencies:
       '@flareling/auth':
         specifier: workspace:*
         version: link:../../libs/auth
+      '@flareling/billing':
+        specifier: workspace:*
+        version: link:../../libs/billing
       '@flareling/core':
         specifier: workspace:*
         version: link:../../libs/core

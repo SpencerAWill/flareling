@@ -272,7 +272,7 @@ Sources: https://developers.cloudflare.com/kv/platform/limits/ , https://develop
 - *Protection:*
   - (a) Decide now: plan on **Workers Paid ($5/mo)** for any production use. It also unlocks email (R3).
   - (b) On Paid, set `limits.cpu_ms` (for example 50–100) as a runaway guard.
-  - (c) Add a CPU budget check: an E2E/smoke job that hits `/`, `/account` and `/sign-in` on the deployed preview and reads `cpuTimeMs` from Workers Logs invocation events, or the Workers Analytics GraphQL `cpuTimeP50/P99`. Fail above about 8 ms p50 (Free) or a chosen p99 (Paid).
+  - (c) Add a CPU budget check: an E2E/smoke job that hits `/`, `/my/account` and `/sign-in` on the deployed preview and reads `cpuTimeMs` from Workers Logs invocation events, or the Workers Analytics GraphQL `cpuTimeP50/P99`. Fail above about 8 ms p50 (Free) or a chosen p99 (Paid).
   - (d) Locally, profile one SSR request with DevTools (`vite preview`, inspector) and record a baseline in docs.
   - (e) Prerender or cache public pages (marketing) so they are served as free static assets.
 

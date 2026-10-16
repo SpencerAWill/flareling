@@ -73,9 +73,15 @@
     }
   ],
 
+  // The jobs queue, consumed by apps/jobs. The name is the dev stack's;
+  // deploys use the target stack's `resourcePrefix`.
+  "queues": {
+    "producers": [{ "binding": "JOBS_QUEUE", "queue": "flareling-dev-jobs" }]
+  },
+
   // Non-secret configuration, validated by src/env.ts. These are the local
   // development values; deploys override them per environment. Secrets
-  // (TURNSTILE_SECRET_KEY) and dev-only settings (MAILPIT_URL) go in
+  // (TURNSTILE_SECRET_KEY, STRIPE_*) and dev-only settings (MAILPIT_URL) go in
   // .env.local locally (see .env.example) and `wrangler secret put` deployed.
   "vars": {
     "APP_BASE_URL": "http://localhost:3000",

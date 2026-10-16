@@ -47,4 +47,33 @@ describe("configurationProblems", () => {
       }),
     ).toEqual([]);
   });
+
+  it("refuses one Stripe secret without the other", () => {
+    expect(
+      configurationProblems({ ...local, STRIPE_SECRET_KEY: "sk_test_1" }),
+    ).toEqual([
+      expect.stringContaining("STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET"),
+    ]);
+    expect(
+      configurationProblems({
+        ...local,
+        STRIPE_SECRET_KEY: "sk_test_1",
+        STRIPE_WEBHOOK_SECRET: "whsec_1",
+      }),
+    ).toEqual([]);
+  });
+
+  it("refuses stripe-mock in a deployed environment", () => {
+    const { MAILPIT_URL: _, ...rest } = local;
+    expect(
+      configurationProblems({
+        ...rest,
+        APP_BASE_URL: "https://app.example.com",
+        STRIPE_API_BASE: "http://stripe-mock:12111",
+      }),
+    ).toEqual([
+      expect.stringContaining("No email transport"),
+      expect.stringContaining("STRIPE_API_BASE is for local development only"),
+    ]);
+  });
 });

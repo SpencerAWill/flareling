@@ -1,0 +1,36 @@
+{
+  "name": "@flareling/jobs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "typecheck": "tsc",
+    "cf-typegen": "wrangler types",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "size": "check-worker-size"
+  },
+  "dependencies": {
+    "@flareling/billing": "workspace:*",
+    "@flareling/env": "workspace:*",
+    "@flareling/log": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "catalog:",
+    "@flareling/config": "workspace:*",
+    "@flareling/db": "workspace:*",
+    "@flareling/scripts": "workspace:*",
+    "@msw/cloudflare": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "msw": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  }
+}

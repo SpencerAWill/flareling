@@ -1,0 +1,59 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Background work for the suite: a queue consumer with no public routes.
+  // Producers (apps/web) send messages libs/* define; this Worker dispatches
+  // them by `kind` (src/index.ts).
+  "name": "flareling-jobs",
+
+  // Pinned, as in apps/web (see the comment there).
+  "compatibility_date": "2026-10-01",
+
+  // libs/log's per-request context uses node:async_hooks.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // A runaway guard, as in apps/web. A batch is mostly waiting on Stripe and
+  // D1, which doesn't count as CPU time. Queue consumers may use up to 5 min.
+  "limits": { "cpu_ms": 1000 },
+
+  "main": "src/index.ts",
+
+  // No HTTP surface: nothing should reach this Worker except its queue.
+  "workers_dev": false,
+  "preview_urls": false,
+
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+
+  // The suite's D1 database, as in apps/web (placeholder id).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flareling-dev",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../../libs/db/migrations"
+    }
+  ],
+
+  // infra/cloudflare's jobs queue and its dead-letter queue. Names are the dev
+  // stack's; deploys use the target stack's `resourcePrefix`.
+  //
+  // Delivery is at least once, so every handler is idempotent. A message
+  // that fails is retried with backoff (src/index.ts), and after
+  // `max_retries` it moves to the dead-letter queue, which nothing consumes:
+  // inspect it in the dashboard, fix the cause, and replay. Paid retains
+  // messages for 4 days by default (Free: 24 h, fixed), DLQ included.
+  "queues": {
+    "consumers": [
+      {
+        "queue": "flareling-dev-jobs",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "dead_letter_queue": "flareling-dev-jobs-dlq"
+      }
+    ]
+  }
+}

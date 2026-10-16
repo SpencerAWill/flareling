@@ -16,6 +16,14 @@ export default defineConfig({
       // re-exports the same entry.
       main: "./test/worker.ts",
       wrangler: { configPath: "./wrangler.jsonc" },
+      // Secrets the app reads from .env.local in development. Stripe calls go
+      // nowhere: the webhook tests only verify signatures and enqueue.
+      miniflare: {
+        bindings: {
+          STRIPE_SECRET_KEY: "sk_test_123",
+          STRIPE_WEBHOOK_SECRET: "whsec_test",
+        },
+      },
     }),
     // Provides the virtual modules (the route tree, the router entry) that
     // Start's server entry imports. Without it the Worker fails at load.
