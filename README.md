@@ -344,6 +344,7 @@ Notes:
 
 - **It runs locally by a repo admin, not in CI.** The Actions `GITHUB_TOKEN` cannot change repo settings or write secrets. CI should also never hold a credential that can loosen its own rules.
 - **Changes made in the GitHub UI are reverted** on the next `pnpm apply`. Change the code instead.
+- **Going public takes two applies.** GitHub offers secret scanning only on a public repo, so the apply that makes it public leaves scanning off and the next one turns it on. Confirm the visibility actually changed (`gh repo view --json visibility`); see the note on `visibility` in `src/repository.ts` if it didn't.
 - **Every repository setting is declared explicitly**, even ones that match GitHub's defaults. The provider treats an omitted optional field as "clear it."
 
 ## Data and storage
