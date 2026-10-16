@@ -109,6 +109,7 @@ Key principles:
 │   ├── ui/                 # Shared React components, with Storybook
 │   ├── auth/               # Session, passkey, and RBAC utilities
 │   ├── contracts/          # Shared zod schemas, types, and RPC interfaces
+│   ├── email/              # Sending email behind an interface (Mailpit today; provider later)
 │   ├── env/                # Env validation for Workers (t3 env-core + zod) and shared schemas
 │   └── log/                # Structured logger with redaction
 ├── infra/
@@ -382,6 +383,7 @@ Defaults that keep the bill small:
 | --- | --- | --- |
 | Unit and integration | Vitest with `@cloudflare/vitest-plugin` | Runs in workerd with real D1, KV, R2, Queues, and DOs. Migrations are applied with `readD1Migrations`. Storage is isolated per test file. |
 | Component | Storybook with `@storybook/addon-vitest` | Each story in `libs/ui` runs as a Vitest browser test in Chromium, with `play` interactions and an axe check (WCAG 2.1 A and AA) |
+| HTTP mocking | MSW with `@msw/cloudflare` | Intercepts outbound `fetch` in Workers tests; unhandled requests fail the test |
 | Property-based | fast-check (`*.property.test.ts`) | For parsers, permissions, and anything with a large input space |
 | E2E | Playwright, desktop and mobile projects | Runs against `vite preview` (the production build in workerd) in CI, and against a deployed URL with `E2E_BASE_URL`. Fails on console errors and uncaught exceptions. |
 | Accessibility | `@axe-core/playwright` | Every E2E page check includes an axe scan against WCAG 2.1 A and AA |

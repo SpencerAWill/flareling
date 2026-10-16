@@ -115,6 +115,10 @@ catalog:
   "@playwright/test": ^1.63.0
   playwright: ^1.63.0
   "@axe-core/playwright": ^4.13.0
+  # Outbound HTTP mocking in Workers tests (fetchMock was removed from the
+  # Cloudflare test plugin; its docs point here).
+  msw: ^3.0.2
+  "@msw/cloudflare": ^0.2.0
   storybook: ^10.6.1
   "@storybook/react-vite": ^10.6.1
   "@storybook/addon-vitest": ^10.6.1
@@ -180,3 +184,7 @@ peerDependencyRules:
     # Pulumi projects set `typescript: false` and run on Node's native type
     # stripping, so the TypeScript 7 in the catalog is never loaded by Pulumi.
     "@pulumi/pulumi>typescript": "7"
+    # @vitest/mocker's optional msw peer (^2) is for module mocking in Vitest
+    # browser mode. Our MSW 3 is used only in Workers-pool tests (libs/email
+    # and others, through @msw/cloudflare), never in browser mode.
+    "@vitest/mocker>msw": "3"
