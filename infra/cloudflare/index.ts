@@ -1,6 +1,8 @@
+import { webauthnRpId, webBaseUrl, webDomain } from "./src/apps.ts";
 import {
   accountId,
   authRateLimitNamespaceId,
+  emailFrom,
   hostname,
   resourcePrefix,
   zone,
@@ -24,7 +26,14 @@ import {
  * renaming it there too.
  */
 
-export { authRateLimitNamespaceId, resourcePrefix };
+export {
+  authRateLimitNamespaceId,
+  emailFrom,
+  resourcePrefix,
+  webauthnRpId,
+  webBaseUrl,
+};
+export const webDomainId = webDomain?.id;
 
 export const cloudflareAccountId = accountId;
 export const zoneName = zone.name;

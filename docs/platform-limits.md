@@ -10,7 +10,7 @@ This template targets **Workers Paid** in deployed environments ([ADR 0016](./ad
 
 | Risk (details below) | Handling |
 | --- | --- |
-| R1: 10 ms CPU per request on Workers Free | Target Workers Paid (ADR 0016); `limits.cpu_ms: 300` in `apps/web/wrangler.jsonc` as a runaway guard. Not detectable by local tests. |
+| R1: 10 ms CPU per request on Workers Free | Deployed environments are on Workers Free (ADR 0020, superseding 0016's Paid target), so this applies: keep server rendering lean and measure deployed CPU time. `limits.cpu_ms` is Paid-only and not set. Not detectable by local tests. |
 | R2: a session request on every client navigation | The principal is cached on the client and refetched after sign-in or sign-out (`apps/web/src/lib/auth.ts`) |
 | R3: no production email transport | Provider still to be chosen ([ADR 0015](./adr/0015-email-behind-an-interface.md)); a deployed (https) environment without one fails every request at startup, so a post-deploy smoke test catches it |
 | R4, R5: Actions minutes and cache churn | PRs run desktop Chromium E2E only; all browsers on `main`. The turbo cache is saved only from `main`. Mutation testing is manual. |
@@ -270,7 +270,7 @@ Sources: https://developers.cloudflare.com/kv/platform/limits/ , https://develop
 - *Symptom:* intermittent then persistent **Error 1102** "Worker exceeded resource limits" (`exceededCpu`), a 5xx page. It looks fine at low traffic because occasional overruns are tolerated.
 - *Detect locally:* no (UNVERIFIED but assume).
 - *Protection:*
-  - (a) Decide now: plan on **Workers Paid ($5/mo)** for any production use. It also unlocks email (R3).
+  - (a) Decided: stay on **Workers Free** for now (ADR 0020). Paid ($5/mo) remains the fix if CPU overruns appear, and would also unlock Email Service (R3).
   - (b) On Paid, set `limits.cpu_ms` (for example 50–100) as a runaway guard.
   - (c) Add a CPU budget check: an E2E/smoke job that hits `/`, `/my/account` and `/sign-in` on the deployed preview and reads `cpuTimeMs` from Workers Logs invocation events, or the Workers Analytics GraphQL `cpuTimeP50/P99`. Fail above about 8 ms p50 (Free) or a chosen p99 (Paid).
   - (d) Locally, profile one SSR request with DevTools (`vite preview`, inspector) and record a baseline in docs.
@@ -328,7 +328,7 @@ Sources: https://developers.cloudflare.com/kv/platform/limits/ , https://develop
 **R10. D1 daily writes and table growth (now, low→medium).**
 - *Exposed:* the sign-in path writes about 12–16 rows-written. Examples: a magic_links insert (+2 indexes), a sessions insert (+3), audit_log (+4 indexes), session deletes, user/email/role inserts for new users. `loadSession` refreshes `expires_at` (indexed). `magic_links`, `sessions`, `webauthn_challenges` and `audit_log` grow without cleanup, toward the 500 MB per DB on Free.
 - *Protection:*
-  - ✅ A daily cleanup Cron in apps/jobs (`17 3 * * *`, `runRetentionSweeps`) deletes expired sessions, magic links and WebAuthn ceremonies, and Stripe event ids older than 30 days, in bounded batches. One trigger per deployed Worker (Free allows 5 per account).
+  - ✅ A daily cleanup Cron in apps/jobs (`17 3 * * *`, `runRetentionSweeps`) deletes expired sessions, magic links and WebAuthn ceremonies, and Stripe event ids older than 30 days, in bounded batches. One trigger per deployed Worker, but Free allows 5 per account and ucmc uses 4, so `sync-env` strips the cron from deployed configs for now (ADR 0020); run the sweep by hand until then.
   - ✅ Keep the `expires_at` indexes (present); `libs/db/src/retention.test.ts` checks each sweep's delete uses its index (`EXPLAIN QUERY PLAN`).
   - Add a test that every query on hot paths uses an index (`EXPLAIN QUERY PLAN` in vitest-pool-workers asserts no `SCAN`). This catches full-scan rows-read blowups locally.
 

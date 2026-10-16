@@ -17,14 +17,11 @@
   // fails at module load, so a deploy succeeds and every request then 500s.
   "compatibility_flags": ["nodejs_compat"],
 
-  // Per-request CPU limit, as a guard against runaway requests. This
-  // template targets Workers Paid (docs/adr/0016-target-workers-paid.md),
-  // where the default is 30 s; server rendering with a session check uses
-  // roughly 10-20 ms, so 300 ms leaves a wide margin while still stopping a
-  // request stuck in a loop from burning CPU billing. Raise it per app if a
-  // route legitimately needs more. Workers Free has a fixed 10 ms limit and
-  // doesn't accept this setting.
-  "limits": { "cpu_ms": 300 },
+  // No `limits.cpu_ms`: this template targets Workers Free
+  // (docs/adr/0020-target-workers-free.md), where CPU is a fixed 10 ms per
+  // request and the setting is rejected at deploy. Server rendering with a
+  // session check is close to that, so keep requests lean. On Workers Paid,
+  // add `"limits": { "cpu_ms": 300 }` as a guard against runaway requests.
 
   // Resolved from the installed @tanstack/react-start package: Start owns the
   // fetch handler. This becomes a local module only if the app ever needs a

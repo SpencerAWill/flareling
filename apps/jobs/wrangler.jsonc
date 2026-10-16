@@ -12,15 +12,16 @@
   // libs/log's per-request context uses node:async_hooks.
   "compatibility_flags": ["nodejs_compat"],
 
-  // A runaway guard, as in apps/web. A batch is mostly waiting on Stripe and
-  // D1, which doesn't count as CPU time. Queue consumers may use up to 5 min.
-  "limits": { "cpu_ms": 1000 },
+  // No `limits.cpu_ms`, as in apps/web (Workers Free). A batch is mostly
+  // waiting on Stripe and D1, which doesn't count as CPU time.
 
   "main": "src/index.ts",
 
   // Scheduled work, dispatched in src/index.ts (CRONS), which must list the
   // same expressions. UTC, no DST. Each expression is one Cron Trigger per
-  // deployed Worker, so per environment; Paid allows 250 per account. A
+  // deployed Worker, so per environment. Workers Free allows 5 per account,
+  // and this account's other projects use 4, so sync-env strips these from
+  // deployed configs for now (docs/adr/0020-target-workers-free.md). A
   // change takes up to 15 minutes to reach the edge after a deploy. To run one
   // locally, start `pnpm --filter @flareling/jobs dev` and
   // `curl "localhost:8787/cdn-cgi/local/scheduled?cron=17+3+*+*+*"`.
@@ -51,13 +52,17 @@
   // Delivery is at least once, so every handler is idempotent. A message
   // that fails is retried with backoff (src/index.ts), and after
   // `max_retries` it moves to the dead-letter queue, which nothing consumes:
-  // inspect it in the dashboard, fix the cause, and replay. Paid retains
-  // messages for 4 days by default (Free: 24 h, fixed), DLQ included.
+  // inspect it in the dashboard, fix the cause, and replay. On Workers Free
+  // messages are kept 24 h, DLQ included, so a dead-lettered message is gone a
+  // day later (Paid: 4 days by default, up to 14). Stripe can resend an event
+  // for 30 days, which is the fallback.
   "queues": {
     "consumers": [
       {
         "queue": "flareling-dev-jobs",
-        "max_batch_size": 10,
+        // 5 messages of about 3 D1 queries and 2-4 Stripe calls each, inside
+        // Workers Free's 50 queries and 50 subrequests per invocation.
+        "max_batch_size": 5,
         "max_batch_timeout": 5,
         "max_retries": 5,
         "dead_letter_queue": "flareling-dev-jobs-dlq"

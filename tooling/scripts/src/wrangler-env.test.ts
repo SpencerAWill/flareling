@@ -15,6 +15,9 @@ const prod = {
   jobsQueueName: "flareling-prod-jobs",
   jobsDeadLetterQueueName: "flareling-prod-jobs-dlq",
   authRateLimitNamespaceId: 2001,
+  webBaseUrl: "https://flareling.example.com",
+  webauthnRpId: "flareling.example.com",
+  emailFrom: "noreply@flareling.example.com",
 };
 
 const committed = (app: string) =>
@@ -38,6 +41,11 @@ describe("syncWranglerConfig on the committed configs", () => {
       { binding: "JOBS_QUEUE", queue: "flareling-prod-jobs" },
     ]);
     assert.equal(config.ratelimits[0].namespace_id, "2001");
+    assert.equal(config.vars.APP_BASE_URL, "https://flareling.example.com");
+    assert.equal(config.vars.WEBAUTHN_RP_ID, "flareling.example.com");
+    assert.equal(config.vars.EMAIL_FROM, "noreply@flareling.example.com");
+    // Not per stack: left as committed.
+    assert.equal(config.vars.APP_NAME, "Flareling");
     // Comments survive.
     assert.match(text, /\/\/ Pinned rather than tracking "today"/);
   });
@@ -51,6 +59,12 @@ describe("syncWranglerConfig on the committed configs", () => {
       "flareling-prod-jobs-dlq",
     );
     assert.equal(config.d1_databases[0].database_id, prod.d1DatabaseId);
+  });
+
+  it("unschedules cron triggers on deployed Workers (Workers Free, ADR 0020)", () => {
+    assert.ok(parse(committed("jobs")).triggers.crons.length > 0);
+    const config = parse(syncWranglerConfig(committed("jobs"), "jobs", prod));
+    assert.deepEqual(config.triggers.crons, []);
   });
 
   it("leaves no dev stack name behind", () => {

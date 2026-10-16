@@ -1,6 +1,6 @@
 # 0016. Target Workers Paid for deployed environments
 
-- **Status:** Accepted
+- **Status:** Superseded by [0020](./0020-target-workers-free.md)
 - **Date:** 2026-10-16
 
 ## Context

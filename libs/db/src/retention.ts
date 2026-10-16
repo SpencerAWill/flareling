@@ -4,11 +4,12 @@
  *
  * A backlog can be large (a first run, or a sweep that was off for a while),
  * and two D1 limits make one big DELETE unsafe: a statement may run for 30 s,
- * and an invocation may make 1,000 queries (Paid). So rows go in batches of
- * `batchSize`, picked by a subquery on the cutoff column, which must be
- * indexed (retention.test.ts checks the query plan), and a run stops after
- * `maxBatches`. What's left goes on the next run, and `complete: false` says
- * so.
+ * and an invocation may make 50 queries on Workers Free (1,000 on Paid). So
+ * rows go in batches of `batchSize`, picked by a subquery on the cutoff
+ * column, which must be indexed (retention.test.ts checks the query plan),
+ * and a run stops after `maxBatches`. What's left goes on the next run, and
+ * `complete: false` says so. The defaults keep a four-table sweep at 40
+ * queries, inside Free's 50.
  */
 import { lt } from "drizzle-orm";
 import type { AnySQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
@@ -58,7 +59,7 @@ export async function deleteBefore(
   table: TableWithId,
   column: AnySQLiteColumn,
   cutoff: Date,
-  { batchSize = 500, maxBatches = 20 }: DeleteBeforeOptions = {},
+  { batchSize = 1000, maxBatches = 10 }: DeleteBeforeOptions = {},
 ): Promise<DeleteBeforeResult> {
   let deleted = 0;
   // Sequential on purpose: each batch's subquery has to see the previous

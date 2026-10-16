@@ -41,3 +41,14 @@ export const hostname = config.require("hostname");
 export const authRateLimitNamespaceId = config.requireNumber(
   "authRateLimitNamespaceId",
 );
+
+/**
+ * Whether apps/web's Worker (`<resourcePrefix>-web`) has been deployed in
+ * this stack yet. A custom domain can only point at a Worker that exists, so
+ * a new stack's first deploy runs with this off; set it to true afterwards
+ * and the next `pulumi up` attaches `hostname` to the Worker.
+ */
+export const webDeployed = config.getBoolean("webDeployed") ?? false;
+
+/** The address sign-in emails come from. Depends on the email provider. */
+export const emailFrom = config.get("emailFrom") ?? `noreply@${hostname}`;

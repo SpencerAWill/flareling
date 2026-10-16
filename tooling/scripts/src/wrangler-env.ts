@@ -11,6 +11,12 @@
  *   - Queues: producer, consumer and dead-letter queue names.
  *   - Rate Limiting: `namespace_id`, which is account-wide, so a shared one
  *     would share counters between stacks.
+ *   - Vars that differ per stack (the app's URL, the passkey RP ID, the
+ *     sender address), wherever a config declares them.
+ *   - Cron Triggers: removed (an empty list, which also unschedules any
+ *     already deployed). Workers Free allows 5 per account and the account's
+ *     other projects use 4 (docs/adr/0020-target-workers-free.md). Flip
+ *     DEPLOY_CRONS when that changes.
  *
  * It fails closed. A binding it doesn't know, or a top-level key it hasn't
  * been taught about, is an error rather than something deployed pointing at
@@ -36,6 +42,9 @@ export interface StackOutputs {
   readonly jobsQueueName: string;
   readonly jobsDeadLetterQueueName: string;
   readonly authRateLimitNamespaceId: number;
+  readonly webBaseUrl: string;
+  readonly webauthnRpId: string;
+  readonly emailFrom: string;
 }
 
 export const OUTPUT_KEYS = {
@@ -45,6 +54,9 @@ export const OUTPUT_KEYS = {
   jobsQueueName: "string",
   jobsDeadLetterQueueName: "string",
   authRateLimitNamespaceId: "number",
+  webBaseUrl: "string",
+  webauthnRpId: "string",
+  emailFrom: "string",
 } as const satisfies Record<keyof StackOutputs, "string" | "number">;
 
 /** D1 bindings, by binding name. */
@@ -62,6 +74,16 @@ const QUEUES: Record<string, (o: StackOutputs) => string> = {
 const RATE_LIMITS: Record<string, (o: StackOutputs) => number> = {
   AUTH_RATE_LIMITER: (o) => o.authRateLimitNamespaceId,
 };
+
+/** Per-stack vars, by name, set wherever a config declares them. */
+const VARS: Record<string, (o: StackOutputs) => string> = {
+  APP_BASE_URL: (o) => o.webBaseUrl,
+  WEBAUTHN_RP_ID: (o) => o.webauthnRpId,
+  EMAIL_FROM: (o) => o.emailFrom,
+};
+
+/** Whether deployed Workers keep their Cron Triggers (see the module doc). */
+const DEPLOY_CRONS = false;
 
 /**
  * Top-level keys that hold nothing per-stack, or that are handled above. Any
@@ -91,6 +113,8 @@ const FORMATTING: FormattingOptions = { insertSpaces: true, tabSize: 2 };
 
 interface WranglerConfig {
   readonly [key: string]: unknown;
+  readonly vars?: Readonly<Record<string, unknown>>;
+  readonly triggers?: { readonly crons?: readonly string[] };
   readonly d1_databases?: readonly { binding: string }[];
   readonly queues?: {
     readonly producers?: readonly { queue: string }[];
@@ -135,7 +159,7 @@ export function syncWranglerConfig(
     );
   }
 
-  const changes: [JSONPath, string | number][] = [
+  const changes: [JSONPath, string | number | never[]][] = [
     [["name"], `${outputs.resourcePrefix}-${app}`],
   ];
   const lookup = <T>(
@@ -181,6 +205,14 @@ export function syncWranglerConfig(
       String(lookup(RATE_LIMITS, r.name, "the rate limiter")),
     ]);
   });
+
+  for (const name of Object.keys(config.vars ?? {})) {
+    const map = VARS[name];
+    if (map) changes.push([["vars", name], map(outputs)]);
+  }
+  if (!DEPLOY_CRONS && config.triggers?.crons !== undefined) {
+    changes.push([["triggers", "crons"], []]);
+  }
 
   let result = text;
   for (const [path, value] of changes) {

@@ -37,7 +37,8 @@ Small, easily reversed choices don't need one. When in doubt, write the short ve
 | [0013](./0013-shadcn-on-base-ui.md) | shadcn/ui on Base UI for components | Accepted |
 | [0014](./0014-security-headers-now-csp-later.md) | Security headers now, script CSP later | Accepted |
 | [0015](./0015-email-behind-an-interface.md) | Email behind an interface, provider decided later | Accepted |
-| [0016](./0016-target-workers-paid.md) | Target Workers Paid for deployed environments | Accepted |
+| [0016](./0016-target-workers-paid.md) | Target Workers Paid for deployed environments | Superseded by 0020 |
 | [0017](./0017-workspaces-as-tenants.md) | Workspaces as tenants, in one shared database | Accepted |
 | [0018](./0018-stripe-subscriptions-through-a-queue.md) | Stripe subscriptions, with webhooks processed through a queue | Accepted |
 | [0019](./0019-own-auth-magic-links-passkeys-d1-sessions.md) | Our own auth: magic links, passkeys, sessions in D1, RBAC | Accepted |
+| [0020](./0020-target-workers-free.md) | Target Workers Free for deployed environments | Accepted |
