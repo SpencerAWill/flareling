@@ -44,6 +44,7 @@ export function testContext(
     cookies?: TestCookieJar;
     clientIp?: string | null;
     start?: Temporal.Instant;
+    rateLimiter?: AuthContext["rateLimiter"];
   } = {},
 ): TestContext {
   let now = overrides.start ?? Temporal.Instant.from("2026-10-16T12:00:00Z");
@@ -53,6 +54,8 @@ export function testContext(
       appBaseUrl: "http://localhost:3000",
       appName: "Flareling",
       rpId: "localhost",
+      // No artificial delay in tests; the padding test sets its own.
+      magicLinkResponsePadding: { minMs: 0, jitterMs: 0 },
       ...overrides.config,
     },
     cookies: overrides.cookies ?? new TestCookieJar(),
@@ -63,6 +66,7 @@ export function testContext(
       },
     },
     sent,
+    ...(overrides.rateLimiter ? { rateLimiter: overrides.rateLimiter } : {}),
     now: () => now,
     advance(duration) {
       now = now.add(duration);

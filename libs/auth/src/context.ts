@@ -40,6 +40,12 @@ export interface AuthConfig {
   readonly turnstileSecret?: string;
   /** Skip rate limits, for E2E suites. Ignored when the app is on https. */
   readonly rateLimitBypass?: boolean;
+  /** Minimum response time for a magic-link request, plus random jitter, so
+   *  timing doesn't reveal whether an address has an account. Tests set 0. */
+  readonly magicLinkResponsePadding?: {
+    readonly minMs: number;
+    readonly jitterMs: number;
+  };
 }
 
 /** Cloudflare's Rate Limiting binding. */

@@ -15,15 +15,18 @@
   "dependencies": {
     "@flareling/db": "workspace:*",
     "@flareling/email": "workspace:*",
+    "@flareling/log": "workspace:*",
     "drizzle-orm": "catalog:",
     "temporal-polyfill": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@flareling/config": "workspace:*",
+    "@msw/cloudflare": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "fast-check": "catalog:",
+    "msw": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
