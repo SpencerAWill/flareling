@@ -60,20 +60,7 @@ jobs:
 
       # One line per package in the run summary, from Istanbul's json-summary.
       - name: Summarize coverage
-        run: |
-          {
-            echo "| Package | Statements | Branches | Functions | Lines |"
-            echo "| --- | --- | --- | --- | --- |"
-            for summary in apps/*/coverage/coverage-summary.json libs/*/coverage/coverage-summary.json; do
-              [ -f "$summary" ] || continue
-              node -e '
-                const { total } = require(require("node:path").resolve(process.argv[1]));
-                const pct = (k) => `${total[k].pct}%`;
-                const pkg = process.argv[1].split("/coverage/")[0];
-                console.log(`| ${pkg} | ${pct("statements")} | ${pct("branches")} | ${pct("functions")} | ${pct("lines")} |`);
-              ' "$summary"
-            done
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: node tooling/scripts/src/summarize-coverage.ts >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

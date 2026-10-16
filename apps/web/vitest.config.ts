@@ -25,6 +25,10 @@ export default defineConfig({
     viteReact(),
   ],
   test: {
+    // The first request in a file also compiles Start's server entry. That
+    // takes about a second here, but over 5 s (Vitest's default) on a CI
+    // runner busy with every other package's tests.
+    testTimeout: 30_000,
     // e2e/ is Playwright's (playwright.config.ts), run by `test:e2e`.
     exclude: [...configDefaults.exclude, "e2e/**"],
     coverage,
