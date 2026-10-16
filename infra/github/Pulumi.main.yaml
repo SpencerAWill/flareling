@@ -20,10 +20,12 @@ config:
   # until a deployed environment can start: it needs an email provider
   # (docs/adr/0015-email-behind-an-interface.md).
   flareling-github:deploysEnabled: "false"
-  # Uncomment to mint Cloudflare CI tokens (also set cloudflare:apiToken as a
-  # secret: a token allowed to create account API tokens).
-  # flareling-github:cloudflareAccountId: <account id>
+  # Mints the Cloudflare CI tokens. Needs cloudflare:apiToken set as a secret
+  # (`pulumi config set --secret cloudflare:apiToken`): a token allowed to
+  # create account API tokens. Same account and zone as infra/cloudflare.
+  flareling-github:cloudflareAccountId: d57880630b3277f59331318b53f323b6
   # The zone the suite's hostnames live in; the tokens' zone permissions are
-  # scoped to it. Set cloudflareZoneDedicated only if no other site uses it.
-  # flareling-github:cloudflareZoneId: <zone id>
-  # flareling-github:cloudflareZoneDedicated: "false"
+  # scoped to it. spencerwill.com is shared with www and ucmc, so not dedicated:
+  # the tokens get no zone-wide write.
+  flareling-github:cloudflareZoneId: 6bfb4d1d3134e6d765aef413094cd28f
+  flareling-github:cloudflareZoneDedicated: "false"
