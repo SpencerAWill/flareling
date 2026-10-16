@@ -27,13 +27,17 @@ services:
     #
     # Container start fails outright if one of these is already taken on the
     # host, which beats a silent no-op mapping.
+    #
+    # Bound to 127.0.0.1, not every interface: otherwise anyone on the same
+    # network (café Wi-Fi) could open Mailpit, read the sign-in links the dev
+    # server emails, and sign in to the local app as anyone.
     ports:
-      - "3000:3000" # apps/web
-      - "3001:3001" # apps/marketing
-      - "3002:3002" # apps/admin
-      - "4173:4173" # vite preview: the built Worker running in workerd
-      - "6006:6006" # Storybook (libs/ui)
-      - "9323:9323" # Playwright UI mode and `playwright show-report`
+      - "127.0.0.1:3000:3000" # apps/web
+      - "127.0.0.1:3001:3001" # apps/marketing
+      - "127.0.0.1:3002:3002" # apps/admin
+      - "127.0.0.1:4173:4173" # vite preview: the built Worker running in workerd
+      - "127.0.0.1:6006:6006" # Storybook (libs/ui)
+      - "127.0.0.1:9323:9323" # Playwright UI mode and `playwright show-report`
     volumes:
       - ..:/workspace:cached
       # node_modules on a container-native named volume rather than the macOS
@@ -78,8 +82,8 @@ services:
     image: axllent/mailpit:v1.31.4
     restart: unless-stopped
     ports:
-      - "8025:8025" # Web UI + REST API
-      - "1025:1025" # SMTP intake
+      - "127.0.0.1:8025:8025" # Web UI + REST API
+      - "127.0.0.1:1025:1025" # SMTP intake
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: "true"
       MP_SMTP_AUTH_ALLOW_INSECURE: "true"
