@@ -1,6 +1,7 @@
 import { inArray, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import {
+  containsText,
   D1_MAX_BOUND_PARAMS,
   getDb,
   inJsonArray,
@@ -9,7 +10,6 @@ import {
   insertStatements,
   isForeignKeyViolation,
   isUniqueViolation,
-  likeContains,
   notInJsonArray,
   notInSubquery,
   rowsPerInsertStatement,
@@ -237,35 +237,46 @@ describe("constraint errors", () => {
   });
 });
 
-describe("likeContains", () => {
-  it("matches its needle literally, wildcards included", async () => {
+describe("containsText", () => {
+  const find = async (query: string) =>
+    (
+      await getDb()
+        .select({ id: auditLog.id })
+        .from(auditLog)
+        .where(containsText(auditLog.targetId, query))
+    ).map((r) => r.id);
+
+  it("matches literally, wildcards included, ignoring ASCII case", async () => {
     await insertMany(auditLog, [
       {
-        id: "like_pct",
-        action: "test.like",
+        id: "text_pct",
+        action: "test.text",
         actorId: null,
-        targetId: "50% off",
+        targetId: "50% OFF",
       },
       {
-        id: "like_any",
-        action: "test.like",
+        id: "text_any",
+        action: "test.text",
         actorId: null,
         targetId: "500 off",
       },
-      { id: "like_us", action: "test.like", actorId: null, targetId: "a_b" },
-      { id: "like_ab", action: "test.like", actorId: null, targetId: "axb" },
+      { id: "text_us", action: "test.text", actorId: null, targetId: "a_b" },
+      { id: "text_ab", action: "test.text", actorId: null, targetId: "axb" },
     ]);
-    const find = async (query: string) =>
-      (
-        await getDb()
-          .select({ id: auditLog.id })
-          .from(auditLog)
-          .where(likeContains(auditLog.targetId, query))
-      ).map((r) => r.id);
+    expect(await find("50% off")).toEqual(["text_pct"]);
+    expect(await find("a_b")).toEqual(["text_us"]);
+  });
 
-    // Unescaped, `%` and `_` are wildcards and would match the second row of
-    // each pair too.
-    expect(await find("50%")).toEqual(["like_pct"]);
-    expect(await find("a_b")).toEqual(["like_us"]);
+  it("takes a query far past D1's 50-byte LIKE pattern limit", async () => {
+    const long = "x".repeat(500);
+    await insertMany(auditLog, [
+      {
+        id: "text_long",
+        action: "test.text",
+        actorId: null,
+        targetId: `-${long}-`,
+      },
+    ]);
+    expect(await find(long)).toEqual(["text_long"]);
   });
 });

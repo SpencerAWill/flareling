@@ -1,6 +1,7 @@
 export { auditRow, recordAudit } from "./audit.ts";
 export { getDb, schema } from "./client.ts";
 export {
+  containsText,
   D1_MAX_BOUND_PARAMS,
   inJsonArray,
   inSubquery,
@@ -8,7 +9,6 @@ export {
   insertStatements,
   isForeignKeyViolation,
   isUniqueViolation,
-  likeContains,
   notInJsonArray,
   notInSubquery,
   rowsPerInsertStatement,

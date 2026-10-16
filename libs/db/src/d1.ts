@@ -216,16 +216,17 @@ export function isForeignKeyViolation(err: unknown): boolean {
 }
 
 /**
- * `column LIKE '%query%'` with the wildcards in `query` escaped, so a search
- * for `50%` matches that literal text. The `ESCAPE` clause is the part that
- * matters: SQLite honors an escape character only when the pattern declares
- * one, and Drizzle's `like()` never does, so escaping without it matches
- * nothing at all.
+ * Case-insensitive substring match: `column` contains `query`.
+ *
+ * Deliberately not `LIKE '%query%'`. D1 caps a LIKE pattern at 50 bytes, so
+ * ordinary search input fails at runtime once it's long enough, and LIKE needs
+ * its `%` and `_` escaped (with an explicit ESCAPE clause, which Drizzle's
+ * `like()` never emits). `instr` has neither problem. Case folding is the same
+ * as LIKE's: SQLite's `lower()` folds ASCII only, without ICU.
  */
-export function likeContains(
+export function containsText(
   column: AnySQLiteColumn | SQL,
   query: string,
 ): SQL {
-  const needle = `%${query.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`;
-  return sql`${column} LIKE ${needle} ESCAPE '\\'`;
+  return sql`instr(lower(${column}), lower(${query})) > 0`;
 }
