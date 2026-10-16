@@ -5,7 +5,7 @@ import {
   waitForHydration,
 } from "./fixtures.ts";
 
-test.describe("home", () => {
+test.describe("home", { tag: "@smoke" }, () => {
   test("renders", async ({ page }) => {
     await page.goto("/");
 
@@ -21,7 +21,7 @@ test.describe("home", () => {
   });
 });
 
-test.describe("not found", () => {
+test.describe("not found", { tag: "@smoke" }, () => {
   test("returns 404 and links home", async ({ page }) => {
     const response = await page.goto("/missing");
     expect(response?.status()).toBe(404);

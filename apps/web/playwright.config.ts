@@ -12,6 +12,9 @@ const isCI = Boolean(process.env.CI);
 
 export default defineConfig({
   testDir: "./e2e",
+  // Against a deployed environment, only the post-deploy checks run: the rest
+  // of the suite needs Mailpit, stripe-mock and the E2E rate-limit bypass.
+  ...(deployedUrl ? { grep: /@smoke/ } : {}),
   fullyParallel: true,
   forbidOnly: isCI,
   // One retry in CI absorbs a rare flake without tripling a failing run.
