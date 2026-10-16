@@ -32,4 +32,19 @@ describe("configurationProblems", () => {
       }),
     ).toEqual([expect.stringContaining("local development only")]);
   });
+
+  it("refuses one Turnstile key without the other", () => {
+    expect(
+      configurationProblems({ ...local, TURNSTILE_SECRET_KEY: "s" }),
+    ).toEqual([
+      expect.stringContaining("TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY"),
+    ]);
+    expect(
+      configurationProblems({
+        ...local,
+        TURNSTILE_SITE_KEY: "k",
+        TURNSTILE_SECRET_KEY: "s",
+      }),
+    ).toEqual([]);
+  });
 });

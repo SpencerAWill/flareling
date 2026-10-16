@@ -8,10 +8,12 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { Turnstile } from "#/components/turnstile.tsx";
 import { afterSessionChange } from "#/lib/auth.ts";
 import {
   beginPasskeySignInFn,
   finishPasskeySignInFn,
+  getSignInConfigFn,
   requestMagicLinkFn,
 } from "#/server/auth/fns.ts";
 
@@ -20,6 +22,7 @@ export const Route = createFileRoute("/sign-in")({
   beforeLoad: ({ context }) => {
     if (context.principal) throw redirect({ to: "/account" });
   },
+  loader: () => getSignInConfigFn(),
   head: () => ({ meta: [{ title: "Sign in · Flareling" }] }),
   component: SignIn,
 });
@@ -34,6 +37,9 @@ function SignIn() {
     "idle",
   );
   const [passkeyError, setPasskeyError] = useState(false);
+  const { turnstileSiteKey } = Route.useLoaderData();
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const resetTurnstile = useRef<(() => void) | null>(null);
 
   // The autofill ceremony's first request, while it's in flight. The button
   // waits for it before beginning its own: each begin sets the ceremony
@@ -74,10 +80,19 @@ function SignIn() {
     const email = String(new FormData(event.currentTarget).get("email") ?? "");
     setState("sending");
     try {
-      await requestMagicLink({ data: { email, redirect: next } });
+      await requestMagicLink({
+        data: {
+          email,
+          redirect: next,
+          turnstileToken: turnstileToken ?? undefined,
+        },
+      });
       setState("sent");
     } catch {
       setState("error");
+    } finally {
+      // Turnstile tokens are single use.
+      resetTurnstile.current?.();
     }
   }
 
@@ -102,7 +117,19 @@ function SignIn() {
               className="rounded border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
             />
           </label>
-          <Button type="submit" disabled={state === "sending"}>
+          {turnstileSiteKey && (
+            <Turnstile
+              siteKey={turnstileSiteKey}
+              onToken={setTurnstileToken}
+              resetRef={resetTurnstile}
+            />
+          )}
+          <Button
+            type="submit"
+            disabled={
+              state === "sending" || (!!turnstileSiteKey && !turnstileToken)
+            }
+          >
             Email me a sign-in link
           </Button>
           <Button

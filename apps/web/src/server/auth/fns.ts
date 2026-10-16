@@ -15,6 +15,14 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(
   },
 );
 
+/** What the sign-in form needs to render: Turnstile's public site key. */
+export const getSignInConfigFn = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { getEnv } = await import("#/env.ts");
+    return { turnstileSiteKey: getEnv().TURNSTILE_SITE_KEY ?? null };
+  },
+);
+
 export const requestMagicLinkFn = createServerFn({ method: "POST" })
   .validator(
     z.object({

@@ -32,7 +32,11 @@ export function Passkeys({
     setMessage(null);
     const started = await begin();
     if (!started.ok) {
-      setMessage("Couldn't start adding a passkey. Try again in a minute.");
+      setMessage(
+        started.reason === "reauthenticate"
+          ? "For your security, adding a passkey needs a recent sign-in. Sign out, sign in again with an email link, then add it."
+          : "Couldn't start adding a passkey. Try again in a minute.",
+      );
       return;
     }
     let response: unknown;
@@ -48,7 +52,11 @@ export function Passkeys({
     const nickname = window.navigator.platform || undefined;
     const result = await finish({ data: { response, nickname } });
     setMessage(
-      result.ok ? "Passkey added." : "That passkey couldn't be verified.",
+      result.ok
+        ? "Passkey added."
+        : result.reason === "reauthenticate"
+          ? "Your sign-in is no longer recent. Sign in again, then add the passkey."
+          : "That passkey couldn't be verified.",
     );
     await router.invalidate().catch(() => {}); // superseded by a navigation
   }

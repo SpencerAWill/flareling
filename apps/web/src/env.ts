@@ -19,7 +19,10 @@ const getVars = defineEnv({
   EMAIL_FROM_NAME: z.string().optional(),
   /** Local development: the Mailpit sidecar (`http://mailpit:8025`). */
   MAILPIT_URL: z.url().optional(),
-  /** Turnstile on the sign-in form. Unset skips the check (local only). */
+  /** Turnstile on the sign-in form: the public site key the widget uses,
+   *  and the secret the server verifies with. Set both or neither; unset
+   *  skips the check (local only). */
+  TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
   /** E2E suites only. libs/auth ignores it on https. */
   E2E_BYPASS_RATE_LIMIT: z.literal("1").optional(),
@@ -34,9 +37,19 @@ type Vars = ReturnType<typeof getVars>;
  * first one, which the post-deploy smoke test catches.
  */
 export function configurationProblems(
-  vars: Pick<Vars, "APP_BASE_URL"> & Partial<Pick<Vars, "MAILPIT_URL">>,
+  vars: Pick<Vars, "APP_BASE_URL"> &
+    Partial<
+      Pick<Vars, "MAILPIT_URL" | "TURNSTILE_SITE_KEY" | "TURNSTILE_SECRET_KEY">
+    >,
 ): string[] {
   const problems: string[] = [];
+  // A secret without a site key means the form never sends a token, so every
+  // sign-in request is refused, silently by design.
+  if (Boolean(vars.TURNSTILE_SITE_KEY) !== Boolean(vars.TURNSTILE_SECRET_KEY)) {
+    problems.push(
+      "Set TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY together, or neither.",
+    );
+  }
   const deployed = vars.APP_BASE_URL.startsWith("https://");
   if (deployed && !vars.MAILPIT_URL) {
     problems.push(

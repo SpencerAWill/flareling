@@ -30,12 +30,22 @@ export const securityHeaders: Readonly<Record<string, string>> = {
     "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
 };
 
-/** Adds the security headers to `response`, without overriding any it sets. */
+/**
+ * `response` with the security headers added, without overriding any it sets.
+ * A response whose headers are immutable (from `Response.redirect`, or passed
+ * through from a fetch) is copied rather than modified, since setting a header
+ * on it throws.
+ */
 export function withSecurityHeaders(response: Response): Response {
+  let target = response;
   for (const [name, value] of Object.entries(securityHeaders)) {
-    if (!response.headers.has(name)) {
-      response.headers.set(name, value);
+    if (target.headers.has(name)) continue;
+    try {
+      target.headers.set(name, value);
+    } catch {
+      target = new Response(target.body, target);
+      target.headers.set(name, value);
     }
   }
-  return response;
+  return target;
 }
