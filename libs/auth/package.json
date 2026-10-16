@@ -17,6 +17,7 @@
     "@flareling/db": "workspace:*",
     "@flareling/email": "workspace:*",
     "@flareling/log": "workspace:*",
+    "@simplewebauthn/server": "catalog:",
     "drizzle-orm": "catalog:",
     "temporal-polyfill": "catalog:"
   },

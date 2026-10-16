@@ -29,6 +29,7 @@
     "@flareling/env": "workspace:*",
     "@flareling/log": "workspace:*",
     "@flareling/ui": "workspace:*",
+    "@simplewebauthn/browser": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "react": "catalog:",

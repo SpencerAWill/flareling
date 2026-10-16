@@ -1,26 +1,28 @@
 import { Button } from "@flareling/ui";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { requireSignedIn } from "#/lib/auth.ts";
-import { signOutFn } from "#/server/auth/fns.ts";
+import { Passkeys } from "#/components/passkeys.tsx";
+import { afterSessionChange, requireSignedIn } from "#/lib/auth.ts";
+import { listPasskeysFn, signOutFn } from "#/server/auth/fns.ts";
 
 export const Route = createFileRoute("/account")({
   beforeLoad: ({ context, location }) => ({
     principal: requireSignedIn(context.principal, location),
   }),
+  loader: () => listPasskeysFn(),
   head: () => ({ meta: [{ title: "Account · Flareling" }] }),
   component: Account,
 });
 
 function Account() {
   const { principal } = Route.useRouteContext();
+  const passkeys = Route.useLoaderData();
   const router = useRouter();
   const signOut = useServerFn(signOutFn);
 
   async function onSignOut() {
     await signOut();
-    await router.invalidate();
-    await router.navigate({ to: "/" });
+    await afterSessionChange(router, "/");
   }
 
   return (
@@ -32,6 +34,7 @@ function Account() {
       <p className="text-sm text-neutral-700 dark:text-neutral-300">
         Roles: {principal.roles.join(", ") || "none"}
       </p>
+      <Passkeys passkeys={passkeys} />
       <Button variant="secondary" className="self-start" onClick={onSignOut}>
         Sign out
       </Button>

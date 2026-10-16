@@ -15,3 +15,24 @@ export function requireSignedIn(
   }
   return principal;
 }
+
+/**
+ * After signing in or out: reload route data for the new session, then go to
+ * `to`. If the person navigates elsewhere before this finishes, the browser
+ * aborts these requests, which is expected, not an error (WebKit otherwise
+ * reports it as an uncaught "TypeError: Load failed").
+ */
+export async function afterSessionChange(
+  router: {
+    invalidate(): Promise<unknown>;
+    navigate(opts: { to: string }): Promise<unknown>;
+  },
+  to: string,
+): Promise<void> {
+  try {
+    await router.invalidate();
+    await router.navigate({ to });
+  } catch {
+    // Superseded by another navigation.
+  }
+}

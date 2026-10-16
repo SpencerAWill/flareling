@@ -145,6 +145,8 @@ catalog:
   sherif: ^1.13.0
   turbo: ^2.11.7
   knip: ^6.39.0
+  '@simplewebauthn/server': ^14.0.3
+  '@simplewebauthn/browser': ^14.0.0
 
 # Named catalogs: deliberate, temporary exceptions to one-version-per-dependency.
 catalogs:

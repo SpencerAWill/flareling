@@ -4,6 +4,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { z } from "zod";
+import { afterSessionChange } from "#/lib/auth.ts";
 import { consumeMagicLinkFn } from "#/server/auth/fns.ts";
 
 /**
@@ -35,10 +36,10 @@ function Callback() {
       setState(result?.reason === "rate_limited" ? "limited" : "invalid");
       return;
     }
-    await router.invalidate();
-    await router.navigate({
-      to: next && isSafeRedirect(next) ? next : "/account",
-    });
+    await afterSessionChange(
+      router,
+      next && isSafeRedirect(next) ? next : "/account",
+    );
   }
 
   return (

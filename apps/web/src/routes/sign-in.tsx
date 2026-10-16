@@ -1,9 +1,19 @@
+import { isSafeRedirect } from "@flareling/auth/client";
 import { Button } from "@flareling/ui";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import {
+  browserSupportsWebAuthnAutofill,
+  startAuthentication,
+} from "@simplewebauthn/browser";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { z } from "zod";
-import { requestMagicLinkFn } from "#/server/auth/fns.ts";
+import { afterSessionChange } from "#/lib/auth.ts";
+import {
+  beginPasskeySignInFn,
+  finishPasskeySignInFn,
+  requestMagicLinkFn,
+} from "#/server/auth/fns.ts";
 
 export const Route = createFileRoute("/sign-in")({
   validateSearch: z.object({ redirect: z.string().optional() }),
@@ -16,10 +26,39 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignIn() {
   const { redirect: next } = Route.useSearch();
+  const router = useRouter();
   const requestMagicLink = useServerFn(requestMagicLinkFn);
+  const beginPasskey = useServerFn(beginPasskeySignInFn);
+  const finishPasskey = useServerFn(finishPasskeySignInFn);
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">(
     "idle",
   );
+  const [passkeyError, setPasskeyError] = useState(false);
+
+  /** One passkey ceremony. With `autofill`, it waits for the field's offer. */
+  async function signInWithPasskey(autofill: boolean) {
+    const started = await beginPasskey();
+    if (!started.ok) throw new Error(started.reason);
+    const response = await startAuthentication({
+      optionsJSON: JSON.parse(started.optionsJSON),
+      useBrowserAutofill: autofill,
+    });
+    const result = await finishPasskey({ data: { response } });
+    if (!result.ok) throw new Error(result.reason);
+    await afterSessionChange(
+      router,
+      next && isSafeRedirect(next) ? next : "/account",
+    );
+  }
+
+  // Offer saved passkeys in the email field's autofill, where supported.
+  // Failures are silent: the email form is the fallback, and starting another
+  // ceremony (the button) cancels this one.
+  useEffect(() => {
+    void browserSupportsWebAuthnAutofill().then((supported) => {
+      if (supported) signInWithPasskey(true).catch(() => {});
+    });
+  }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,6 +84,7 @@ function SignIn() {
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Email</span>
+            {/* "webauthn" lets the browser offer passkeys from this field. */}
             <input
               name="email"
               type="email"
@@ -56,9 +96,21 @@ function SignIn() {
           <Button type="submit" disabled={state === "sending"}>
             Email me a sign-in link
           </Button>
-          {state === "error" && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setPasskeyError(false);
+              signInWithPasskey(false).catch(() => setPasskeyError(true));
+            }}
+          >
+            Sign in with a passkey
+          </Button>
+          {(state === "error" || passkeyError) && (
             <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-              Something went wrong sending the link. Try again in a minute.
+              {passkeyError
+                ? "That didn't work. Use an email link instead."
+                : "Something went wrong sending the link. Try again in a minute."}
             </p>
           )}
         </form>

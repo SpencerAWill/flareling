@@ -45,3 +45,84 @@ export const signOutFn = createServerFn({ method: "POST" }).handler(
     return { ok: true as const };
   },
 );
+
+// ── Passkeys ────────────────────────────────────────────────────────────────
+// The WebAuthn response is opaque JSON from the browser; @simplewebauthn
+// validates its structure and signature, so zod only bounds its size.
+const webauthnResponse = z
+  .unknown()
+  .refine((v) => JSON.stringify(v ?? null).length < 64_000, "too large");
+
+async function signedIn() {
+  const { getPrincipal } = await import("@flareling/auth");
+  const { authContext } = await import("./context.server.ts");
+  const ctx = authContext();
+  return { ctx, principal: await getPrincipal(ctx) };
+}
+
+export const beginPasskeyRegistrationFn = createServerFn({
+  method: "POST",
+}).handler(async () => {
+  const { beginPasskeyRegistration } = await import("@flareling/auth");
+  const { ctx, principal } = await signedIn();
+  if (!principal) return { ok: false as const, reason: "unauthorized" };
+  const result = await beginPasskeyRegistration(ctx, principal);
+  // WebAuthn options are JSON by design; sent as a string, they pass
+  // Start's serializer as-is and the browser hands them straight back to
+  // @simplewebauthn/browser.
+  return result.ok
+    ? { ok: true as const, optionsJSON: JSON.stringify(result.options) }
+    : { ok: false as const, reason: result.reason };
+});
+
+export const finishPasskeyRegistrationFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      response: webauthnResponse,
+      nickname: z.string().max(60).optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const { finishPasskeyRegistration } = await import("@flareling/auth");
+    const { ctx, principal } = await signedIn();
+    if (!principal)
+      return { ok: false as const, reason: "unauthorized" as const };
+    return finishPasskeyRegistration(ctx, principal, data);
+  });
+
+export const beginPasskeySignInFn = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const { beginPasskeyAuthentication } = await import("@flareling/auth");
+    const { authContext } = await import("./context.server.ts");
+    const result = await beginPasskeyAuthentication(authContext());
+    return result.ok
+      ? { ok: true as const, optionsJSON: JSON.stringify(result.options) }
+      : { ok: false as const, reason: result.reason };
+  },
+);
+
+export const finishPasskeySignInFn = createServerFn({ method: "POST" })
+  .validator(z.object({ response: webauthnResponse }))
+  .handler(async ({ data }) => {
+    const { finishPasskeyAuthentication } = await import("@flareling/auth");
+    const { authContext } = await import("./context.server.ts");
+    return finishPasskeyAuthentication(authContext(), data);
+  });
+
+export const listPasskeysFn = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { listPasskeys } = await import("@flareling/auth");
+    const { principal } = await signedIn();
+    if (!principal) return [];
+    return listPasskeys(principal.userId);
+  },
+);
+
+export const removePasskeyFn = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.string().max(64) }))
+  .handler(async ({ data }) => {
+    const { removePasskey } = await import("@flareling/auth");
+    const { principal } = await signedIn();
+    if (!principal) return { ok: false as const };
+    return { ok: await removePasskey(principal.userId, data.id) };
+  });
