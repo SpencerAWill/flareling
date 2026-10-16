@@ -111,7 +111,7 @@ catalog:
   # Testing
   # Vitest and @cloudflare/vitest-plugin move together: the plugin peers on a
   # Vitest range (1.4.0 added Vitest 5). Dependabot groups them.
-  vitest: ^5.0.3
+  vitest: ^5.0.1
   "@cloudflare/vitest-plugin": ^1.4.0
   # The @vitest/* companions peer on the exact Vitest version, so they move
   # with `vitest` above (Dependabot groups them).
