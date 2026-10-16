@@ -35,8 +35,8 @@ const toDate = (instant: Temporal.Instant) =>
 export interface MagicLinkRequest {
   readonly email: string;
   /** Where to go after signing in; dropped unless it's a path on this origin. */
-  readonly redirect?: string;
-  readonly turnstileToken?: string;
+  readonly redirect?: string | undefined;
+  readonly turnstileToken?: string | undefined;
 }
 
 /** Emails a sign-in link to `email`, if the request passes the checks. */

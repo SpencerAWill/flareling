@@ -36,5 +36,45 @@
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
+  },
+
+  // The suite's D1 database (libs/db). The id is a placeholder: deploys
+  // replace it with infra/cloudflare's `d1DatabaseId` output, and local
+  // development and tests use Miniflare's local D1, for which any id works.
+  // Migrations come from libs/db; apply them locally with
+  // `pnpm --filter @flareling/web db:migrate:local`.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flareling-dev",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../../libs/db/migrations"
+    }
+  ],
+
+  // Cloudflare's Rate Limiting binding, used by libs/auth on sign-in routes,
+  // keyed per IP and per email address. Limits are per Cloudflare location
+  // and eventually consistent, so they slow abuse rather than enforce exact
+  // quotas. The namespace id must be unique within the account.
+  "ratelimits": [
+    {
+      "name": "AUTH_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
+
+  // Non-secret configuration, validated by src/env.ts. These are the local
+  // development values; deploys override them per environment. Secrets
+  // (TURNSTILE_SECRET_KEY) and dev-only settings (MAILPIT_URL) go in
+  // .env.local locally (see .env.example) and `wrangler secret put` deployed.
+  "vars": {
+    "APP_BASE_URL": "http://localhost:3000",
+    "APP_NAME": "Flareling",
+    // The hostname passkeys are bound to: APP_BASE_URL's host, or a parent
+    // domain of it. A passkey made for one RP ID doesn't work on another.
+    "WEBAUTHN_RP_ID": "localhost",
+    "EMAIL_FROM": "noreply@flareling.localhost",
+    "EMAIL_FROM_NAME": "Flareling"
   }
 }

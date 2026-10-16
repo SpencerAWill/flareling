@@ -96,7 +96,10 @@ export function parseEnv<T extends Schema>(
 export function defineEnv<T extends Schema>(schema: T): () => Parsed<T> {
   let parsed: Parsed<T> | undefined;
   return () => {
-    parsed ??= parseEnv(schema, workerEnv as Record<string, unknown>);
+    parsed ??= parseEnv(
+      schema,
+      workerEnv as unknown as Record<string, unknown>,
+    );
     return parsed;
   };
 }

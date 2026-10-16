@@ -1,3 +1,4 @@
+export type { AuthContext } from "./context.ts";
 export { isSafeRedirect, normalizeEmail } from "./input.ts";
 export { consumeMagicLink, requestMagicLink } from "./magic-link.ts";
 export { getPrincipal, loadPrincipal, signIn, signOut } from "./principal.ts";

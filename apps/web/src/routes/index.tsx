@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -13,6 +13,9 @@ function Home() {
         <code className="font-mono text-base">apps/web/src/routes</code> to get
         started.
       </p>
+      <Link to="/account" className="self-start underline">
+        Your account
+      </Link>
     </main>
   );
 }

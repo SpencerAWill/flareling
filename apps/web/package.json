@@ -20,16 +20,20 @@
     "test:e2e:install": "playwright install --with-deps chromium webkit",
     "test:e2e:ui": "playwright test --ui --ui-host 0.0.0.0 --ui-port 9323",
     "test:e2e:report": "playwright show-report --host 0.0.0.0 --port 9323",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local"
   },
   "dependencies": {
+    "@flareling/auth": "workspace:*",
+    "@flareling/email": "workspace:*",
     "@flareling/env": "workspace:*",
     "@flareling/log": "workspace:*",
     "@flareling/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@axe-core/playwright": "catalog:",

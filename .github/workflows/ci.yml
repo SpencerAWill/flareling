@@ -124,6 +124,14 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+    # The inbox the E2E sign-in tests read magic links from. Pinned to the
+    # same release as the dev container's (.devcontainer/docker-compose.yml);
+    # Dependabot doesn't update service images here, so bump both together.
+    services:
+      mailpit:
+        image: axllent/mailpit:v1.31.4@sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48
+        ports:
+          - 8025:8025
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -179,6 +187,20 @@ jobs:
       # Fails when a Worker's gzip upload passes its budget (below the Workers
       # Free plan's 3 MB cap). Sizes go to the run summary.
       - run: pnpm size
+
+      # The Worker under `vite preview` can't reach a service on loopback
+      # (found in ucmc.spencerwill.com), but service ports are published on
+      # every interface, so the runner's own address works for both the Worker
+      # and the Playwright fixture. Mailpit may still be starting, too.
+      - name: Point the E2E suite at Mailpit
+        run: |
+          mailpit="http://$(hostname -I | awk '{print $1}'):8025"
+          for _ in $(seq 1 30); do
+            curl -sf "$mailpit/api/v1/info" > /dev/null && break
+            sleep 1
+          done
+          curl -sf "$mailpit/api/v1/info" > /dev/null
+          echo "MAILPIT_URL=$mailpit" >> "$GITHUB_ENV"
 
       # Against `vite preview`, which serves the production build through
       # workerd. The build step above is a turbo cache hit here.

@@ -37,10 +37,20 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: "pnpm preview",
+          // Fresh local D1 schema, then the production build in workerd.
+          command: "pnpm db:migrate:local && pnpm preview",
           url: `http://localhost:${PREVIEW_PORT}/api/health`,
           reuseExistingServer: !isCI,
           timeout: 60_000,
+          // Passed into the Worker (CLOUDFLARE_INCLUDE_PROCESS_ENV): the
+          // origin it's served from, where to send email, and the rate-limit
+          // bypass, since the suite signs in more often than the limit allows.
+          env: {
+            CLOUDFLARE_INCLUDE_PROCESS_ENV: "true",
+            APP_BASE_URL: `http://localhost:${PREVIEW_PORT}`,
+            MAILPIT_URL: process.env.MAILPIT_URL ?? "http://mailpit:8025",
+            E2E_BYPASS_RATE_LIMIT: "1",
+          },
         },
       }),
 });

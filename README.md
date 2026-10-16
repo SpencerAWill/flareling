@@ -201,7 +201,7 @@ Rules:
 | `pnpm lint` / `pnpm format` | Runs Biome |
 | `pnpm cf-typegen` | Regenerates binding types from each `wrangler.jsonc` (`wrangler types`) |
 | `pnpm db:generate` | Generates a D1 migration from changes to `libs/db/src/schema.ts` |
-| `pnpm db:migrate:local` 🚧 | Applies migrations to the local D1 database (once an app binds D1) |
+| `pnpm --filter @flareling/web db:migrate:local` | Applies `libs/db`'s migrations to the app's local D1 (the E2E suite does this itself) |
 | `pnpm db:studio` 🚧 | Opens Drizzle Studio against local data |
 | `pnpm test:coverage` | Runs the unit and integration tests with Istanbul coverage (a report, with no thresholds) |
 | `pnpm test:mutation` | Runs Stryker over the pure modules listed in `stryker.config.mjs` (a report, never a gate) |
