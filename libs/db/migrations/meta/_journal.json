@@ -8,6 +8,20 @@
       "when": 1792167067903,
       "tag": "0000_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792169046160,
+      "tag": "0001_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792169058685,
+      "tag": "0002_rbac_seed",
+      "breakpoints": true
     }
   ]
 }
