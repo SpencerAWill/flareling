@@ -38,7 +38,7 @@ function Callback() {
     }
     await afterSessionChange(
       router,
-      next && isSafeRedirect(next) ? next : "/account",
+      next && isSafeRedirect(next) ? next : "/my/account",
     );
   }
 

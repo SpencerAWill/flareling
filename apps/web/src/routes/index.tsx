@@ -13,7 +13,7 @@ function Home() {
         <code className="font-mono text-base">apps/web/src/routes</code> to get
         started.
       </p>
-      <Link to="/account" className="self-start underline">
+      <Link to="/my/account" className="self-start underline">
         Your account
       </Link>
     </main>

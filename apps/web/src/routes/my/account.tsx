@@ -9,7 +9,7 @@ import {
   signOutFn,
 } from "#/server/auth/fns.ts";
 
-export const Route = createFileRoute("/account")({
+export const Route = createFileRoute("/my/account")({
   beforeLoad: ({ context, location }) => ({
     principal: requireSignedIn(context.principal, location),
   }),

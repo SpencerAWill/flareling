@@ -32,12 +32,14 @@ describe("web worker", () => {
     },
   );
 
-  it("sends anonymous visitors from /account to sign in, and back after", async () => {
-    const res = await exports.default.fetch("https://example.com/account", {
+  it("sends anonymous visitors from /my/account to sign in, and back after", async () => {
+    const res = await exports.default.fetch("https://example.com/my/account", {
       redirect: "manual",
     });
     expect(res.status).toBe(307);
-    expect(res.headers.get("Location")).toBe("/sign-in?redirect=%2Faccount");
+    expect(res.headers.get("Location")).toBe(
+      "/sign-in?redirect=%2Fmy%2Faccount",
+    );
     await res.text();
   });
 

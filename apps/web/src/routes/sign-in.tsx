@@ -20,7 +20,7 @@ import {
 export const Route = createFileRoute("/sign-in")({
   validateSearch: z.object({ redirect: z.string().optional() }),
   beforeLoad: ({ context }) => {
-    if (context.principal) throw redirect({ to: "/account" });
+    if (context.principal) throw redirect({ to: "/my/account" });
   },
   loader: () => getSignInConfigFn(),
   head: () => ({ meta: [{ title: "Sign in · Flareling" }] }),
@@ -62,7 +62,7 @@ function SignIn() {
     if (!result.ok) throw new Error(result.reason);
     await afterSessionChange(
       router,
-      next && isSafeRedirect(next) ? next : "/account",
+      next && isSafeRedirect(next) ? next : "/my/account",
     );
   }
 

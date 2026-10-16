@@ -30,7 +30,7 @@ test("adds a passkey, then signs in with it", async ({ page }, testInfo) => {
   await page.goto(link.pathname + link.search);
   await waitForHydration(page);
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/my\/account$/);
   await waitForHydration(page);
 
   await page.getByRole("button", { name: "Add a passkey" }).click();
@@ -49,6 +49,6 @@ test("adds a passkey, then signs in with it", async ({ page }, testInfo) => {
     .getByRole("button", { name: "Sign in with a passkey" })
     .click({ timeout: 2000 })
     .catch(() => {});
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/my\/account$/);
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
 });

@@ -324,6 +324,9 @@ catalogs:
     storybook:
       specifier: ^10.6.1
       version: 10.6.1
+    stripe:
+      specifier: ^23.0.0
+      version: 23.0.0
     tailwind-merge:
       specifier: ^3.7.0
       version: 3.7.0
@@ -585,6 +588,52 @@ importers:
       fast-check:
         specifier: 'catalog:'
         version: 4.10.2
+      msw:
+        specifier: 'catalog:'
+        version: 3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-istanbul@5.0.3)(@vitest/ui@5.0.3)(msw@3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+
+  libs/billing:
+    dependencies:
+      '@flareling/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@flareling/core':
+        specifier: workspace:*
+        version: link:../core
+      '@flareling/db':
+        specifier: workspace:*
+        version: link:../db
+      '@flareling/log':
+        specifier: workspace:*
+        version: link:../log
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@opentelemetry/api@1.9.1)
+      stripe:
+        specifier: 'catalog:'
+        version: 23.0.0(@types/node@24.19.1)
+    devDependencies:
+      '@cloudflare/vitest-plugin':
+        specifier: 'catalog:'
+        version: 1.4.0(@types/node@24.19.1)(vitest@5.0.3)
+      '@flareling/config':
+        specifier: workspace:*
+        version: link:../../tooling/config
+      '@msw/cloudflare':
+        specifier: 'catalog:'
+        version: 0.2.0(msw@3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(supports-color@10.2.2)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.1
+      '@vitest/coverage-istanbul':
+        specifier: 'catalog:'
+        version: 5.0.3(vitest@5.0.3)
       msw:
         specifier: 'catalog:'
         version: 3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -5808,6 +5857,15 @@ packages:
   strip-json-comments@5.0.3:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
+
+  stripe@23.0.0:
+    resolution: {integrity: sha512-MDE2A5ZVVluYURORaZEVghSmnLJc3w6aHAlZSxDQMsOjOb3V0O6ro/CiaeFlJS4N7uIVmsg98ocRsPmUK6YfyA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@types/node': '>=20'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   supports-color@10.2.2:
     resolution: {integrity: sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g==}
@@ -11262,6 +11320,10 @@ snapshots:
   strip-json-comments@3.1.1: {}
 
   strip-json-comments@5.0.3: {}
+
+  stripe@23.0.0(@types/node@24.19.1):
+    optionalDependencies:
+      '@types/node': 24.19.1
 
   supports-color@10.2.2: {}
 
