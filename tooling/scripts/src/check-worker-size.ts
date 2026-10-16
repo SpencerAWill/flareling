@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 /**
- * Fails when a Worker's compressed upload exceeds its size budget.
+ * Fails when a Worker's upload is too large.
  *
  * Run from an app directory after `vite build`, as that app's `size` script.
- * It asks Wrangler for a dry-run deploy and reads the gzip total Wrangler
- * reports, which is the figure Cloudflare enforces its limit against. The
- * Workers Free plan caps a Worker at 3 MB compressed (Paid: 10 MB), and the
- * default budget sits below the Free cap so the template deploys on any
- * account. An app can pass `--budget-kib <n>` to set a tighter budget.
+ * It asks Wrangler for a dry-run deploy and reads the totals Wrangler reports.
+ * Two checks (https://developers.cloudflare.com/workers/platform/limits/):
  *
- * If Wrangler changes its output and the total cannot be found, this fails
+ *   - The platform limit: 64 MiB uncompressed. There is no compressed limit.
+ *   - A gzip budget (default 2.5 MiB), as a proxy for startup time. A Worker's
+ *     global scope must finish within 1 s (error 10021), separately from the
+ *     per-request CPU limit, and bundle size is what grows it. An app can pass
+ *     `--budget-kib <n>` to set its own.
+ *
+ * If Wrangler changes its output and the totals can't be found, this fails
  * rather than passing, so the check can never silently stop checking.
  */
 import { spawnSync } from "node:child_process";
@@ -68,7 +71,12 @@ console.log(summary);
 if (process.env.GITHUB_STEP_SUMMARY) {
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, `- ${summary}\n`);
 }
+const PLATFORM_LIMIT_KIB = 64 * 1024;
+if (rawKib > PLATFORM_LIMIT_KIB) {
+  console.error(`${app} is over Workers' 64 MiB uncompressed limit.`);
+  process.exit(1);
+}
 if (gzipKib > budgetKib) {
-  console.error(`${app} is over its Worker size budget.`);
+  console.error(`${app} is over its gzip size budget.`);
   process.exit(1);
 }

@@ -17,6 +17,6 @@ User-facing apps use TanStack Start (React 19, Vite, Tailwind 4) deployed with `
 
 - Most primitives are free at rest, and service bindings add no network hop or extra invocation.
 - `pnpm dev` runs server code in workerd, the production runtime, so a Node-only API fails locally instead of after deploy.
-- Workers' limits become design constraints: bundle size (3 MB compressed on Free, checked by `pnpm size`), CPU time per request, and D1's 100-bound-parameter cap on statements.
+- Workers' limits become design constraints: CPU time per request, startup time (checked indirectly by `pnpm size`), D1's per-statement and per-request limits, and daily quotas. See [platform-limits.md](../platform-limits.md) and [ADR 0016](./0016-target-workers-paid.md).
 - Bindings exist only inside a request, queue, or scheduled handler, so `env` is never read at module scope.
 - `compatibility_date` is pinned and moved deliberately, as a tested upgrade.

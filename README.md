@@ -197,7 +197,7 @@ Rules:
 | `pnpm verify` | Biome, sherif, knip, typecheck, tests, and boundaries: the same gate CI runs |
 | `pnpm test` | Runs unit and integration tests in the Workers runtime |
 | `pnpm test:e2e` | Builds, then runs Playwright with axe against the production build (desktop and mobile projects). The dev container installs the browsers; elsewhere run `pnpm --filter @flareling/web test:e2e:install` once. UI mode: `pnpm --filter @flareling/web test:e2e:ui`, on port 9323 |
-| `pnpm size` | Builds, then fails if any Worker's gzip upload is over its budget (below the Free plan's 3 MB cap) |
+| `pnpm size` | Builds, then fails if any Worker is over Workers' 64 MiB uncompressed limit or its gzip budget (a proxy for the 1 s startup limit) |
 | `pnpm lint` / `pnpm format` | Runs Biome |
 | `pnpm cf-typegen` | Regenerates binding types from each `wrangler.jsonc` (`wrangler types`) |
 | `pnpm db:generate` | Generates a D1 migration from changes to `libs/db/src/schema.ts` |

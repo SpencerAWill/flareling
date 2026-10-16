@@ -1,0 +1,15 @@
+# Headers for static assets. Workers Assets serves these files before the
+# Worker runs, so Start's middleware (src/server/security-headers.ts), which
+# sets headers on every Worker response, never sees them. Keep the overlapping
+# values in step with that file. At most 100 rules.
+# https://developers.cloudflare.com/workers/static-assets/headers/
+
+/*
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Vite's build output is content-hashed, so a file at a given URL never
+# changes: browsers and the CDN can keep it for a year.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

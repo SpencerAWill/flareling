@@ -37,3 +37,4 @@ Small, easily reversed choices don't need one. When in doubt, write the short ve
 | [0013](./0013-shadcn-on-base-ui.md) | shadcn/ui on Base UI for components | Accepted |
 | [0014](./0014-security-headers-now-csp-later.md) | Security headers now, script CSP later | Accepted |
 | [0015](./0015-email-behind-an-interface.md) | Email behind an interface, provider decided later | Accepted |
+| [0016](./0016-target-workers-paid.md) | Target Workers Paid for deployed environments | Accepted |
