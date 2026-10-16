@@ -221,7 +221,7 @@ Pre-commit hooks scan staged changes for secrets with gitleaks and run `biome ch
 | Dev | Every push to `main`, after the checks pass | `flareling-dev-web`, `flareling-dev-jobs` | `dev` Pulumi stack |
 | Production | The same run, once a reviewer approves `deploy: prod` | `flareling-prod-web`, `flareling-prod-jobs` | `prod` Pulumi stack |
 
-There are no Wrangler environments (`env.*`). Each app has one committed `wrangler.jsonc` with the dev stack's names, and a deploy points it at its stack with `sync-env` (see [Cloudflare](#cloudflare)). Deploys are off until the `DEPLOYS_ENABLED` repo variable is `true` (`deploysEnabled` in infra/github), because a deployed environment won't start without an email provider ([ADR 0015](./docs/adr/0015-email-behind-an-interface.md)).
+There are no Wrangler environments (`env.*`). Each app has one committed `wrangler.jsonc` with the dev stack's names, and a deploy points it at its stack with `sync-env` (see [Cloudflare](#cloudflare)). Deploys are off until the `DEPLOYS_ENABLED` repo variable is `true` (`deploysEnabled` in infra/github). A deployed environment won't start without an email transport ([ADR 0015](./docs/adr/0015-email-behind-an-interface.md)): dev uses an outbox at `/dev/outbox` behind Cloudflare Access instead of sending ([ADR 0022](./docs/adr/0022-dev-email-outbox.md)), and prod needs a provider.
 
 Each deploy (`.github/workflows/deploy.yml`, one job per environment) runs in a fixed order:
 
@@ -273,6 +273,7 @@ Each stack (`dev`, `prod`) gets a baseline set of resources, all free at rest:
 | Queue | `<prefix>-jobs-dlq` | Jobs that exhausted their retries |
 | Turnstile widget | `<prefix>-web sign-in` | The sign-in form's bot check, for the stack's hostname. Its site key and secret reach `apps/web` through `deploy.yml` |
 | Custom domain | the stack's `hostname` | Points at `<prefix>-web` once `webDeployed` is set |
+| Access application | `<prefix>-web outbox` | Dev only (`emailOutbox`): limits `/dev/outbox` to `outboxViewers` |
 
 `<prefix>` is `resourcePrefix` in the stack config (`flareling-dev`, `flareling-prod`). Data resources are `protect`ed in prod (`protectData`). The stack outputs (`d1DatabaseId`, `kvNamespaceId`, `r2FilesBucketName`, `jobsQueueName`, and so on) are the contract with Wrangler.
 

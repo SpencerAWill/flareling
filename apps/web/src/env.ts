@@ -30,6 +30,13 @@ const getVars = defineEnv({
   STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional(),
   /** Local development and tests: stripe-mock (`http://stripe-mock:12111`). */
   STRIPE_API_BASE: z.url().optional(),
+  /** A deployed dev environment's email goes to /dev/outbox instead of
+   *  being sent, behind Cloudflare Access (docs/adr/0022-dev-email-outbox.md).
+   *  Set per stack by sync-env, with the Access organization's domain and the
+   *  outbox application's audience tag, which the page verifies tokens for. */
+  EMAIL_OUTBOX: z.literal("1").optional(),
+  ACCESS_TEAM_DOMAIN: z.string().endsWith(".cloudflareaccess.com").optional(),
+  ACCESS_OUTBOX_AUD: z.string().min(1).optional(),
   /** E2E suites only. libs/auth ignores it on https. */
   E2E_BYPASS_RATE_LIMIT: z.literal("1").optional(),
 });
@@ -53,6 +60,9 @@ export function configurationProblems(
         | "STRIPE_SECRET_KEY"
         | "STRIPE_WEBHOOK_SECRET"
         | "STRIPE_API_BASE"
+        | "EMAIL_OUTBOX"
+        | "ACCESS_TEAM_DOMAIN"
+        | "ACCESS_OUTBOX_AUD"
       >
     >,
 ): string[] {
@@ -72,9 +82,19 @@ export function configurationProblems(
     );
   }
   const deployed = vars.APP_BASE_URL.startsWith("https://");
-  if (deployed && !vars.MAILPIT_URL) {
+  if (deployed && !vars.MAILPIT_URL && !vars.EMAIL_OUTBOX) {
     problems.push(
       "No email transport is configured, so nobody could sign in. Choose a provider (docs/adr/0015-email-behind-an-interface.md).",
+    );
+  }
+  // The outbox holds working sign-in links; without Access's settings the
+  // page can't check who is reading them, so it would refuse everyone.
+  if (
+    vars.EMAIL_OUTBOX &&
+    !(vars.ACCESS_TEAM_DOMAIN && vars.ACCESS_OUTBOX_AUD)
+  ) {
+    problems.push(
+      "EMAIL_OUTBOX needs ACCESS_TEAM_DOMAIN and ACCESS_OUTBOX_AUD (docs/adr/0022-dev-email-outbox.md).",
     );
   }
   if (deployed && vars.MAILPIT_URL) {

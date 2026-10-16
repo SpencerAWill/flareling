@@ -8,8 +8,9 @@
  * rows go in batches of `batchSize`, picked by a subquery on the cutoff
  * column, which must be indexed (retention.test.ts checks the query plan),
  * and a run stops after `maxBatches`. What's left goes on the next run, and
- * `complete: false` says so. The defaults keep a four-table sweep at 40
- * queries, inside Free's 50.
+ * `complete: false` says so. The defaults keep the five-table sweep in
+ * apps/jobs at 40 queries, inside Free's 50; lower `maxBatches` when adding
+ * a table to it.
  */
 import { lt } from "drizzle-orm";
 import type { AnySQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
@@ -21,7 +22,7 @@ type TableWithId = SQLiteTable & { id: AnySQLiteColumn };
 export interface DeleteBeforeOptions {
   /** Rows per DELETE. */
   readonly batchSize?: number;
-  /** DELETEs per call; at the defaults, up to 10,000 rows. */
+  /** DELETEs per call; at the defaults, up to 8,000 rows. */
   readonly maxBatches?: number;
 }
 
@@ -59,7 +60,7 @@ export async function deleteBefore(
   table: TableWithId,
   column: AnySQLiteColumn,
   cutoff: Date,
-  { batchSize = 1000, maxBatches = 10 }: DeleteBeforeOptions = {},
+  { batchSize = 1000, maxBatches = 8 }: DeleteBeforeOptions = {},
 ): Promise<DeleteBeforeResult> {
   let deleted = 0;
   // Sequential on purpose: each batch's subquery has to see the previous

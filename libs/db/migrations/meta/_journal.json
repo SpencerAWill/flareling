@@ -36,6 +36,13 @@
       "when": 1792175577790,
       "tag": "0004_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792185963961,
+      "tag": "0005_email_outbox",
+      "breakpoints": true
     }
   ]
 }

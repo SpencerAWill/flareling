@@ -18,6 +18,7 @@
   "dependencies": {
     "@flareling/auth": "workspace:*",
     "@flareling/billing": "workspace:*",
+    "@flareling/email": "workspace:*",
     "@flareling/env": "workspace:*",
     "@flareling/log": "workspace:*",
     "temporal-polyfill": "catalog:",

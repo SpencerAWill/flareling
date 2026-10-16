@@ -45,6 +45,10 @@ export interface StackOutputs {
   readonly webBaseUrl: string;
   readonly webauthnRpId: string;
   readonly emailFrom: string;
+  /** "1" on a stack with the dev outbox (empty otherwise), and its Access app. */
+  readonly emailOutbox: string;
+  readonly accessTeamDomain: string;
+  readonly accessOutboxAud: string;
 }
 
 export const OUTPUT_KEYS = {
@@ -57,7 +61,13 @@ export const OUTPUT_KEYS = {
   webBaseUrl: "string",
   webauthnRpId: "string",
   emailFrom: "string",
-} as const satisfies Record<keyof StackOutputs, "string" | "number">;
+  emailOutbox: "string?",
+  accessTeamDomain: "string?",
+  accessOutboxAud: "string?",
+} as const satisfies Record<
+  keyof StackOutputs,
+  "string" | "string?" | "number"
+>;
 
 /** D1 bindings, by binding name. */
 const D1: Record<string, (o: StackOutputs) => { id: string; name: string }> = {
@@ -80,6 +90,9 @@ const VARS: Record<string, (o: StackOutputs) => string> = {
   APP_BASE_URL: (o) => o.webBaseUrl,
   WEBAUTHN_RP_ID: (o) => o.webauthnRpId,
   EMAIL_FROM: (o) => o.emailFrom,
+  EMAIL_OUTBOX: (o) => o.emailOutbox,
+  ACCESS_TEAM_DOMAIN: (o) => o.accessTeamDomain,
+  ACCESS_OUTBOX_AUD: (o) => o.accessOutboxAud,
 };
 
 /** Whether deployed Workers keep their Cron Triggers (see the module doc). */
@@ -235,8 +248,13 @@ export function parseStackOutputs(json: unknown): StackOutputs {
     );
   }
   const record = json as Record<string, unknown>;
+  // "string?" may be empty (a stack without that feature); others may not.
   const problems = Object.entries(OUTPUT_KEYS)
-    .filter(([key, type]) => typeof record[key] !== type || record[key] === "")
+    .filter(([key, type]) =>
+      type === "string?"
+        ? typeof record[key] !== "string"
+        : typeof record[key] !== type || record[key] === "",
+    )
     .map(([key, type]) => `${key} (${type})`);
   if (problems.length > 0) {
     throw new SyncError(

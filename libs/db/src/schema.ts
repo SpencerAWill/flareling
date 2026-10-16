@@ -388,3 +388,25 @@ export const stripeEvents = sqliteTable(
   },
   (t) => [index("stripe_events_processed_at_idx").on(t.processedAt)],
 );
+
+// ── Email outbox ────────────────────────────────────────────────────────────
+
+/**
+ * Emails a deployed dev environment "sent", for reading at /dev/outbox behind
+ * Cloudflare Access instead of delivering them (docs/adr/0022-dev-email-outbox.md).
+ * Holds working sign-in links, so it is never used in prod, and rows are
+ * deleted after a day.
+ */
+export const emailOutbox = sqliteTable(
+  "email_outbox",
+  {
+    id: text("id").primaryKey().$defaultFn(newId),
+    kind: text("kind").notNull(),
+    to: text("to").notNull(),
+    subject: text("subject").notNull(),
+    text: text("text").notNull(),
+    html: text("html"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [index("email_outbox_created_at_idx").on(t.createdAt)],
+);

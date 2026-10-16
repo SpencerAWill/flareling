@@ -43,3 +43,4 @@ Small, easily reversed choices don't need one. When in doubt, write the short ve
 | [0019](./0019-own-auth-magic-links-passkeys-d1-sessions.md) | Our own auth: magic links, passkeys, sessions in D1, RBAC | Accepted |
 | [0020](./0020-target-workers-free.md) | Target Workers Free for deployed environments | Accepted |
 | [0021](./0021-one-pipeline-from-check-to-prod.md) | One pipeline from check to prod, with prod behind an approval | Accepted |
+| [0022](./0022-dev-email-outbox.md) | A dev email outbox behind Cloudflare Access | Accepted |

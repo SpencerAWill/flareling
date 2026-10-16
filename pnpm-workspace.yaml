@@ -101,6 +101,9 @@ catalog:
   # The SDK pins the Stripe API version, so upgrading it is an API upgrade:
   # read Stripe's changelog for the versions in between.
   stripe: ^23.0.0
+  # Verifies Cloudflare Access's tokens on apps/web's /dev/outbox (WebCrypto,
+  # so it runs in Workers). What Cloudflare's Access docs use.
+  jose: ^6.2.12
 
   # Cloudflare
   # Kept on the wrangler version @cloudflare/vitest-plugin and vite-plugin pin,

@@ -300,6 +300,9 @@ catalogs:
     inquirer:
       specifier: ^12.11.1
       version: 12.11.1
+    jose:
+      specifier: ^6.2.12
+      version: 6.2.12
     jsonc-parser:
       specifier: ^3.3.1
       version: 3.3.1
@@ -428,6 +431,9 @@ importers:
       '@flareling/billing':
         specifier: workspace:*
         version: link:../../libs/billing
+      '@flareling/email':
+        specifier: workspace:*
+        version: link:../../libs/email
       '@flareling/env':
         specifier: workspace:*
         version: link:../../libs/env
@@ -507,6 +513,9 @@ importers:
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.60(esbuild@0.28.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.12)(supports-color@10.2.2)(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      jose:
+        specifier: 'catalog:'
+        version: 6.2.12
       react:
         specifier: 'catalog:'
         version: 19.3.0
@@ -532,6 +541,9 @@ importers:
       '@flareling/scripts':
         specifier: workspace:*
         version: link:../../tooling/scripts
+      '@msw/cloudflare':
+        specifier: 'catalog:'
+        version: 0.2.0(msw@3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(supports-color@10.2.2)
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.0
@@ -553,6 +565,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 5.0.3(vitest@5.0.3)
+      msw:
+        specifier: 'catalog:'
+        version: 3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
@@ -772,9 +787,15 @@ importers:
 
   libs/email:
     dependencies:
+      '@flareling/db':
+        specifier: workspace:*
+        version: link:../db
       '@flareling/log':
         specifier: workspace:*
         version: link:../log
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@opentelemetry/api@1.9.1)
     devDependencies:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'
@@ -4924,6 +4945,9 @@ packages:
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
+
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
   js-md4@0.3.2:
     resolution: {integrity: sha512-/GDnfQYsltsjRswQhN9fhv3EMw2sCpUdrdxyWDOUK7eyD++r3gRhzgiQgc/x4MAv2i1iuQ4lxO5mvqM3vj4bwA==}
@@ -10294,6 +10318,8 @@ snapshots:
   jiti@2.6.1: {}
 
   jiti@2.7.0: {}
+
+  jose@6.2.12: {}
 
   js-md4@0.3.2: {}
 

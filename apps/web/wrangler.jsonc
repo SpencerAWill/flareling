@@ -87,6 +87,11 @@
     // domain of it. A passkey made for one RP ID doesn't work on another.
     "WEBAUTHN_RP_ID": "localhost",
     "EMAIL_FROM": "noreply@flareling.localhost",
-    "EMAIL_FROM_NAME": "Flareling"
+    "EMAIL_FROM_NAME": "Flareling",
+    // The deployed dev outbox (docs/adr/0022-dev-email-outbox.md), set per
+    // stack by sync-env. Empty means off; local development uses Mailpit.
+    "EMAIL_OUTBOX": "",
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_OUTBOX_AUD": ""
   }
 }

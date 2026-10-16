@@ -1,8 +1,9 @@
 /**
  * Sending email, behind an interface so the provider can be chosen later
  * (docs/adr/0015-email-behind-an-interface.md). Today the only implementation
- * is Mailpit, the dev container's inbox. A provider adds one implementation
- * here and one branch in `createEmailSender`.
+ * is Mailpit, the dev container's inbox, plus the outbox a deployed dev
+ * environment writes to (outbox.ts). A provider adds one implementation here
+ * and one branch in `createEmailSender`.
  *
  * There is deliberately no "log it instead" fallback. In ucmc.spencerwill.com
  * one either dumped magic-link URLs into dashboard-readable Workers Logs or
@@ -13,6 +14,7 @@
  * the content.
  */
 import { log } from "@flareling/log";
+import { storeInOutbox } from "./outbox.ts";
 
 export interface EmailMessage {
   /** What the email is, for logs and metrics (`auth.magic_link`). */
@@ -33,13 +35,18 @@ export interface EmailConfig {
   readonly fromName?: string;
   /** Mailpit's HTTP base URL (`http://mailpit:8025` in the dev container). */
   readonly mailpitUrl?: string;
+  /**
+   * Store messages in the outbox (D1) instead of sending them. Deployed dev
+   * only, behind Cloudflare Access; apps/web's env checks refuse it otherwise.
+   */
+  readonly outbox?: boolean;
 }
 
 /** No email transport is configured, so nothing can be sent. */
 export class EmailNotConfiguredError extends Error {
   constructor() {
     super(
-      "No email transport is configured. Set MAILPIT_URL for local development.",
+      "No email transport is configured. Set MAILPIT_URL for local development, or EMAIL_OUTBOX on a deployed dev environment.",
     );
     this.name = "EmailNotConfiguredError";
   }
@@ -62,6 +69,14 @@ export class EmailSendError extends Error {
 export function createEmailSender(config: EmailConfig): EmailSender {
   if (config.mailpitUrl) {
     return mailpitSender(config.mailpitUrl, config);
+  }
+  if (config.outbox) {
+    return {
+      async send(message) {
+        await storeInOutbox(message);
+        log.info("email.sent", { kind: message.kind, provider: "outbox" });
+      },
+    };
   }
   return {
     send: () => Promise.reject(new EmailNotConfiguredError()),

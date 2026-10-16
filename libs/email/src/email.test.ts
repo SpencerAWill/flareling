@@ -13,7 +13,9 @@ import {
   createEmailSender,
   EmailNotConfiguredError,
   EmailSendError,
+  listOutbox,
 } from "./index.ts";
+import { storeInOutbox } from "./outbox.ts";
 
 // Outbound requests from the Worker are intercepted, so nothing reaches a
 // real Mailpit, and a request no handler declares fails the test.
@@ -114,5 +116,59 @@ describe("with no transport configured", () => {
     await expect(
       createEmailSender({ from: "a@b.co" }).send(message),
     ).rejects.toBeInstanceOf(EmailNotConfiguredError);
+  });
+});
+
+describe("the outbox", () => {
+  it("stores the message instead of sending it, and lists newest first", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    const sender = createEmailSender({
+      from: "noreply@example.com",
+      outbox: true,
+    });
+    await sender.send({ ...message, subject: "First" });
+    await sender.send({ ...message, subject: "Second" });
+
+    const emails = await listOutbox();
+    expect(emails.map((e) => e.subject).slice(0, 2)).toEqual([
+      "Second",
+      "First",
+    ]);
+    expect(emails[0]).toMatchObject({
+      kind: "auth.magic_link",
+      to: "alice@example.com",
+      text: "Use this link",
+    });
+  });
+
+  it("prefers Mailpit when both are configured (local development)", async () => {
+    network.use(
+      http.post(`${MAILPIT}/api/v1/send`, () => HttpResponse.json({ ID: "x" })),
+    );
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await createEmailSender({
+      from: "a@b.co",
+      mailpitUrl: MAILPIT,
+      outbox: true,
+    }).send(message);
+    expect(info).toHaveBeenCalledWith(
+      "email.sent",
+      expect.objectContaining({ provider: "mailpit" }),
+    );
+  });
+
+  it("forgets emails after a day", async () => {
+    const day = 24 * 60 * 60 * 1000;
+    await storeInOutbox(
+      { ...message, subject: "Old" },
+      new Date(Date.now() - day - 1000),
+    );
+    await storeInOutbox(
+      { ...message, subject: "Recent" },
+      new Date(Date.now() - day + 60_000),
+    );
+    const subjects = (await listOutbox()).map((e) => e.subject);
+    expect(subjects).toContain("Recent");
+    expect(subjects).not.toContain("Old");
   });
 });

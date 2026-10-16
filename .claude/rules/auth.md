@@ -42,4 +42,5 @@ The design and why it's ours: `docs/adr/0019-own-auth-magic-links-passkeys-d1-se
 - **A permission** is a migration (a row in `permissions`, plus grants in `role_permissions`), not just a string in code.
 - **A table with expiring rows** needs an index on its expiry column and an entry in a sweep (`libs/auth/src/sweep.ts`, run daily by `apps/jobs`). `libs/db/src/retention.test.ts` checks the delete uses the index; add the table there too.
 - **A new cookie** uses `cookieName()` (gets `__Host-` over https) and `isSecure()`.
+- **The dev outbox** (`/dev/outbox`, ADR 0022) holds working sign-in links. Keep both locks: Access in front, and `accessViewer`'s own token check in the handler. Never enable it for prod, and never render its content unescaped or link to other origins.
 - **Audit** security-relevant changes with `recordAudit` (sign-in, passkey added or removed, role changes).

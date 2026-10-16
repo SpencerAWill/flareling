@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as DevOutboxRouteImport } from './routes/dev/outbox'
 import { Route as MyAccountRouteImport } from './routes/my/account'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as WWorkspaceIdBillingRouteImport } from './routes/w/$workspaceId/billing'
@@ -37,6 +38,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevOutboxRoute = DevOutboxRouteImport.update({
+  id: '/dev/outbox',
+  path: '/dev/outbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MyAccountRoute = MyAccountRouteImport.update({
   id: '/my/account',
   path: '/my/account',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dev/outbox': typeof DevOutboxRoute
   '/my/account': typeof MyAccountRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dev/outbox': typeof DevOutboxRoute
   '/my/account': typeof MyAccountRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dev/outbox': typeof DevOutboxRoute
   '/my/account': typeof MyAccountRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/api/health'
     | '/auth/callback'
+    | '/dev/outbox'
     | '/my/account'
     | '/api/stripe/webhook'
     | '/w/$workspaceId/billing'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/api/health'
     | '/auth/callback'
+    | '/dev/outbox'
     | '/my/account'
     | '/api/stripe/webhook'
     | '/w/$workspaceId/billing'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/api/health'
     | '/auth/callback'
+    | '/dev/outbox'
     | '/my/account'
     | '/api/stripe/webhook'
     | '/w/$workspaceId/billing'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   ApiHealthRoute: typeof ApiHealthRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  DevOutboxRoute: typeof DevOutboxRoute
   MyAccountRoute: typeof MyAccountRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   WWorkspaceIdBillingRoute: typeof WWorkspaceIdBillingRoute
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/outbox': {
+      id: '/dev/outbox'
+      path: '/dev/outbox'
+      fullPath: '/dev/outbox'
+      preLoaderRoute: typeof DevOutboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my/account': {
       id: '/my/account'
       path: '/my/account'
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   ApiHealthRoute: ApiHealthRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  DevOutboxRoute: DevOutboxRoute,
   MyAccountRoute: MyAccountRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   WWorkspaceIdBillingRoute: WWorkspaceIdBillingRoute,

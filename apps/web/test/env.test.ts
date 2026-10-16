@@ -76,4 +76,32 @@ describe("configurationProblems", () => {
       expect.stringContaining("STRIPE_API_BASE is for local development only"),
     ]);
   });
+
+  describe("the dev outbox", () => {
+    const { MAILPIT_URL: _, ...rest } = local;
+    const deployed = { ...rest, APP_BASE_URL: "https://dev.example.com" };
+
+    it("counts as an email transport for a deployed environment", () => {
+      expect(
+        configurationProblems({
+          ...deployed,
+          EMAIL_OUTBOX: "1",
+          ACCESS_TEAM_DOMAIN: "team.cloudflareaccess.com",
+          ACCESS_OUTBOX_AUD: "aud",
+        }),
+      ).toEqual([]);
+    });
+
+    it("needs both Access settings", () => {
+      expect(
+        configurationProblems({
+          ...deployed,
+          EMAIL_OUTBOX: "1",
+          ACCESS_OUTBOX_AUD: "aud",
+        }),
+      ).toEqual([
+        expect.stringContaining("ACCESS_TEAM_DOMAIN and ACCESS_OUTBOX_AUD"),
+      ]);
+    });
+  });
 });

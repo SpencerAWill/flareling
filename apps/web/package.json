@@ -37,6 +37,7 @@
     "@simplewebauthn/browser": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "jose": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "catalog:"
@@ -47,6 +48,7 @@
     "@cloudflare/vitest-plugin": "catalog:",
     "@flareling/config": "workspace:*",
     "@flareling/scripts": "workspace:*",
+    "@msw/cloudflare": "catalog:",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
@@ -54,6 +56,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "msw": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

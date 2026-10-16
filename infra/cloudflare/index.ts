@@ -14,6 +14,11 @@ import {
   jobsQueue,
   kv,
 } from "./src/data.ts";
+import {
+  accessOutboxAud,
+  accessTeamDomain,
+  emailOutboxEnabled,
+} from "./src/outbox.ts";
 import { turnstileSecretKey, turnstileSiteKey } from "./src/turnstile.ts";
 
 /**
@@ -35,7 +40,14 @@ export {
   webBaseUrl,
 };
 export const webDomainId = webDomain?.id;
-export { turnstileSecretKey, turnstileSiteKey };
+export {
+  accessOutboxAud,
+  accessTeamDomain,
+  turnstileSecretKey,
+  turnstileSiteKey,
+};
+/** "1" turns apps/web's outbox transport on (sync-env's EMAIL_OUTBOX). */
+export const emailOutbox = emailOutboxEnabled ? "1" : "";
 
 export const cloudflareAccountId = accountId;
 export const zoneName = zone.name;

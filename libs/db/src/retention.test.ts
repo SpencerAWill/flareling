@@ -81,6 +81,7 @@ describe("deleteBefore", () => {
       schema.webauthnChallenges.expiresAt,
     ],
     ["stripe_events", schema.stripeEvents, schema.stripeEvents.processedAt],
+    ["email_outbox", schema.emailOutbox, schema.emailOutbox.createdAt],
   ] as const)(
     "finds %s rows by index, not a table scan",
     async (name, table, column) => {

@@ -18,6 +18,9 @@ const prod = {
   webBaseUrl: "https://flareling.example.com",
   webauthnRpId: "flareling.example.com",
   emailFrom: "noreply@flareling.example.com",
+  emailOutbox: "",
+  accessTeamDomain: "",
+  accessOutboxAud: "",
 };
 
 const committed = (app: string) =>
@@ -44,6 +47,8 @@ describe("syncWranglerConfig on the committed configs", () => {
     assert.equal(config.vars.APP_BASE_URL, "https://flareling.example.com");
     assert.equal(config.vars.WEBAUTHN_RP_ID, "flareling.example.com");
     assert.equal(config.vars.EMAIL_FROM, "noreply@flareling.example.com");
+    // A stack without the outbox leaves it off.
+    assert.equal(config.vars.EMAIL_OUTBOX, "");
     // Not per stack: left as committed.
     assert.equal(config.vars.APP_NAME, "Flareling");
     // Comments survive.
@@ -112,6 +117,21 @@ describe("syncWranglerConfig refuses what it doesn't know", () => {
       () => syncWranglerConfig(`{ "name": `, "web", prod),
       SyncError,
     );
+  });
+});
+
+describe("syncWranglerConfig with the dev outbox", () => {
+  it("turns it on with its Access settings", () => {
+    const dev = {
+      ...prod,
+      emailOutbox: "1",
+      accessTeamDomain: "team.cloudflareaccess.com",
+      accessOutboxAud: "aud-tag",
+    };
+    const config = parse(syncWranglerConfig(committed("web"), "web", dev));
+    assert.equal(config.vars.EMAIL_OUTBOX, "1");
+    assert.equal(config.vars.ACCESS_TEAM_DOMAIN, "team.cloudflareaccess.com");
+    assert.equal(config.vars.ACCESS_OUTBOX_AUD, "aud-tag");
   });
 });
 

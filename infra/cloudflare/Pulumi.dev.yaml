@@ -10,3 +10,8 @@ config:
   flareling-cloudflare:protectData: "false"
   # AUTH_RATE_LIMITER's namespace; unique per stack (see src/config.ts).
   flareling-cloudflare:authRateLimitNamespaceId: "1001"
+  # Email goes to the outbox at /dev/outbox, behind Cloudflare Access, until a
+  # provider is chosen (docs/adr/0022-dev-email-outbox.md). Never in prod.
+  flareling-cloudflare:emailOutbox: "true"
+  flareling-cloudflare:outboxViewers: '["spencer.a.will@gmail.com"]'
+  # flareling-cloudflare:accessTeamDomain: <team>.cloudflareaccess.com
