@@ -99,7 +99,7 @@ updates:
 
   # Sidecar images in the dev container's compose file (Mailpit, stripe-mock).
   # CI's service containers pin the same images by digest and are bumped by
-  # hand alongside (.github/workflows/ci.yml).
+  # hand alongside (.github/workflows/cicd.yml).
   - package-ecosystem: docker-compose
     directory: /.devcontainer
     schedule:

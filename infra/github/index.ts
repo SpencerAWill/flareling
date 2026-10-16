@@ -4,6 +4,7 @@ import {
   cloudflareAccountId,
   cloudflareZoneDedicated,
   cloudflareZoneId,
+  deploysEnabled,
   features,
   prodReviewerIds,
   repositoryName,
@@ -49,6 +50,23 @@ const environments = features.environments
       return { name, environment };
     })
   : [];
+
+// Not a secret, so a plain repository variable on every plan. cicd.yml's
+// deploy jobs run only when it is "true".
+new github.ActionsVariable("deploys-enabled", {
+  repository: repository.name,
+  variableName: "DEPLOYS_ENABLED",
+  value: String(deploysEnabled),
+});
+
+// Whether `prod` really requires a reviewer. cicd.yml's `deploy: prod` runs
+// only when it does: on a plan without required reviewers the environment
+// gate doesn't exist, and every push to main would go straight to prod.
+new github.ActionsVariable("prod-approval-required", {
+  repository: repository.name,
+  variableName: "PROD_APPROVAL_REQUIRED",
+  value: String(features.requiredReviewers && prodReviewerIds.length > 0),
+});
 
 if (cloudflareAccountId && !cloudflareZoneId) {
   throw new Error(

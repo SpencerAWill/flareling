@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "size": "check-worker-size"
+    "size": "check-worker-size",
+    "rollback": "wrangler rollback --yes"
   },
   "dependencies": {
     "@flareling/auth": "workspace:*",

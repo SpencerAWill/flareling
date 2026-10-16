@@ -214,33 +214,40 @@ Pre-commit hooks scan staged changes for secrets with gitleaks and run `biome ch
 
 ## Environments and deployment
 
-| Environment | Trigger | Wrangler env | Data |
+| Environment | Trigger | Workers | Data |
 | --- | --- | --- | --- |
-| Local | `pnpm dev` | top level | Miniflare, persisted in `.wrangler/` |
-| Preview 🚧 | Pull request | top level, uploaded as a version | Shared `dev` resources |
-| Dev | Merge to `main` | top level | Dev resources (`dev` Pulumi stack) |
-| Production | Manual dispatch with approval | `env.production` | Production resources (`prod` Pulumi stack) |
+| Local | `pnpm dev` | Miniflare (`apps/jobs` runs beside `apps/web`) | Persisted in `.wrangler/` |
+| Preview 🚧 | Pull request | Previews of `apps/web` | Shared `dev` resources |
+| Dev | Every push to `main`, after the checks pass | `flareling-dev-web`, `flareling-dev-jobs` | `dev` Pulumi stack |
+| Production | The same run, once a reviewer approves `deploy: prod` | `flareling-prod-web`, `flareling-prod-jobs` | `prod` Pulumi stack |
 
-Each deploy runs in a fixed order:
+There are no Wrangler environments (`env.*`). Each app has one committed `wrangler.jsonc` with the dev stack's names, and a deploy points it at its stack with `sync-env` (see [Cloudflare](#cloudflare)). Deploys are off until the `DEPLOYS_ENABLED` repo variable is `true` (`deploysEnabled` in infra/github), because a deployed environment won't start without an email provider ([ADR 0015](./docs/adr/0015-email-behind-an-interface.md)).
+
+Each deploy (`.github/workflows/deploy.yml`, one job per environment) runs in a fixed order:
 
 1. **`pulumi up`** on `infra/cloudflare` creates or updates long-lived resources.
-2. **Sync IDs.** Pulumi stack outputs (D1 IDs, KV namespace IDs, bucket names) are written into each deployable's Wrangler config. Non-secret values are passed as `--var`, and secrets go through `wrangler-action`'s `secrets:`.
-3. **`wrangler d1 migrations apply --remote`** runs migrations before any code that depends on them.
-4. **`wrangler deploy`** deploys affected Workers only (Turborepo affected detection).
-5. **Smoke E2E** runs Playwright against the deployed URL, and a failure blocks promotion.
+2. **`sync-env`** writes the stack's outputs into each app's `wrangler.jsonc`: Worker names, D1 ids, queue names, the rate-limit namespace and per-stack vars.
+3. **Build** both apps with that config.
+4. **Record a D1 Time Travel bookmark**, the way back if a migration goes wrong, since migrations have no "down".
+5. **`wrangler d1 migrations apply --remote`** before any code that needs the new schema. Migrations only add (expand, then contract in a later release).
+6. **`wrangler deploy`** `apps/jobs`, then `apps/web` (consumers before producers), each with its secrets in the same upload (`--secrets-file`).
+7. **Smoke test:** the `@smoke` Playwright specs against the deployed site. Nothing signs in: deployed sign-in emails go to real inboxes.
+8. **Prod only, if the smoke test fails:** `wrangler rollback` of both Workers. Code only; D1 stays as migrated.
 
-Production deploys use the `prod` GitHub environment (with required reviewers where the plan allows; see [plan limits](#github-as-code)) and `concurrency` set to `cancel-in-progress: false` so a deploy is never cut off halfway. They also use Workers gradual deployments for percentage rollouts and instant rollback.
+Prod deploys are the commit dev just deployed and smoke-tested, rebuilt with prod config (a Worker version can't move between two Workers). They wait on the `prod` environment's required reviewer, which needs a public repo on GitHub Free. Each environment deploys one run at a time and is never cancelled halfway. Design and alternatives: [ADR 0021](./docs/adr/0021-one-pipeline-from-check-to-prod.md).
+
+A new stack's first deploy has no public URL yet: the custom domain can only point at a Worker that exists. Set `webDeployed: true` in that stack's config afterwards, and the next deploy attaches the hostname and runs the smoke test.
 
 ### GitHub Actions workflows
 
 | Workflow | Runs on | Does |
 | --- | --- | --- |
-| `ci.yml` | PRs (skips drafts) and pushes to `main` | Path filtering, `pnpm audit --prod`, a gitleaks scan of the full history, `pnpm verify`, a build, the Worker size budget, and Playwright with axe. 🚧 A `pulumi preview` of `infra/cloudflare` commented on the PR (skipped for forks) |
-| `workflow-lint` job in `ci.yml` | Workflow changes, and every push to `main` | actionlint and zizmor, from checksum-verified release binaries |
+| `cicd.yml` | PRs (skips drafts) and pushes to `main` | `check:` jobs: changed paths, `pnpm audit --prod`, a gitleaks scan of the full history, `pnpm verify` + build + size budget + Playwright with axe, and actionlint + zizmor. `required` aggregates them and is the one required status check. On `main`: `deploy: dev`, then `deploy: prod` after approval. 🚧 A `pulumi preview` on PRs |
+| `deploy.yml` | Called by `cicd.yml` | One environment's deploy, above |
 | `lint-pr.yml` | PR opened, edited, or updated | Runs commitlint on the PR title, which becomes the squash commit on `main` |
-| `preview.yml` 🚧 | PR opened or updated | Uploads preview versions of affected Workers and comments URLs |
-| `deploy.yml` 🚧 | Merge to `main` (dev), dispatch (prod) | The five-step deploy above |
 | `quality.yml` | Weekly schedule, and manual dispatch | Coverage and mutation testing reports as artifacts, with coverage in the run summary (informational, not gates) |
+
+Job names are `check: <what>` and `deploy: <environment>`. Rename them freely: the ruleset requires only `required`.
 
 CI secrets are scoped per GitHub environment where the plan allows, and fall back to repository secrets otherwise. `infra/github` creates and writes all of them except `PULUMI_ACCESS_TOKEN`, which is set by hand once. See [GitHub as code](#github-as-code).
 
@@ -317,7 +324,7 @@ GitHub gates several of these features by plan and visibility. Set `plan` and `v
 | Required reviewers on `prod` | ✓ | – | – | ✓ (org repos) |
 | Secret scanning and push protection | ✓ | – | – | With Secret Protection |
 
-On a private personal repo, nothing can require a second person to approve `prod`. The practical safeguard there is that only `main` can deploy, and only collaborators with write access can trigger the dispatch.
+On a private personal repo, nothing can require anyone to approve `prod`, so `deploy: prod` doesn't run at all: it runs only when the `PROD_APPROVAL_REQUIRED` variable (set by infra/github when a reviewer is configured) is `true`. A private repo on Free gets dev deploys only, until it goes public or adds its own manual prod path.
 
 #### Running it
 

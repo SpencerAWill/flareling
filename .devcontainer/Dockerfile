@@ -27,7 +27,7 @@ RUN corepack enable
 # gitleaks for the pre-commit secret scan (lint-staged.config.js). No dev
 # container feature verifies the binary it downloads, so it is fetched here from
 # the pinned release and checked against the SHA-256 published in that
-# release's checksums.txt. CI pins the same version in ci.yml; bump both.
+# release's checksums.txt. CI pins the same version in cicd.yml; bump both.
 ARG GITLEAKS_VERSION=8.30.1
 ARG TARGETARCH
 RUN set -eux; \

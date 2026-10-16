@@ -36,7 +36,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # libs/ui's stories run in Chromium. Same cache key as ci.yml, so a
+      # libs/ui's stories run in Chromium. Same cache key as cicd.yml, so a
       # browser download from a CI run on main is reused here.
       - name: Resolve Playwright version
         id: playwright

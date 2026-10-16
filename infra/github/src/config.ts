@@ -40,6 +40,9 @@ export const isTemplate = config.getBoolean("isTemplate") ?? false;
 export const requiredChecks =
   config.getObject<string[]>("requiredChecks") ?? [];
 
+/** Whether cicd.yml deploys main (the DEPLOYS_ENABLED repo variable). */
+export const deploysEnabled = config.getBoolean("deploysEnabled") ?? false;
+
 /** GitHub user IDs allowed to approve prod deploys, where the plan allows it. */
 export const prodReviewerIds =
   config.getObject<number[]>("prodReviewerIds") ?? [];

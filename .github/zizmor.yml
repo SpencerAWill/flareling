@@ -1,0 +1,11 @@
+# zizmor's configuration: every ignored finding, with why.
+# https://docs.zizmor.sh/configuration/
+rules:
+  # Wants `uses: $/...` (GitHub's self-repository syntax, July 2026) for the
+  # local reusable workflow in cicd.yml. actionlint 1.7.12 rejects that syntax
+  # (rhysd/actionlint#760). The risk the audit names, loading code cloned at
+  # runtime, is for local actions; a local reusable workflow is read from this
+  # repository at the run's commit. Re-enable when actionlint supports `$/`,
+  # and use it for any local action added before then.
+  self-repository:
+    disable: true

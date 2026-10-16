@@ -13,10 +13,16 @@ import * as pulumi from "@pulumi/pulumi";
  * when the zone is dedicated to this suite (`zoneDedicated`).
  */
 const tokenPermissions = {
-  // Used by Wrangler in the deploy workflow: upload Worker versions and apply
-  // D1 migrations. Everything long-lived is the infra token's job.
+  // Used by Wrangler in deploy.yml: upload Worker versions, apply D1
+  // migrations (and read Time Travel bookmarks), and attach apps/jobs as its
+  // queue's consumer. Everything long-lived is the infra token's job.
   deploy: {
-    account: ["Workers Scripts Write", "D1 Write", "Account Settings Read"],
+    account: [
+      "Workers Scripts Write",
+      "D1 Write",
+      "Queues Write",
+      "Account Settings Read",
+    ],
     zone: ["Workers Routes Write", "Zone Read"],
   },
   // Used by `pulumi up` on infra/cloudflare.

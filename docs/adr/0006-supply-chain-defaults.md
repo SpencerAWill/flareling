@@ -21,4 +21,4 @@ We will apply these defaults, and keep them when adding tools:
 
 - A just-released fix can't be installed for a week without a deliberate, documented `minimumReleaseAgeExclude` entry.
 - Some legitimate packages trip the trust policy (for example a maintenance release published without provenance after a newer line had it), and each one needs a reviewed exception.
-- Pins don't update themselves: Dependabot moves npm packages, Actions, dev container features, and compose images. The gitleaks version is bumped by hand in both `.devcontainer/Dockerfile` and `ci.yml`.
+- Pins don't update themselves: Dependabot moves npm packages, Actions, dev container features, and compose images. The gitleaks version is bumped by hand in both `.devcontainer/Dockerfile` and `cicd.yml`.

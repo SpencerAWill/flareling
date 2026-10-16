@@ -4,13 +4,22 @@ config:
   github:owner: SpencerAWill
   flareling-github:repository: flareling
   flareling-github:description: GitHub template for shipping a multi-app SaaS suite on Cloudflare
-  flareling-github:visibility: private
+  # Public so environments can require a reviewer before prod (GitHub Free
+  # offers that only on public repos), and so Actions minutes are free.
+  flareling-github:visibility: public
   # free | pro | team | enterprise. Decides which gated GitHub features are
   # managed; see src/config.ts.
   flareling-github:plan: free
   flareling-github:isTemplate: "true"
-  # Uncomment once CI exists, listing check names exactly as they appear on PRs.
-  # flareling-github:requiredChecks: '["verify"]'
+  # The aggregate job in cicd.yml; it waits on every `check:` job, so renaming
+  # one of those never breaks the ruleset.
+  flareling-github:requiredChecks: '["required"]'
+  # Who approves `deploy: prod` (GitHub user ids: gh api users/<login> -q .id).
+  flareling-github:prodReviewerIds: '[43732866]'
+  # Turns on cicd.yml's deploy jobs (the DEPLOYS_ENABLED repo variable). Off
+  # until a deployed environment can start: it needs an email provider
+  # (docs/adr/0015-email-behind-an-interface.md).
+  flareling-github:deploysEnabled: "false"
   # Uncomment to mint Cloudflare CI tokens (also set cloudflare:apiToken as a
   # secret: a token allowed to create account API tokens).
   # flareling-github:cloudflareAccountId: <account id>
