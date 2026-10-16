@@ -93,6 +93,7 @@ catalog:
   zod: ^4.6.5
   "@t3-oss/env-core": ^0.13.11
   uuidv7: ^1.2.1
+  temporal-polyfill: ^1.0.5
 
   # Cloudflare
   # Kept on the wrangler version @cloudflare/vitest-plugin and vite-plugin pin,
