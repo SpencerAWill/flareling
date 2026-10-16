@@ -17,6 +17,15 @@ updates:
     cooldown:
       default-days: 7
       semver-major-days: 30
+    ignore:
+      # Matches the Node major in .nvmrc (the runtime CI and the dev container
+      # use), so it moves with that, by hand, not on its own.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # @commitlint/cz-commitlint peers on inquirer ^9 to ^12. Lift this once a
+      # release accepts a newer major.
+      - dependency-name: "inquirer"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
       prefix-development: chore
@@ -88,7 +97,9 @@ updates:
       devcontainers:
         patterns: ["*"]
 
-  # Sidecar images in the dev container's compose file (Mailpit).
+  # Sidecar images in the dev container's compose file (Mailpit, stripe-mock).
+  # CI's service containers pin the same images by digest and are bumped by
+  # hand alongside (.github/workflows/ci.yml).
   - package-ecosystem: docker-compose
     directory: /.devcontainer
     schedule:
