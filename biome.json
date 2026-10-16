@@ -11,6 +11,7 @@
       "**",
       "!**/*.gen.ts",
       "!**/worker-configuration.d.ts",
+      "!tooling/config/workers/runtime.d.ts",
       "!**/.wrangler",
       "!**/drizzle/meta"
     ]
@@ -35,6 +36,9 @@
       "nursery": {
         "noFloatingPromises": "error",
         "noMisusedPromises": "error"
+      },
+      "suspicious": {
+        "noConsole": "error"
       }
     }
   },
@@ -47,5 +51,17 @@
     "parser": {
       "tailwindDirectives": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["libs/log/src/log.ts", "tooling/scripts/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ]
 }

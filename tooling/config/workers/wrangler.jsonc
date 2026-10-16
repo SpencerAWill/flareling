@@ -1,0 +1,10 @@
+{
+  // Not a Worker. This config exists only so `wrangler types` can generate
+  // runtime type declarations for libs, which have no wrangler.jsonc of their
+  // own (they are bundled into apps). Keep the compatibility date and flags
+  // in step with the apps' wrangler.jsonc files, and regenerate with
+  // `pnpm --filter @flareling/config workers-typegen`.
+  "name": "flareling-lib-runtime-types",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"]
+}

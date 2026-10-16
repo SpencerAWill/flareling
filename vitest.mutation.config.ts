@@ -9,6 +9,10 @@ import { defineConfig } from "vitest/config";
 // already runs these files in their packages' own projects.
 export default defineConfig({
   test: {
-    include: ["libs/core/src/index.test.ts", "libs/ui/src/cn*.test.ts"],
+    include: [
+      "libs/core/src/index.test.ts",
+      "libs/log/src/redact*.test.ts",
+      "libs/ui/src/cn*.test.ts",
+    ],
   },
 });

@@ -16,7 +16,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "boundaries": "turbo boundaries",
-    "verify": "biome check && sherif && knip && turbo run typecheck test && turbo boundaries",
+    "verify": "biome check && sherif && knip && pnpm --filter @flareling/db db:drift && turbo run typecheck test && turbo boundaries",
     "check": "biome check",
     "check:fix": "biome check --write",
     "format": "biome format --write",
@@ -29,7 +29,8 @@
     "knip": "knip",
     "test:coverage": "turbo run test:coverage",
     "test:mutation": "stryker run",
-    "storybook": "pnpm --filter @flareling/ui storybook"
+    "storybook": "pnpm --filter @flareling/ui storybook",
+    "db:generate": "pnpm --filter @flareling/db db:generate"
   },
   "config": {
     "commitizen": {

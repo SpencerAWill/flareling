@@ -5,7 +5,8 @@
   "description": "Dev-time and CI scripts, run directly by Node's type stripping",
   "type": "module",
   "bin": {
-    "check-worker-size": "./src/check-worker-size.ts"
+    "check-worker-size": "./src/check-worker-size.ts",
+    "check-migration-drift": "./src/check-migration-drift.ts"
   },
   "scripts": {
     "typecheck": "tsc"

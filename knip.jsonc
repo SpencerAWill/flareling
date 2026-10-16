@@ -41,10 +41,12 @@
       "entry": ["test/worker.ts"]
     },
     "tooling/scripts": {
-      // check-worker-size spawns `wrangler` from the calling app's PATH (each
-      // app that runs it already depends on wrangler). Declaring wrangler here
-      // too would add a second copy of something this package never imports.
-      "ignoreBinaries": ["wrangler"]
+      // The scripts spawn tools from the calling package's PATH: `wrangler`
+      // (check-worker-size, run by apps) and `drizzle-kit`
+      // (check-migration-drift, run by libs/db), which those packages already
+      // depend on. Declaring them here too would add second copies of things
+      // this package never imports.
+      "ignoreBinaries": ["wrangler", "drizzle-kit"]
     }
   }
 }

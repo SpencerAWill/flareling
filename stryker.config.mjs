@@ -24,7 +24,11 @@ export default {
   },
   // Pure modules only; see vitest.mutation.config.ts for why. Adding a module
   // here means adding its tests there.
-  mutate: ["libs/core/src/index.ts", "libs/ui/src/cn.ts"],
+  mutate: [
+    "libs/core/src/index.ts",
+    "libs/log/src/redact.ts",
+    "libs/ui/src/cn.ts",
+  ],
   coverageAnalysis: "perTest",
   reporters: ["clear-text", "progress", "html", "json"],
   htmlReporter: { fileName: "reports/mutation/index.html" },

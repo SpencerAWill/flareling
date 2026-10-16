@@ -132,6 +132,30 @@ catalog:
   sherif: ^1.13.0
   turbo: ^2.11.7
   knip: ^6.39.0
+  drizzle-orm: ^0.45.4
+  drizzle-kit: ^0.31.11
+  '@t3-oss/env-core': ^0.13.11
+  zod: ^4.6.5
+
+# Security overrides for transitive dependencies, each pinned above the
+# vulnerable range and capped at the major its consumers expect. Every target
+# has cleared the release-age window, so none needs a quarantine exception.
+# All four advisories are in dev and test tooling; none reaches a deployed
+# Worker, and `pnpm audit --prod` (the CI gate) does not see them.
+#   - esbuild <0.28.1  GHSA-67mh-4wv8-2f99 (dev server answers any origin) and
+#               GHSA-g7r4-m6w7-qqqr (dev-server file read). drizzle-kit's
+#               @esbuild-kit loader pulls 0.18.x; Vite is already on 0.28.
+#   - qs <6.16.0  GHSA-q8mj-m7cp-5q26, GHSA-x5fp-wj9c-mxmx, GHSA-4mjr-xmp4-gh2g
+#               (DoS); via @stryker-mutator/core's typed-rest-client.
+#   - sharp <0.35.5  GHSA-wq5f-xc86-pv6w (bundled librsvg); via miniflare.
+# Deliberately not overridden, because no fixed version exists:
+#   - braces <=3.0.3  GHSA-vfj7-8cjw-p6xm (stack exhaustion on deeply nested
+#               patterns). 3.0.3 is the latest release. Reached only through
+#               commitizen's file lookup, over patterns in this repo.
+overrides:
+  "esbuild@<0.28.1": ">=0.28.1 <0.29.0"
+  "qs@<6.16.0": ">=6.16.0 <7.0.0"
+  "sharp@<0.35.5": ">=0.35.5 <0.36.0"
 
 peerDependencyRules:
   allowedVersions:

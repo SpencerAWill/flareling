@@ -6,6 +6,15 @@
   "exports": {
     "./tsconfig/base.json": "./tsconfig/base.json",
     "./tsconfig/react.json": "./tsconfig/react.json",
-    "./vitest/coverage": "./vitest/coverage.ts"
+    "./vitest/coverage": "./vitest/coverage.ts",
+    "./workers/runtime": {
+      "types": "./workers/runtime.d.ts"
+    }
+  },
+  "scripts": {
+    "workers-typegen": "wrangler types --config workers/wrangler.jsonc workers/runtime.d.ts"
+  },
+  "devDependencies": {
+    "wrangler": "catalog:"
   }
 }

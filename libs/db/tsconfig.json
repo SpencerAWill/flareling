@@ -1,0 +1,11 @@
+{
+  "extends": "@flareling/config/tsconfig/base.json",
+  "compilerOptions": {
+    "types": [
+      "node",
+      "@flareling/config/workers/runtime",
+      "@cloudflare/vitest-plugin/types"
+    ]
+  },
+  "include": ["src", "test", "vitest.config.ts", "drizzle.config.ts"]
+}

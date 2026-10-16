@@ -109,7 +109,7 @@ Key principles:
 │   ├── ui/                 # Shared React components, with Storybook
 │   ├── auth/               # Session, passkey, and RBAC utilities
 │   ├── contracts/          # Shared zod schemas, types, and RPC interfaces
-│   ├── env/                # Typed, validated env schemas per app
+│   ├── env/                # Env validation for Workers (t3 env-core + zod) and shared schemas
 │   └── log/                # Structured logger with redaction
 ├── infra/
 │   ├── cloudflare/         # Pulumi: zones, DNS, D1, R2, KV, Queues, Access, WAF (dev/prod stacks)
@@ -199,15 +199,15 @@ Rules:
 | `pnpm size` | Builds, then fails if any Worker's gzip upload is over its budget (below the Free plan's 3 MB cap) |
 | `pnpm lint` / `pnpm format` | Runs Biome |
 | `pnpm cf-typegen` | Regenerates binding types from each `wrangler.jsonc` (`wrangler types`) |
-| `pnpm db:generate` | Generates a D1 migration from schema changes |
-| `pnpm db:migrate:local` | Applies migrations to the local D1 database |
-| `pnpm db:studio` | Opens Drizzle Studio against local data |
+| `pnpm db:generate` | Generates a D1 migration from changes to `libs/db/src/schema.ts` |
+| `pnpm db:migrate:local` 🚧 | Applies migrations to the local D1 database (once an app binds D1) |
+| `pnpm db:studio` 🚧 | Opens Drizzle Studio against local data |
 | `pnpm test:coverage` | Runs the unit and integration tests with Istanbul coverage (a report, with no thresholds) |
 | `pnpm test:mutation` | Runs Stryker over the pure modules listed in `stryker.config.mjs` (a report, never a gate) |
 | `pnpm storybook` | Starts Storybook for `libs/ui` on port 6006 |
 | `pnpm commit` | Guided Conventional Commit prompt (commitizen) |
 
-Local configuration lives in each deployable's `.env.local`, copied from a committed `.env.example`. Wrangler v4 reads `.env` files natively. Every deployable validates its env at startup with a schema from `libs/env`, so a missing variable fails loudly instead of at the first request that needs it.
+Local configuration lives in each deployable's `.env.local`, copied from a committed `.env.example`. Wrangler v4 reads `.env` files natively. Every deployable declares its vars and secrets in `src/env.ts` with `defineEnv` from `libs/env`, and request middleware validates them on the first request of each isolate, so a missing variable fails loudly instead of at the first request that needs it. Error messages name the variable, never its value.
 
 Pre-commit hooks scan staged changes for secrets with gitleaks and run `biome check --write --error-on-warnings` on staged files, and `commit-msg` enforces Conventional Commits. Decisions that shape the codebase are recorded in [`docs/adr/`](./docs/adr/README.md).
 
@@ -350,7 +350,7 @@ Notes:
 | **Workflows** | Onboarding flows, billing runs, long-running pipelines with retries and sleeps | Sub-second request/response work |
 | **Rate limiting bindings** | Per-route and per-identity throttling | Exact global quotas (use a Durable Object) |
 
-Migrations live in `libs/db/migrations` and are applied by CI before code deploys. Write migrations to be backward compatible (expand, deploy, contract) so a rollback never breaks the schema. A schema-drift test fails CI if the Drizzle schema and the migrations disagree.
+Migrations live in `libs/db/migrations` and are applied by CI before code deploys. Write migrations to be backward compatible (expand, deploy, contract) so a rollback never breaks the schema. Generate them with `pnpm db:generate`. `pnpm verify` (and so CI) runs `db:drift`, which fails if `drizzle-kit generate` would write a new migration, meaning the schema changed without one.
 
 ## Cost efficiency
 
@@ -430,7 +430,8 @@ Lessons learned the hard way:
 
 - **D1 rejects statements with more than 100 bound parameters.** Chunk bulk inserts and large `IN (...)` lists.
 - **Never read `env` at module scope.** Bindings are only available inside the request, queue, or scheduled handler.
-- **Drizzle snapshots can drift** from the migrations directory. The schema-drift test catches this. If snapshots are already broken, write the migration SQL by hand rather than trusting `drizzle-kit generate`.
+- **Drizzle snapshots can drift** from the migrations directory. `db:drift` catches this as it starts. Hand-write SQL only for what Drizzle can't express (triggers, FTS tables), and keep the schema file in step.
+- **t3 env-core's `emptyStringAsUndefined` deletes keys from the object it's given.** `libs/env` hands it a copy, never the Worker's `env` binding.
 - **`wrangler-action` needs `environment: production`** for production. Without it, production secrets are uploaded to the default (dev) Worker.
 - **pnpm 11 and later ignore `.npmrc`** for workspace settings. Put them in `pnpm-workspace.yaml`. Since pnpm 12, an unrecognized key there is a hard error (`ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS`) because the repo pins its pnpm version, so typos fail fast instead of being silently ignored.
 - **The pnpm store in dev containers.** `storeDir: node_modules/.store` in `pnpm-workspace.yaml` keeps the store on the `node_modules` volume, so packages hardlink instead of copying. pnpm 12 finds that spot on its own only when run from the repo root; run from a package directory, it would create a second full store at `/workspace/.pnpm-store` on the slow bind mount. The setting is relative, so it works from any directory, on the host, and in CI.
@@ -453,7 +454,7 @@ For a new **app**:
 
 1. Rename it in `package.json` and `wrangler.jsonc`, and tag it `app`.
 2. Add any new resources to `infra/cloudflare`, and placeholder IDs to `wrangler.jsonc`.
-3. Add an env schema in `libs/env` and an `.env.example`.
+3. Declare its env in `src/env.ts` with `defineEnv`, validate it in `src/start.ts` request middleware (copy `apps/web`'s), and document it in `.env.example`.
 4. Run `pnpm cf-typegen`.
 5. Add it to the deploy matrix in `.github/workflows/deploy.yml`.
 
