@@ -271,6 +271,8 @@ Each stack (`dev`, `prod`) gets a baseline set of resources, all free at rest:
 | R2 bucket | `<prefix>-files` | Private uploads and exports |
 | Queue | `<prefix>-jobs` | Background work for `apps/jobs` |
 | Queue | `<prefix>-jobs-dlq` | Jobs that exhausted their retries |
+| Turnstile widget | `<prefix>-web sign-in` | The sign-in form's bot check, for the stack's hostname. Its site key and secret reach `apps/web` through `deploy.yml` |
+| Custom domain | the stack's `hostname` | Points at `<prefix>-web` once `webDeployed` is set |
 
 `<prefix>` is `resourcePrefix` in the stack config (`flareling-dev`, `flareling-prod`). Data resources are `protect`ed in prod (`protectData`). The stack outputs (`d1DatabaseId`, `kvNamespaceId`, `r2FilesBucketName`, `jobsQueueName`, and so on) are the contract with Wrangler.
 

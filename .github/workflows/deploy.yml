@@ -32,13 +32,12 @@ on:
       # The rest are the environment's own secrets, which this job reads
       # through its `environment:` (an environment secret wins over a passed
       # one). Declared so the workflow's inputs are listed in one place. The
-      # Cloudflare tokens are written by infra/github; the app secrets are set
-      # by hand per environment, and an unset one leaves its feature off.
+      # Cloudflare tokens are written by infra/github; the Stripe secrets are
+      # set by hand per environment, and unset ones leave billing off.
+      # Turnstile's keys come from the Pulumi stack, not from here.
       CLOUDFLARE_API_TOKEN:
         required: false
       CLOUDFLARE_INFRA_API_TOKEN:
-        required: false
-      TURNSTILE_SECRET_KEY:
         required: false
       STRIPE_SECRET_KEY:
         required: false
@@ -91,7 +90,11 @@ jobs:
         working-directory: infra/cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_INFRA_API_TOKEN }}
-        run: pulumi up --stack "$STACK" --yes --diff
+        # The stack's settings are committed (Pulumi.<stack>.yaml); its state
+        # lives in Pulumi Cloud and is created on the first deploy.
+        run: |
+          pulumi stack select --create "$STACK"
+          pulumi up --stack "$STACK" --yes --diff
 
       - name: Read the stack's outputs
         id: stack
@@ -132,14 +135,17 @@ jobs:
       # Uploaded with each Worker version (`--secrets-file`), so code and
       # secrets change together. Additive: a secret left unset here keeps
       # its deployed value. Unset ones are omitted, which leaves that feature
-      # off (Turnstile, billing).
+      # off (billing). Turnstile's secret is the stack's widget (masked as
+      # soon as it's read).
       - name: Write the secrets files
         env:
-          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
         run: |
           umask 077
+          TURNSTILE_SECRET_KEY="$(cd infra/cloudflare && pulumi stack output turnstileSecretKey --show-secrets --stack "$STACK")"
+          echo "::add-mask::$TURNSTILE_SECRET_KEY"
+          export TURNSTILE_SECRET_KEY
           pick='with_entries(select(.value != null and .value != ""))'
           jq -n "env | {TURNSTILE_SECRET_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET} | $pick" \
             > "$RUNNER_TEMP/web-secrets.json"
@@ -157,13 +163,11 @@ jobs:
         working-directory: apps/web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+        # The site key is public: the sign-in page reads it from the server.
         run: |
-          args=(--secrets-file "$RUNNER_TEMP/web-secrets.json")
-          if [ -n "$TURNSTILE_SITE_KEY" ]; then
-            args+=(--var "TURNSTILE_SITE_KEY:$TURNSTILE_SITE_KEY")
-          fi
-          pnpm run deploy "${args[@]}"
+          site_key="$(jq -r .turnstileSiteKey "$RUNNER_TEMP/outputs.json")"
+          pnpm run deploy --secrets-file "$RUNNER_TEMP/web-secrets.json" \
+            --var "TURNSTILE_SITE_KEY:$site_key"
 
       - name: Remove the secrets files
         if: always()

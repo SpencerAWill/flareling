@@ -34,6 +34,7 @@ const tokenPermissions = {
       "Workers KV Storage Write",
       "Workers R2 Storage Write",
       "Queues Write",
+      "Turnstile Sites Write",
       "Access: Apps and Policies Write",
     ],
     zone: ["Zone Read", "DNS Write", "Workers Routes Write"],

@@ -29,3 +29,5 @@ config:
   # the tokens get no zone-wide write.
   flareling-github:cloudflareZoneId: 6bfb4d1d3134e6d765aef413094cd28f
   flareling-github:cloudflareZoneDedicated: "false"
+  cloudflare:apiToken:
+    secure: AAABAKSqZpKboDZXEa0zx7eT4nFvMH9F5iTcbdw2/Knj/N8XpoAxnQk6g/8PImb9BzIg3CQX1TwHhLq2x3QLCvyJZkx3I2VTHscAoTr0oVGDiJKlXA==

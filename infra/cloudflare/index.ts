@@ -14,6 +14,7 @@ import {
   jobsQueue,
   kv,
 } from "./src/data.ts";
+import { turnstileSecretKey, turnstileSiteKey } from "./src/turnstile.ts";
 
 /**
  * Long-lived Cloudflare resources for one environment (the `dev` or `prod`
@@ -34,6 +35,7 @@ export {
   webBaseUrl,
 };
 export const webDomainId = webDomain?.id;
+export { turnstileSecretKey, turnstileSiteKey };
 
 export const cloudflareAccountId = accountId;
 export const zoneName = zone.name;
