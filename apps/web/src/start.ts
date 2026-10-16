@@ -1,6 +1,7 @@
 import { runWithLogContext } from "@flareling/log";
 import { createMiddleware, createStart } from "@tanstack/react-start";
 import { getEnv } from "#/env.ts";
+import { withSecurityHeaders } from "#/server/security-headers.ts";
 
 /**
  * Runs around every request. It validates the env, so a missing or malformed
@@ -16,6 +17,13 @@ const requestContext = createMiddleware().server(({ next, request }) => {
   );
 });
 
+/** Adds the security headers (src/server/security-headers.ts) to every response. */
+const securityHeaders = createMiddleware().server(async ({ next }) => {
+  const result = await next();
+  withSecurityHeaders(result.response);
+  return result;
+});
+
 export const startInstance = createStart(() => ({
-  requestMiddleware: [requestContext],
+  requestMiddleware: [securityHeaders, requestContext],
 }));

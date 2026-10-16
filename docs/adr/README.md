@@ -35,3 +35,4 @@ Small, easily reversed choices don't need one. When in doubt, write the short ve
 | [0011](./0011-uuidv7-primary-keys.md) | UUIDv7 primary keys | Accepted |
 | [0012](./0012-temporal-for-dates-and-times.md) | Temporal for dates and times, imported as a ponyfill | Accepted |
 | [0013](./0013-shadcn-on-base-ui.md) | shadcn/ui on Base UI for components | Accepted |
+| [0014](./0014-security-headers-now-csp-later.md) | Security headers now, script CSP later | Accepted |
