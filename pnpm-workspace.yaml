@@ -95,6 +95,13 @@ catalog:
   uuidv7: ^1.2.1
   temporal-polyfill: ^1.0.5
 
+  # Auth and billing
+  "@simplewebauthn/server": ^14.0.3
+  "@simplewebauthn/browser": ^14.0.0
+  # The SDK pins the Stripe API version, so upgrading it is an API upgrade:
+  # read Stripe's changelog for the versions in between.
+  stripe: ^23.0.0
+
   # Cloudflare
   # Kept on the wrangler version @cloudflare/vitest-plugin and vite-plugin pin,
   # so the workspace has one wrangler.
@@ -145,9 +152,6 @@ catalog:
   sherif: ^1.13.0
   turbo: ^2.11.7
   knip: ^6.39.0
-  '@simplewebauthn/server': ^14.0.3
-  '@simplewebauthn/browser': ^14.0.0
-  stripe: ^23.0.0
 
 # Named catalogs: deliberate, temporary exceptions to one-version-per-dependency.
 catalogs:

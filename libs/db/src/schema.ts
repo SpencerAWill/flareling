@@ -324,3 +324,67 @@ export const workspaceMembers = sqliteTable(
     index("workspace_members_user_idx").on(t.userId),
   ],
 );
+
+// ── Billing ─────────────────────────────────────────────────────────────────
+//
+// Stripe is the source of truth; these tables are its latest state, as
+// written by the billing consumer in apps/jobs (libs/billing). Plans and what
+// they grant are defined in code (libs/billing/src/plans.ts), keyed by name.
+
+/** The Stripe customer for each workspace that has started checkout. */
+export const billingCustomers = sqliteTable(
+  "billing_customers",
+  {
+    workspaceId: text("workspace_id")
+      .primaryKey()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    stripeCustomerId: text("stripe_customer_id").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [
+    uniqueIndex("billing_customers_stripe_unique").on(t.stripeCustomerId),
+  ],
+);
+
+/**
+ * Subscriptions as Stripe last reported them. Rewritten in full from a fresh
+ * fetch of the subscription on every event, so events arriving late, twice or
+ * out of order can't leave a stale state behind.
+ */
+export const subscriptions = sqliteTable(
+  "subscriptions",
+  {
+    stripeSubscriptionId: text("stripe_subscription_id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    // Stripe's status: active, trialing, past_due, canceled, incomplete, ...
+    status: text("status").notNull(),
+    // The plan name from libs/billing, from the price's lookup key.
+    plan: text("plan").notNull(),
+    stripePriceId: text("stripe_price_id").notNull(),
+    currentPeriodEnd: integer("current_period_end", { mode: "timestamp_ms" }),
+    cancelAtPeriodEnd: integer("cancel_at_period_end", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [index("subscriptions_workspace_idx").on(t.workspaceId)],
+);
+
+/**
+ * Stripe events already processed. Stripe delivers at least once, so the
+ * consumer records each event id in the same batch as the writes it causes,
+ * and skips an id it has seen.
+ */
+export const stripeEvents = sqliteTable(
+  "stripe_events",
+  {
+    id: text("id").primaryKey(),
+    type: text("type").notNull(),
+    processedAt: integer("processed_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [index("stripe_events_processed_at_idx").on(t.processedAt)],
+);

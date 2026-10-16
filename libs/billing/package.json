@@ -1,0 +1,33 @@
+{
+  "name": "@flareling/billing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@flareling/auth": "workspace:*",
+    "@flareling/core": "workspace:*",
+    "@flareling/db": "workspace:*",
+    "@flareling/log": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "stripe": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "catalog:",
+    "@flareling/config": "workspace:*",
+    "@msw/cloudflare": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "msw": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
