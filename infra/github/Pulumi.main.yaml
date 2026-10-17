@@ -19,7 +19,7 @@ config:
   # Turns on cicd.yml's deploy jobs (the DEPLOYS_ENABLED repo variable). Off
   # until a deployed environment can start: it needs an email provider
   # (docs/adr/0015-email-behind-an-interface.md).
-  flareling-github:deploysEnabled: "false"
+  flareling-github:deploysEnabled: "true"
   # Mints the Cloudflare CI tokens. Needs cloudflare:apiToken set as a secret
   # (`pulumi config set --secret cloudflare:apiToken`): a token allowed to
   # create account API tokens. Same account and zone as infra/cloudflare.
