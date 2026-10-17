@@ -223,7 +223,7 @@ Pre-commit hooks scan staged changes for secrets with gitleaks and run `biome ch
 
 There are no Wrangler environments (`env.*`). Each app has one committed `wrangler.jsonc` with the dev stack's names, and a deploy points it at its stack with `sync-env` (see [Cloudflare](#cloudflare)). Deploys are off until the `DEPLOYS_ENABLED` repo variable is `true` (`deploysEnabled` in infra/github). A deployed environment won't start without an email transport ([ADR 0015](./docs/adr/0015-email-behind-an-interface.md)): dev uses an outbox at `/dev/outbox` behind Cloudflare Access instead of sending ([ADR 0022](./docs/adr/0022-dev-email-outbox.md)), and prod needs a provider.
 
-Each deploy (`.github/workflows/deploy.yml`, one job per environment) runs in a fixed order:
+Each deploy (the `deploy: dev` and `deploy: prod` jobs in `cicd.yml`, both running the local action `.github/actions/deploy`) runs in a fixed order:
 
 1. **`pulumi up`** on `infra/cloudflare` creates or updates long-lived resources.
 2. **`sync-env`** writes the stack's outputs into each app's `wrangler.jsonc`: Worker names, D1 ids, queue names, the rate-limit namespace and per-stack vars.
@@ -243,7 +243,6 @@ A new stack's first deploy has no public URL yet: the custom domain can only poi
 | Workflow | Runs on | Does |
 | --- | --- | --- |
 | `cicd.yml` | PRs (skips drafts) and pushes to `main` | `check:` jobs: changed paths, `pnpm audit --prod`, a gitleaks scan of the full history, `pnpm verify` + build + size budget + Playwright with axe, and actionlint + zizmor. `required` aggregates them and is the one required status check. On `main`: `deploy: dev`, then `deploy: prod` after approval. 🚧 A `pulumi preview` on PRs |
-| `deploy.yml` | Called by `cicd.yml` | One environment's deploy, above |
 | `lint-pr.yml` | PR opened, edited, or updated | Runs commitlint on the PR title, which becomes the squash commit on `main` |
 | `quality.yml` | Weekly schedule, and manual dispatch | Coverage and mutation testing reports as artifacts, with coverage in the run summary (informational, not gates) |
 
@@ -271,7 +270,7 @@ Each stack (`dev`, `prod`) gets a baseline set of resources, all free at rest:
 | R2 bucket | `<prefix>-files` | Private uploads and exports |
 | Queue | `<prefix>-jobs` | Background work for `apps/jobs` |
 | Queue | `<prefix>-jobs-dlq` | Jobs that exhausted their retries |
-| Turnstile widget | `<prefix>-web sign-in` | The sign-in form's bot check, for the stack's hostname. Its site key and secret reach `apps/web` through `deploy.yml` |
+| Turnstile widget | `<prefix>-web sign-in` | The sign-in form's bot check, for the stack's hostname. Its site key and secret reach `apps/web` through the deploy action |
 | Custom domain | the stack's `hostname` | Points at `<prefix>-web` once `webDeployed` is set |
 | Access application | `<prefix>-web outbox` | Dev only (`emailOutbox`): limits `/dev/outbox` to `outboxViewers` |
 
@@ -469,7 +468,7 @@ For a new **app**:
 2. Add any new resources to `infra/cloudflare`, and placeholder IDs to `wrangler.jsonc`.
 3. Declare its env in `src/env.ts` with `defineEnv`, validate it in `src/start.ts` request middleware (copy `apps/web`'s), and document it in `.env.example`.
 4. Run `pnpm cf-typegen`.
-5. Add it to the deploy matrix in `.github/workflows/deploy.yml`.
+5. Add its build and deploy steps to `.github/actions/deploy/action.yml`, and teach `sync-env` its bindings.
 
 For a new **lib**:
 

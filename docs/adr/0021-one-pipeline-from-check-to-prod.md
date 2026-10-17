@@ -17,11 +17,11 @@ Promotion: a Workers version belongs to one Worker, so dev's version can't be "p
 
 - **One workflow, `cicd.yml`**, for every PR and every push to `main`. Its `check:` jobs run on both; on `main`, `deploy: dev` follows them, then `deploy: prod`.
 - **Prod is the same run, approved.** `deploy: prod` needs `deploy: dev` (deployed and smoke-tested) and waits on the `prod` environment's required reviewer. It runs only when infra/github reports that the reviewer requirement exists (`PROD_APPROVAL_REQUIRED`), so a repo without one never deploys prod unattended.
-- **The deploy steps are a reusable workflow, `deploy.yml`**, called once per environment, as **one job**: every job naming a protected environment asks for its own approval. Order: `pulumi up`, `sync-env`, build, D1 restore point, migrate, deploy `apps/jobs` then `apps/web`, smoke test, and on prod a `wrangler rollback` if the smoke test fails.
+- **The deploy steps are a local composite action, `.github/actions/deploy`**, used by two ordinary jobs in `cicd.yml`, one per environment. Each job names its GitHub environment and passes that environment's secrets to the action as inputs, as ucmc.spencerwill.com does. The first version was a reusable workflow (`deploy.yml`), but environment secrets never reached it, declared as `workflow_call` secrets or not, so the first dev deploys ran with no Cloudflare token. Each deploy is **one job**: every job naming a protected environment asks for its own approval. Order: `pulumi up`, `sync-env`, build, D1 restore point, migrate, deploy `apps/jobs` then `apps/web`, smoke test, and on prod a `wrangler rollback` if the smoke test fails.
 - **No Wrangler environments.** One `wrangler.jsonc` per app; `sync-env` points it at the stack.
 - **Names:** check jobs `check: <what>`, deploy jobs `deploy: <environment>`. Grouping by workflow name ("CI / lint") is more common, but checks and deploys share a workflow here, and the prefixes keep them apart. The ruleset requires only `required`, an aggregate of every check, so renaming a check can't break it.
 - **Off until it can work:** deploys run only when `DEPLOYS_ENABLED` is `true`. A deployed environment won't start without an email provider (ADR 0015).
-- **Secrets:** Cloudflare tokens and app secrets are environment secrets (readable only by a job deploying to that environment, from `main`); `PULUMI_ACCESS_TOKEN` is the one repo secret, passed to `deploy.yml` by name, never with `secrets: inherit`.
+- **Secrets:** Cloudflare tokens and app secrets are environment secrets (readable only by a job deploying to that environment, from `main`); `PULUMI_ACCESS_TOKEN` is the one repo secret, read by the deploy jobs directly, like every other secret.
 
 ## Consequences
 

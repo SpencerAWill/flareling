@@ -2,8 +2,8 @@
 # reviewer approves that same run (the `prod` environment). Check jobs are
 # `check: <what>` and deploy jobs `deploy: <environment>`; only `required`
 # (which waits on every check) is a required status check, so renaming a check
-# never breaks the ruleset. The deploy steps live in deploy.yml, called once
-# per environment. Design: docs/adr/0021-one-pipeline-from-check-to-prod.md.
+# never breaks the ruleset. The deploy steps live in the local action
+# .github/actions/deploy, used once per environment. Design: docs/adr/0021-one-pipeline-from-check-to-prod.md.
 name: CI/CD
 
 on:
@@ -20,7 +20,7 @@ permissions: {}
 
 # One in-flight run per PR, so a fixup push cancels the superseded run. Runs on
 # main are never cancelled, so every commit there gets a complete result (and
-# a deploy is never cut off; deploy.yml also queues deploys per environment).
+# a deploy is never cut off; each deploy job also queues per environment).
 concurrency:
   group: cicd-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -60,6 +60,7 @@ jobs:
             workflows:
               - '.github/workflows/**'
               - '.github/zizmor.yml'
+              - '.github/actions/**'
               - '.github/actionlint.yaml'
 
   # Walks the whole lockfile, so it runs on every change rather than by path.
@@ -336,26 +337,47 @@ jobs:
 
   # Deploys are off until the repo variable DEPLOYS_ENABLED is "true"
   # (infra/github sets it). Until then main only runs the checks.
+  #
+  # Ordinary jobs naming their GitHub environment and reading its secrets
+  # directly, as in ucmc.spencerwill.com; the steps are the local action
+  # .github/actions/deploy. One job per environment, because each job naming
+  # a protected environment asks for its own approval. One deploy per
+  # environment at a time, never cancelled halfway.
   deploy-dev:
     name: "deploy: dev"
     needs: required
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       vars.DEPLOYS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
-    uses: ./.github/workflows/deploy.yml
-    with:
-      environment: dev
-    # Environment secrets reach deploy.yml's job through its `environment:`;
-    # only repo-level secrets are passed, by name, never `inherit`.
-    secrets:
-      PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+    environment:
+      name: dev
+      url: ${{ steps.deploy.outputs.url }}
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: deploy
+        uses: ./.github/actions/deploy
+        with:
+          environment: dev
+          cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          pulumi-access-token: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-infra-api-token: ${{ secrets.CLOUDFLARE_INFRA_API_TOKEN }}
+          stripe-secret-key: ${{ secrets.STRIPE_SECRET_KEY }}
+          stripe-webhook-secret: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
 
   # The same commit, once dev deployed and passed its smoke test. Waits for a
   # reviewer on the `prod` environment; a waiting run uses no runner time.
-  # deploy.yml's per-environment concurrency group should let a newer run's
-  # prod deploy replace an older one still waiting (verify on the first runs).
+  # Its concurrency group should let a newer run's prod deploy replace an
+  # older one still waiting (verify on the first runs).
   #
   # Runs only when PROD_APPROVAL_REQUIRED is "true", which infra/github sets
   # only if `prod` really has a required reviewer. Without one (a private repo
@@ -364,10 +386,27 @@ jobs:
     name: "deploy: prod"
     needs: deploy-dev
     if: vars.PROD_APPROVAL_REQUIRED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
-    uses: ./.github/workflows/deploy.yml
-    with:
-      environment: prod
-    secrets:
-      PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+    environment:
+      name: prod
+      url: ${{ steps.deploy.outputs.url }}
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: deploy
+        uses: ./.github/actions/deploy
+        with:
+          environment: prod
+          cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          pulumi-access-token: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-infra-api-token: ${{ secrets.CLOUDFLARE_INFRA_API_TOKEN }}
+          stripe-secret-key: ${{ secrets.STRIPE_SECRET_KEY }}
+          stripe-webhook-secret: ${{ secrets.STRIPE_WEBHOOK_SECRET }}

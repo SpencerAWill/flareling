@@ -10,7 +10,7 @@ import { accountId, hostname, resourcePrefix } from "./config.ts";
  * `managed`: Cloudflare shows an interactive challenge only when its risk
  * score for the visitor is high; most people pass without seeing one.
  *
- * deploy.yml passes the site key to apps/web as the TURNSTILE_SITE_KEY var
+ * The deploy action (.github/actions/deploy) passes the site key to apps/web as the TURNSTILE_SITE_KEY var
  * (the sign-in page reads it from the server at runtime) and uploads the
  * secret as TURNSTILE_SECRET_KEY. Local development leaves both unset, which
  * skips the check (libs/auth's passesTurnstile).

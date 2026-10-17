@@ -13,7 +13,7 @@ import * as pulumi from "@pulumi/pulumi";
  * when the zone is dedicated to this suite (`zoneDedicated`).
  */
 const tokenPermissions = {
-  // Used by Wrangler in deploy.yml: upload Worker versions, apply D1
+  // Used by Wrangler in the deploy action (.github/actions/deploy): upload Worker versions, apply D1
   // migrations (and read Time Travel bookmarks), and attach apps/jobs as its
   // queue's consumer. Everything long-lived is the infra token's job.
   deploy: {
