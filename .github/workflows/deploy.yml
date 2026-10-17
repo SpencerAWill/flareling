@@ -29,20 +29,11 @@ on:
       # passes it.
       PULUMI_ACCESS_TOKEN:
         required: true
-      # The rest are the environment's own secrets, which this job reads
-      # through its `environment:` (an environment secret wins over a passed
-      # one). Declared so the workflow's inputs are listed in one place. The
-      # Cloudflare tokens are written by infra/github; the Stripe secrets are
-      # set by hand per environment, and unset ones leave billing off.
-      # Turnstile's keys come from the Pulumi stack, not from here.
-      CLOUDFLARE_API_TOKEN:
-        required: false
-      CLOUDFLARE_INFRA_API_TOKEN:
-        required: false
-      STRIPE_SECRET_KEY:
-        required: false
-      STRIPE_WEBHOOK_SECRET:
-        required: false
+      # Everything else is the environment's own secrets, which this job
+      # reads through its `environment:`. They must NOT be declared here: a
+      # declared secret resolves to what the caller passed (nothing), hiding
+      # the environment's value (the first dev deploy failed that way).
+      # .github/actionlint.yaml tells actionlint about them.
 
 permissions: {}
 

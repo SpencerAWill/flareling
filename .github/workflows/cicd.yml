@@ -60,6 +60,7 @@ jobs:
             workflows:
               - '.github/workflows/**'
               - '.github/zizmor.yml'
+              - '.github/actionlint.yaml'
 
   # Walks the whole lockfile, so it runs on every change rather than by path.
   # Production dependencies only: dev tooling never ships in a Worker bundle.
