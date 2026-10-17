@@ -15,3 +15,6 @@ config:
   flareling-cloudflare:emailOutbox: "true"
   flareling-cloudflare:outboxViewers: '["spencer.a.will@gmail.com"]'
   flareling-cloudflare:accessTeamDomain: late-hat-fec1.cloudflareaccess.com
+  # flareling-dev-web exists (first deployed 2026-10-17), so the hostname can
+  # be attached to it (src/apps.ts).
+  flareling-cloudflare:webDeployed: "true"
