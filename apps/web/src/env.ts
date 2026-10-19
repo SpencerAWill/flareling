@@ -37,6 +37,9 @@ const getVars = defineEnv({
   EMAIL_OUTBOX: z.literal("1").optional(),
   ACCESS_TEAM_DOMAIN: z.string().endsWith(".cloudflareaccess.com").optional(),
   ACCESS_OUTBOX_AUD: z.string().min(1).optional(),
+  /** Prod's email provider (docs/adr/0023-resend-for-production-email.md).
+   *  A secret. Mailpit, then the outbox, win over it when set. */
+  RESEND_API_KEY: z.string().startsWith("re_").optional(),
   /** E2E suites only. libs/auth ignores it on https. */
   E2E_BYPASS_RATE_LIMIT: z.literal("1").optional(),
 });
@@ -63,6 +66,7 @@ export function configurationProblems(
         | "EMAIL_OUTBOX"
         | "ACCESS_TEAM_DOMAIN"
         | "ACCESS_OUTBOX_AUD"
+        | "RESEND_API_KEY"
       >
     >,
 ): string[] {
@@ -82,9 +86,14 @@ export function configurationProblems(
     );
   }
   const deployed = vars.APP_BASE_URL.startsWith("https://");
-  if (deployed && !vars.MAILPIT_URL && !vars.EMAIL_OUTBOX) {
+  if (
+    deployed &&
+    !vars.MAILPIT_URL &&
+    !vars.EMAIL_OUTBOX &&
+    !vars.RESEND_API_KEY
+  ) {
     problems.push(
-      "No email transport is configured, so nobody could sign in. Choose a provider (docs/adr/0015-email-behind-an-interface.md).",
+      "No email transport is configured, so nobody could sign in. Set RESEND_API_KEY (docs/adr/0023-resend-for-production-email.md), or EMAIL_OUTBOX on a dev environment.",
     );
   }
   // The outbox holds working sign-in links; without Access's settings the
@@ -95,6 +104,15 @@ export function configurationProblems(
   ) {
     problems.push(
       "EMAIL_OUTBOX needs ACCESS_TEAM_DOMAIN and ACCESS_OUTBOX_AUD (docs/adr/0022-dev-email-outbox.md).",
+    );
+  }
+  // The outbox would win, and real people would never get their links.
+  // Deploys only ever add secrets, so this is also how a key left behind on a
+  // stack that moved to the outbox shows up: remove it with
+  // `wrangler secret delete RESEND_API_KEY`.
+  if (vars.EMAIL_OUTBOX && vars.RESEND_API_KEY) {
+    problems.push(
+      "Set EMAIL_OUTBOX or RESEND_API_KEY, not both (docs/adr/0023-resend-for-production-email.md).",
     );
   }
   if (deployed && vars.MAILPIT_URL) {

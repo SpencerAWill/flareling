@@ -77,6 +77,17 @@ describe("configurationProblems", () => {
     ]);
   });
 
+  it("accepts Resend as a deployed environment's transport", () => {
+    const { MAILPIT_URL: _, ...rest } = local;
+    expect(
+      configurationProblems({
+        ...rest,
+        APP_BASE_URL: "https://app.example.com",
+        RESEND_API_KEY: "re_123",
+      }),
+    ).toEqual([]);
+  });
+
   describe("the dev outbox", () => {
     const { MAILPIT_URL: _, ...rest } = local;
     const deployed = { ...rest, APP_BASE_URL: "https://dev.example.com" };
@@ -90,6 +101,18 @@ describe("configurationProblems", () => {
           ACCESS_OUTBOX_AUD: "aud",
         }),
       ).toEqual([]);
+    });
+
+    it("refuses a Resend key alongside it", () => {
+      expect(
+        configurationProblems({
+          ...deployed,
+          EMAIL_OUTBOX: "1",
+          ACCESS_TEAM_DOMAIN: "team.cloudflareaccess.com",
+          ACCESS_OUTBOX_AUD: "aud",
+          RESEND_API_KEY: "re_123",
+        }),
+      ).toEqual([expect.stringContaining("EMAIL_OUTBOX or RESEND_API_KEY")]);
     });
 
     it("needs both Access settings", () => {

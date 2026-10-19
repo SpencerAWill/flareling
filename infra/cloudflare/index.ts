@@ -2,7 +2,6 @@ import { webauthnRpId, webBaseUrl, webDomain } from "./src/apps.ts";
 import {
   accountId,
   authRateLimitNamespaceId,
-  emailFrom,
   hostname,
   resourcePrefix,
   zone,
@@ -14,6 +13,7 @@ import {
   jobsQueue,
   kv,
 } from "./src/data.ts";
+import { emailFrom, resendApiKey } from "./src/email.ts";
 import {
   accessOutboxAud,
   accessTeamDomain,
@@ -43,6 +43,7 @@ export const webDomainId = webDomain?.id;
 export {
   accessOutboxAud,
   accessTeamDomain,
+  resendApiKey,
   turnstileSecretKey,
   turnstileSiteKey,
 };

@@ -10,3 +10,10 @@ config:
   flareling-cloudflare:protectData: "true"
   # AUTH_RATE_LIMITER's namespace; unique per stack (see src/config.ts).
   flareling-cloudflare:authRateLimitNamespaceId: "2001"
+  # Resend's key and from-address come from the shared spencerwill.com stack,
+  # which owns the verified spencerwill.com domain and issues each app its
+  # own sending key (SpencerAWill/spencerwill.com#2). Apply that stack first.
+  flareling-cloudflare:emailStack:
+    stack: SpencerAWill/spencerwill-shared/prod
+    apiKeyOutput: flarelingResendApiKey
+    fromOutput: flarelingFromEmail

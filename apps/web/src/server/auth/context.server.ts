@@ -45,6 +45,7 @@ export function authContext(): AuthContext {
       ...(vars.EMAIL_FROM_NAME ? { fromName: vars.EMAIL_FROM_NAME } : {}),
       ...(vars.MAILPIT_URL ? { mailpitUrl: vars.MAILPIT_URL } : {}),
       ...(vars.EMAIL_OUTBOX ? { outbox: true } : {}),
+      ...(vars.RESEND_API_KEY ? { resendApiKey: vars.RESEND_API_KEY } : {}),
     }),
     rateLimiter: env.AUTH_RATE_LIMITER,
   };

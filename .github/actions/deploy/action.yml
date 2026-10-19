@@ -125,8 +125,9 @@ runs:
     # Uploaded with each Worker version (`--secrets-file`), so code and
     # secrets change together. Additive: a secret left unset here keeps its
     # deployed value. Unset ones are omitted, which leaves that feature off
-    # (billing). Turnstile's secret is the stack's widget, masked as soon as
-    # it's read.
+    # (billing). Turnstile's secret is the stack's widget, and Resend's key
+    # comes from the stack's config (empty on a stack using the outbox); both
+    # are masked as soon as they're read.
     - name: Write the secrets files
       shell: bash
       env:
@@ -138,9 +139,11 @@ runs:
         umask 077
         TURNSTILE_SECRET_KEY="$(cd infra/cloudflare && pulumi stack output turnstileSecretKey --show-secrets --stack "$STACK")"
         echo "::add-mask::$TURNSTILE_SECRET_KEY"
-        export TURNSTILE_SECRET_KEY
+        RESEND_API_KEY="$(cd infra/cloudflare && pulumi stack output resendApiKey --show-secrets --stack "$STACK")"
+        if [ -n "$RESEND_API_KEY" ]; then echo "::add-mask::$RESEND_API_KEY"; fi
+        export TURNSTILE_SECRET_KEY RESEND_API_KEY
         pick='with_entries(select(.value != null and .value != ""))'
-        jq -n "env | {TURNSTILE_SECRET_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET} | $pick" \
+        jq -n "env | {TURNSTILE_SECRET_KEY, RESEND_API_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET} | $pick" \
           > "$RUNNER_TEMP/web-secrets.json"
         jq -n "env | {STRIPE_SECRET_KEY} | $pick" > "$RUNNER_TEMP/jobs-secrets.json"
 
