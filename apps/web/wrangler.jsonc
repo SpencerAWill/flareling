@@ -78,8 +78,9 @@
 
   // Non-secret configuration, validated by src/env.ts. These are the local
   // development values; deploys override them per environment. Secrets
-  // (TURNSTILE_SECRET_KEY, STRIPE_*) and dev-only settings (MAILPIT_URL) go in
-  // .env.local locally (see .env.example) and `wrangler secret put` deployed.
+  // (TURNSTILE_SECRET_KEY, STRIPE_*, RESEND_API_KEY) and dev-only settings
+  // (MAILPIT_URL) go in .env.local locally (see .env.example), and are
+  // uploaded with each deploy (.github/actions/deploy).
   "vars": {
     "APP_BASE_URL": "http://localhost:3000",
     "APP_NAME": "Flareling",

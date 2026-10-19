@@ -12,7 +12,7 @@ This template targets **Workers Paid** in deployed environments ([ADR 0016](./ad
 | --- | --- |
 | R1: 10 ms CPU per request on Workers Free | Deployed environments are on Workers Free (ADR 0020, superseding 0016's Paid target), so this applies: keep server rendering lean and measure deployed CPU time. `limits.cpu_ms` is Paid-only and not set. Not detectable by local tests. |
 | R2: a session request on every client navigation | The principal is cached on the client and refetched after sign-in or sign-out (`apps/web/src/lib/auth.ts`) |
-| R3: no production email transport | Provider still to be chosen ([ADR 0015](./adr/0015-email-behind-an-interface.md)); a deployed (https) environment without one fails every request at startup, so a post-deploy smoke test catches it |
+| R3: no production email transport | Prod sends through Resend ([ADR 0023](./adr/0023-resend-for-production-email.md)), whose free tier allows 100 emails a day. A deployed (https) environment without a transport fails every request at startup, and infra/cloudflare refuses a stack with none |
 | R4, R5: Actions minutes and cache churn | PRs run desktop Chromium E2E only; all browsers on `main`. The turbo cache is saved only from `main`. Mutation testing is manual. |
 | D1's 50-byte LIKE pattern limit | Text search uses `containsText` (`instr`), which has no pattern limit (`libs/db`) |
 | R9: Worker size | `pnpm size` checks the real limit (64 MiB uncompressed) plus a gzip budget as a proxy for the 1 s startup limit |
@@ -283,7 +283,8 @@ Sources: https://developers.cloudflare.com/kv/platform/limits/ , https://develop
 - *Protection:* cache the principal in router context with a staleTime, or only refetch on auth-changing actions. Set route fail mode deliberately. Add a Cloudflare usage notification or budget alert (README lists budget alerts as 🚧).
 
 **R3. Magic-link email cannot be sent in production on Workers Free (now, certain if deployed).**
-- *Exposed:* `libs/email` has only a Mailpit transport. With no `MAILPIT_URL` in production, `send` rejects with `EmailNotConfiguredError`, so `requestMagicLink` throws and the server function returns 500. The response padding still runs in `finally`.
+- *Status:* addressed by Resend ([ADR 0023](./adr/0023-resend-for-production-email.md)), whose free tier allows 100 emails a day. Kept for the reasoning and for Email Service if the account moves to Paid.
+- *Exposed (before ADR 0023):* `libs/email` had only a Mailpit transport. With no `MAILPIT_URL` in production, `send` rejects with `EmailNotConfiguredError`, so `requestMagicLink` throws and the server function returns 500. The response padding still runs in `finally`.
 - *Why it matters:* Cloudflare Email Service to arbitrary recipients is **"Not available"** on Workers Free (Paid: 3,000/month). There is also an unpublished "conservative daily quota" for new accounts.
 - *Protection:*
   - Pick a provider (CF Email Service on Paid, or a third party) before the first production deploy.

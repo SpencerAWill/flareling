@@ -109,7 +109,7 @@ Key principles:
 │   ├── ui/                 # Shared React components, with Storybook
 │   ├── auth/               # Session, passkey, and RBAC utilities
 │   ├── contracts/          # Shared zod schemas, types, and RPC interfaces
-│   ├── email/              # Sending email behind an interface (Mailpit today; provider later)
+│   ├── email/              # Sending email: Mailpit locally, dev outbox, Resend in prod
 │   ├── env/                # Env validation for Workers (t3 env-core + zod) and shared schemas
 │   └── log/                # Structured logger with redaction
 ├── infra/
@@ -221,7 +221,7 @@ Pre-commit hooks scan staged changes for secrets with gitleaks and run `biome ch
 | Dev | Every push to `main`, after the checks pass | `flareling-dev-web`, `flareling-dev-jobs` | `dev` Pulumi stack |
 | Production | The same run, once a reviewer approves `deploy: prod` | `flareling-prod-web`, `flareling-prod-jobs` | `prod` Pulumi stack |
 
-There are no Wrangler environments (`env.*`). Each app has one committed `wrangler.jsonc` with the dev stack's names, and a deploy points it at its stack with `sync-env` (see [Cloudflare](#cloudflare)). Deploys are off until the `DEPLOYS_ENABLED` repo variable is `true` (`deploysEnabled` in infra/github). A deployed environment won't start without an email transport ([ADR 0015](./docs/adr/0015-email-behind-an-interface.md)): dev uses an outbox at `/dev/outbox` behind Cloudflare Access instead of sending ([ADR 0022](./docs/adr/0022-dev-email-outbox.md)), and prod needs a provider.
+There are no Wrangler environments (`env.*`). Each app has one committed `wrangler.jsonc` with the dev stack's names, and a deploy points it at its stack with `sync-env` (see [Cloudflare](#cloudflare)). Deploys are off until the `DEPLOYS_ENABLED` repo variable is `true` (`deploysEnabled` in infra/github). A deployed environment won't start without an email transport ([ADR 0015](./docs/adr/0015-email-behind-an-interface.md)): dev uses an outbox at `/dev/outbox` behind Cloudflare Access instead of sending ([ADR 0022](./docs/adr/0022-dev-email-outbox.md)), and prod sends through Resend ([ADR 0023](./docs/adr/0023-resend-for-production-email.md)). Bring your own Resend account and verified domain: set `resendApiKey` (secret) and `emailFrom` in the prod stack config, or `emailStack` to read both from another Pulumi stack, as this instance does.
 
 Each deploy (the `deploy: dev` and `deploy: prod` jobs in `cicd.yml`, both running the local action `.github/actions/deploy`) runs in a fixed order:
 
@@ -291,7 +291,7 @@ Guidelines:
 - **Respect a shared zone.** flareling's hostnames are subdomains of `spencerwill.com`, a zone shared with other projects. In a shared zone this program only declares its own hostnames. A `ZoneSetting`, WAF rule, or other zone-wide resource would change behavior for every site in the zone, so those belong only in a repo that owns a dedicated zone.
 - **Commit Wrangler configs with the dev stack's names and placeholder IDs.** Before a deploy builds, `pnpm sync-env --outputs <file>` (fed `pulumi stack output --json`) rewrites each `apps/*/wrangler.jsonc` for the target stack: Worker names (`<resourcePrefix>-<app>`, so dev and prod in one account are separate Workers), D1 ids and names, queue names, and Rate Limiting namespace ids. It fails on any binding it hasn't been taught, rather than deploying one pointed at dev. This replaces the `sed` step used in ucmc with a typed script (`tooling/scripts/src/wrangler-env.ts`). Vars and secrets are passed to `wrangler deploy` separately.
 - **Deploy a Worker before attaching its domain.** A `WorkersCustomDomain` needs the Worker script to exist first, so a new app's hostname is added after its first Wrangler deploy.
-- **Share across stacks with `StackReference`,** for example an email provider account owned by `prod`.
+- **Share across stacks with `StackReference`,** for example a Resend key issued by another project's stack (`emailStack`, [ADR 0023](./docs/adr/0023-resend-for-production-email.md)).
 
 ### GitHub as code
 
@@ -479,7 +479,6 @@ For a new **lib**:
 
 Still being decided. Feedback welcome.
 
-- **Authentication:** extract ucmc's magic link (Resend) and WebAuthn passkey implementation into `libs/auth`, or adopt Better Auth.
 - **Lint stack:** Biome (as in www.spencerwill.com) or ESLint + Prettier (as in ucmc). This template defaults to Biome for speed and a single tool.
 - **Preview deploys:** neither reference repo has per-PR previews yet. Decide whether they use Workers version preview URLs or a dedicated `preview` stack.
 - **Public third-party API:** if the suite needs one, add `apps/public-api` with [Hono](https://hono.dev) and `@hono/zod-openapi` for versioned routes, API keys, and generated OpenAPI docs. Internal callers still use RPC.

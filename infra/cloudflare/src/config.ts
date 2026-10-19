@@ -49,6 +49,3 @@ export const authRateLimitNamespaceId = config.requireNumber(
  * and the next `pulumi up` attaches `hostname` to the Worker.
  */
 export const webDeployed = config.getBoolean("webDeployed") ?? false;
-
-/** The address sign-in emails come from. Depends on the email provider. */
-export const emailFrom = config.get("emailFrom") ?? `noreply@${hostname}`;
