@@ -148,8 +148,8 @@ Sources: https://developers.cloudflare.com/kv/platform/limits/ , https://develop
 
 | Limit | Free | Paid | Applies |
 |---|---|---|---|
-| Backend | SQLite-backed only | SQLite (+ KV backend only on legacy accounts) | later |
-| Requests / duration per day | 100,000 req, 13,000 GB-s; over the limit "operations… fail with an error" | billed | later |
+| Backend | SQLite-backed only | SQLite (+ KV backend only on legacy accounts) | now (WorkspaceRoom) |
+| Requests / duration per day | 100,000 req, 13,000 GB-s; over the limit "operations… fail with an error" | billed | **now**: each socket open, RPC push and alarm is a request |
 | SQLite rows read / written | 5M / 100k per day | billed | later |
 | Storage | 5 GB per account; per object 10 GB (table) vs "1 GB on the Free plan" (another section). **Docs conflict** | per object 10 GB | later |
 | Classes | 100 | 500 | later |
@@ -157,9 +157,9 @@ Sources: https://developers.cloudflare.com/kv/platform/limits/ , https://develop
 | SQL limits | 100 bound params, 100 KB statement, 2 MB row, 100 columns | same | later |
 | CPU per request | 30 s default (up to 5 min) | same | later |
 | WS message received | 32 MiB | same | later |
-| Throughput | Soft limit of 1,000 req/s per object (single-threaded), then "overloaded" | same | later |
-| WS billing | Incoming messages billed 20:1. Hibernation API stops duration billing once handlers finish | | later |
-| Version URLs | Not generated for Workers that implement a DO | | later (apps/realtime is internal anyway) |
+| Throughput | Soft limit of 1,000 req/s per object (single-threaded), then "overloaded" | same | now: one room per workspace |
+| WS billing | Incoming messages billed 20:1. Hibernation API stops duration billing once handlers finish | | **now**: pings are auto-answered (`setWebSocketAutoResponse`), which doesn't wake the room |
+| Version URLs | Not generated for Workers that implement a DO | | now: why the rooms live in apps/realtime, not apps/web ([ADR 0025](./adr/0025-realtime-through-web.md)) |
 
 ### Workflows (https://developers.cloudflare.com/workflows/reference/limits/)
 

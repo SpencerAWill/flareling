@@ -216,23 +216,23 @@ Pre-commit hooks scan staged changes for secrets with gitleaks and run `biome ch
 
 | Environment | Trigger | Workers | Data |
 | --- | --- | --- | --- |
-| Local | `pnpm dev` | Miniflare (`apps/jobs` runs beside `apps/web`) | Persisted in `.wrangler/` |
+| Local | `pnpm dev` | Miniflare (`apps/jobs` and `apps/realtime` run beside `apps/web`) | Persisted in `.wrangler/` |
 | Preview 🚧 | Pull request | Previews of `apps/web` | Shared `dev` resources |
-| Dev | Every push to `main`, after the checks pass | `flareling-dev-web`, `flareling-dev-jobs` | `dev` Pulumi stack |
-| Production | The same run, once a reviewer approves `deploy: prod` | `flareling-prod-web`, `flareling-prod-jobs` | `prod` Pulumi stack |
+| Dev | Every push to `main`, after the checks pass | `flareling-dev-web`, `flareling-dev-jobs`, `flareling-dev-realtime` | `dev` Pulumi stack |
+| Production | The same run, once a reviewer approves `deploy: prod` | `flareling-prod-web`, `flareling-prod-jobs`, `flareling-prod-realtime` | `prod` Pulumi stack |
 
 There are no Wrangler environments (`env.*`). Each app has one committed `wrangler.jsonc` with the dev stack's names, and a deploy points it at its stack with `sync-env` (see [Cloudflare](#cloudflare)). Deploys are off until the `DEPLOYS_ENABLED` repo variable is `true` (`deploysEnabled` in infra/github). A deployed environment won't start without an email transport ([ADR 0015](./docs/adr/0015-email-behind-an-interface.md)): dev uses an outbox at `/dev/outbox` behind Cloudflare Access instead of sending ([ADR 0022](./docs/adr/0022-dev-email-outbox.md)), and prod sends through Resend ([ADR 0023](./docs/adr/0023-resend-for-production-email.md)). Bring your own Resend account and verified domain: set `resendApiKey` (secret) and `emailFrom` in the prod stack config, or `emailStack` to read both from another Pulumi stack, as this instance does.
 
 Each deploy (the `deploy: dev` and `deploy: prod` jobs in `cicd.yml`, both running the local action `.github/actions/deploy`) runs in a fixed order:
 
 1. **`pulumi up`** on `infra/cloudflare` creates or updates long-lived resources.
-2. **`sync-env`** writes the stack's outputs into each app's `wrangler.jsonc`: Worker names, D1 ids, queue names, the rate-limit namespace and per-stack vars.
-3. **Build** both apps with that config.
+2. **`sync-env`** writes the stack's outputs into each app's `wrangler.jsonc`: Worker names, D1 ids, queue names, the rate-limit namespace, the realtime Worker web's Durable Object binding points at, and per-stack vars.
+3. **Build** the apps with that config.
 4. **Record a D1 Time Travel bookmark**, the way back if a migration goes wrong, since migrations have no "down".
 5. **`wrangler d1 migrations apply --remote`** before any code that needs the new schema. Migrations only add (expand, then contract in a later release).
-6. **`wrangler deploy`** `apps/jobs`, then `apps/web` (consumers before producers), each with its secrets in the same upload (`--secrets-file`).
+6. **`wrangler deploy`** `apps/jobs`, then `apps/realtime`, then `apps/web`: consumers, and the Durable Object class web binds to, before web. Each takes its secrets in the same upload (`--secrets-file`).
 7. **Smoke test:** the `@smoke` Playwright specs against the deployed site, through browser page loads only: the zone's Bot Fight Mode challenges any other request from a CI runner, and the Free plan can't exempt it (#14). Nothing signs in: deployed sign-in emails go to real inboxes.
-8. **Prod only, if the smoke test fails:** `wrangler rollback` of both Workers. Code only; D1 stays as migrated.
+8. **Prod only, if the smoke test fails:** `wrangler rollback` of every Worker. Code only; D1 stays as migrated.
 
 Prod deploys are the commit dev just deployed and smoke-tested, rebuilt with prod config (a Worker version can't move between two Workers). They wait on the `prod` environment's required reviewer, which needs a public repo on GitHub Free. Each environment deploys one run at a time and is never cancelled halfway. Design and alternatives: [ADR 0021](./docs/adr/0021-one-pipeline-from-check-to-prod.md).
 
