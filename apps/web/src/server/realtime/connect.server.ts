@@ -14,6 +14,7 @@
  * The room then holds the socket for up to an hour; removal and sign-out
  * close it sooner (rooms.server.ts).
  */
+import { env } from "cloudflare:workers";
 import {
   currentSessionId,
   ForbiddenError,
@@ -24,7 +25,7 @@ import { requireWorkspaceRole } from "@flareling/core";
 import { z } from "zod";
 import { getEnv } from "#/env.ts";
 import { authContext } from "../auth/context.server.ts";
-import { forwardUpgrade } from "./rooms.server.ts";
+import { disconnectMember, forwardUpgrade } from "./rooms.server.ts";
 
 const refuse = (status: number, text: string) =>
   new Response(text, {
@@ -52,7 +53,10 @@ export async function connectRealtime(
     currentSessionId(ctx),
   ]);
   if (!principal || !sessionId) return refuse(401, "Unauthorized");
-  if (!(await withinRateLimit(ctx, `realtime:${principal.userId}`))) {
+  // Its own limiter (REALTIME_RATE_LIMITER), so reconnects never spend
+  // sign-in's allowance.
+  const limited = { ...ctx, rateLimiter: env.REALTIME_RATE_LIMITER };
+  if (!(await withinRateLimit(limited, `realtime:${principal.userId}`))) {
     return refuse(429, "Too many connections");
   }
   try {
@@ -62,8 +66,20 @@ export async function connectRealtime(
     throw err;
   }
 
-  return forwardUpgrade(request, workspaceId, {
+  const response = await forwardUpgrade(request, workspaceId, {
     userId: principal.userId,
     sessionId,
   });
+  // Removal between the check above and the room accepting the socket would
+  // find no socket to close, and leave this one open. Checking again once
+  // it's open closes that gap: a removal after this point finds the socket.
+  if (response.status === 101) {
+    try {
+      await requireWorkspaceRole(principal, workspaceId, "member");
+    } catch (err) {
+      if (!(err instanceof ForbiddenError)) throw err;
+      await disconnectMember(workspaceId, principal.userId);
+    }
+  }
+  return response;
 }

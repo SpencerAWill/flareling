@@ -45,6 +45,7 @@ export interface StackOutputs {
   readonly jobsQueueName: string;
   readonly jobsDeadLetterQueueName: string;
   readonly authRateLimitNamespaceId: number;
+  readonly realtimeRateLimitNamespaceId: number;
   readonly webBaseUrl: string;
   readonly webauthnRpId: string;
   readonly emailFrom: string;
@@ -61,6 +62,7 @@ export const OUTPUT_KEYS = {
   jobsQueueName: "string",
   jobsDeadLetterQueueName: "string",
   authRateLimitNamespaceId: "number",
+  realtimeRateLimitNamespaceId: "number",
   webBaseUrl: "string",
   webauthnRpId: "string",
   emailFrom: "string",
@@ -86,6 +88,7 @@ const QUEUES: Record<string, (o: StackOutputs) => string> = {
 /** Rate Limiting bindings, by binding name. */
 const RATE_LIMITS: Record<string, (o: StackOutputs) => number> = {
   AUTH_RATE_LIMITER: (o) => o.authRateLimitNamespaceId,
+  REALTIME_RATE_LIMITER: (o) => o.realtimeRateLimitNamespaceId,
 };
 
 /**

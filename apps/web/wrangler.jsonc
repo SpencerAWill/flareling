@@ -67,6 +67,14 @@
       "name": "AUTH_RATE_LIMITER",
       "namespace_id": "1001",
       "simple": { "limit": 10, "period": 60 }
+    },
+    // Realtime socket connections per user (/api/realtime). Apart from
+    // sign-in's, and higher: every tab and workspace switch opens one, and a
+    // realtime redeploy reconnects them all at once.
+    {
+      "name": "REALTIME_RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 60, "period": 60 }
     }
   ],
 
