@@ -728,9 +728,15 @@ importers:
       '@flareling/db':
         specifier: workspace:*
         version: link:../db
+      '@flareling/email':
+        specifier: workspace:*
+        version: link:../email
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@opentelemetry/api@1.9.1)
+      temporal-polyfill:
+        specifier: 'catalog:'
+        version: 1.0.5
     devDependencies:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'

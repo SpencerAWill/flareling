@@ -22,3 +22,4 @@ export {
 } from "./rbac.ts";
 export { revokeUserSessions } from "./session.ts";
 export { sweepExpiredAuthRows } from "./sweep.ts";
+export { hashToken, randomToken } from "./tokens.ts";

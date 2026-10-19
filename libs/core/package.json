@@ -24,6 +24,8 @@
   "dependencies": {
     "@flareling/auth": "workspace:*",
     "@flareling/db": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "@flareling/email": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "temporal-polyfill": "catalog:"
   }
 }
