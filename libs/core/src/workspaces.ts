@@ -16,6 +16,7 @@ import {
   schema,
 } from "@flareling/db";
 import { and, asc, eq, sql } from "drizzle-orm";
+import { OWNED_WORKSPACE_LIMIT, WORKSPACE_NAME_MAX } from "./limits.ts";
 
 const { workspaces, workspaceMembers } = schema;
 
@@ -23,15 +24,6 @@ export type WorkspaceRole = "owner" | "admin" | "member";
 
 /** Higher ranks can do everything lower ones can. */
 const RANK: Record<WorkspaceRole, number> = { member: 1, admin: 2, owner: 3 };
-
-/**
- * How many team workspaces one account may own. Keeps a script from filling
- * the shared database with workspaces; personal workspaces don't count.
- */
-export const OWNED_WORKSPACE_LIMIT = 10;
-
-/** The longest workspace name, in characters. */
-export const WORKSPACE_NAME_MAX = 60;
 
 /**
  * `name` as stored: NFC, control characters removed, whitespace collapsed.

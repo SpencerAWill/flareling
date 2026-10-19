@@ -1,6 +1,7 @@
 import { Button } from "@flareling/ui";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { NewWorkspace } from "#/components/new-workspace.tsx";
 import { Passkeys } from "#/components/passkeys.tsx";
 import { afterSessionChange, requireSignedIn } from "#/lib/auth.ts";
 import {
@@ -59,6 +60,13 @@ function Account() {
                 ({workspace.role})
               </span>{" "}
               <Link
+                to="/w/$workspaceId/members"
+                params={{ workspaceId: workspace.id }}
+                className="text-sm underline"
+              >
+                Members
+              </Link>{" "}
+              <Link
                 to="/w/$workspaceId/billing"
                 params={{ workspaceId: workspace.id }}
                 className="text-sm underline"
@@ -68,6 +76,7 @@ function Account() {
             </li>
           ))}
         </ul>
+        <NewWorkspace />
       </section>
       <Passkeys passkeys={passkeys} />
       <Button variant="secondary" className="self-start" onClick={onSignOut}>

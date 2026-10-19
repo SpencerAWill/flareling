@@ -1,9 +1,8 @@
 import { Button } from "@flareling/ui";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { z } from "zod";
-import { requireSignedIn } from "#/lib/auth.ts";
 import {
   getBillingFn,
   openBillingPortalFn,
@@ -12,9 +11,6 @@ import {
 
 export const Route = createFileRoute("/w/$workspaceId/billing")({
   validateSearch: z.object({ checkout: z.literal("success").optional() }),
-  beforeLoad: ({ context, location }) => ({
-    principal: requireSignedIn(context.principal, location),
-  }),
   loader: async ({ params }) => {
     const billing = await getBillingFn({
       data: { workspaceId: params.workspaceId },
@@ -79,12 +75,7 @@ function Billing() {
     : null;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-4 px-6">
-      <p>
-        <Link to="/my/account" className="text-sm underline">
-          Your account
-        </Link>
-      </p>
+    <main className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold">
         Billing for {billing.workspace.name}
       </h1>
