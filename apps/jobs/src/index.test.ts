@@ -153,6 +153,7 @@ describe("the scheduled handler", () => {
       auth: { sessions: done, magicLinks: done, webauthnChallenges: done },
       stripeEvents: { deleted: 1, complete: true },
       emailOutbox: done,
+      workspaceInvites: done,
     });
   });
 

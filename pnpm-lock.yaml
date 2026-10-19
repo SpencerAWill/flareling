@@ -431,6 +431,9 @@ importers:
       '@flareling/billing':
         specifier: workspace:*
         version: link:../../libs/billing
+      '@flareling/core':
+        specifier: workspace:*
+        version: link:../../libs/core
       '@flareling/email':
         specifier: workspace:*
         version: link:../../libs/email

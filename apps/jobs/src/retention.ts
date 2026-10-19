@@ -7,6 +7,7 @@
  */
 import { sweepExpiredAuthRows } from "@flareling/auth";
 import { sweepStripeEvents } from "@flareling/billing";
+import { sweepWorkspaceInvites } from "@flareling/core";
 import { sweepEmailOutbox } from "@flareling/email";
 import { errorMessage, log } from "@flareling/log";
 import type { Temporal } from "temporal-polyfill";
@@ -18,6 +19,8 @@ export async function runRetentionSweeps(
     auth: () => sweepExpiredAuthRows(now),
     stripeEvents: () => sweepStripeEvents(new Date(now.epochMilliseconds)),
     emailOutbox: () => sweepEmailOutbox(new Date(now.epochMilliseconds)),
+    workspaceInvites: () =>
+      sweepWorkspaceInvites(new Date(now.epochMilliseconds)),
   };
   const results: Record<string, unknown> = {};
   for (const [name, run] of Object.entries(sweeps)) {

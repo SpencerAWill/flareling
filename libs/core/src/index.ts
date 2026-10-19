@@ -14,6 +14,7 @@ export {
   removeMember,
   revokeInvite,
 } from "./members.ts";
+export { sweepWorkspaceInvites } from "./retention.ts";
 export {
   createWorkspace,
   ensurePersonalWorkspace,
