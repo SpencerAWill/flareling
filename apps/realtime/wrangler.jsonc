@@ -1,0 +1,36 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Durable Objects for realtime: one WorkspaceRoom per workspace, holding
+  // that workspace's WebSockets (docs/adr/0025-realtime-through-web.md). No
+  // public surface: browsers connect to apps/web, which checks the session
+  // and membership and forwards the upgrade through its Durable Object
+  // binding. Web also calls the room's RPC methods to publish events.
+  "name": "flareling-realtime",
+
+  // Pinned, as in apps/web (see the comment there).
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "main": "src/index.ts",
+
+  // Reachable only through apps/web's binding. (Workers that define a
+  // Durable Object get no preview URLs anyway.)
+  "workers_dev": false,
+  "preview_urls": false,
+
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+
+  "durable_objects": {
+    "bindings": [{ "name": "WORKSPACE_ROOM", "class_name": "WorkspaceRoom" }]
+  },
+
+  // Durable Object classes are created, renamed and deleted by migrations,
+  // which run once per Worker and are applied in order by tag. Never edit or
+  // remove an applied entry: add one (`renamed_classes`, `deleted_classes`).
+  // SQLite-backed, the only kind Workers Free offers.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["WorkspaceRoom"] }]
+}

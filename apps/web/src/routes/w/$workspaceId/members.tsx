@@ -9,6 +9,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { type FormEvent, useId, useState } from "react";
 import { LeaveWorkspace, MemberRow } from "#/components/member-row.tsx";
+import { usePresence } from "#/lib/realtime.tsx";
 import { ROLE_NAMES, workspaceTitle } from "#/lib/workspaces.ts";
 import {
   getMembersFn,
@@ -37,6 +38,8 @@ function Members() {
   const { workspace } = workspaceRoute.useLoaderData();
   const { members, invites, canManage, seats, viewerId, viewerRole } =
     Route.useLoaderData();
+  const { online, connected } = usePresence();
+  const onlineHere = members.filter((m) => online.has(m.userId)).length;
   const full = seats.used >= seats.limit;
 
   return (
@@ -84,6 +87,11 @@ function Members() {
         <h2 id="members-heading" className="text-lg font-semibold">
           {members.length} {members.length === 1 ? "member" : "members"}
         </h2>
+        {connected && (
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            {onlineHere} online now
+          </p>
+        )}
         <ul className="flex flex-col divide-y divide-neutral-200 dark:divide-neutral-800">
           {members.map((member) => (
             <MemberRow
@@ -93,6 +101,7 @@ function Members() {
               viewerId={viewerId}
               viewerRole={viewerRole}
               personal={workspace.personal}
+              online={online.has(member.userId)}
             />
           ))}
         </ul>

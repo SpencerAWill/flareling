@@ -31,12 +31,15 @@ export function MemberRow({
   viewerId,
   viewerRole,
   personal,
+  online,
 }: {
   workspaceId: string;
   member: { userId: string; email: string; role: WorkspaceRole };
   viewerId: string;
   viewerRole: WorkspaceRole;
   personal: boolean;
+  /** Has the workspace open right now. */
+  online: boolean;
 }) {
   const router = useRouter();
   const changeRole = useServerFn(changeRoleFn);
@@ -64,12 +67,17 @@ export function MemberRow({
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 py-2">
-      <span className="break-all">
+      <span className="flex flex-wrap items-center gap-2 break-all">
         {member.email}
         {isViewer && (
           <span className="text-sm text-neutral-700 dark:text-neutral-300">
             {" "}
             (you)
+          </span>
+        )}
+        {online && (
+          <span className="rounded-full bg-green-100 px-2 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-100">
+            Online
           </span>
         )}
       </span>

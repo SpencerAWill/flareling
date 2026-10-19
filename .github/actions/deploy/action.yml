@@ -1,4 +1,4 @@
-# Deploys one environment (a Pulumi stack and its two Workers) at the
+# Deploys one environment (a Pulumi stack and its three Workers) at the
 # checked-out commit. Used by cicd.yml's `deploy: dev` and `deploy: prod`
 # jobs, which run with that GitHub environment and pass its secrets in as
 # inputs: ucmc.spencerwill.com's pattern. (A reusable workflow didn't work
@@ -10,7 +10,8 @@
 #   3. build                with this stack's config
 #   4. D1 restore point     the way back, since migrations have no "down"
 #   5. migrate              before any code that needs the new schema
-#   6. deploy jobs, then web    consumers before producers
+#   6. deploy jobs, realtime, then web   consumers, and the Durable
+#                           Object class, before web, which binds to both
 #   7. smoke                the @smoke Playwright specs against the site
 #   8. rollback (prod)      the Workers' code, if smoke failed; never D1
 name: Deploy
@@ -92,7 +93,7 @@ runs:
 
     - name: Build
       shell: bash
-      run: pnpm turbo run build --filter=@flareling/web --filter=@flareling/jobs
+      run: pnpm turbo run build --filter=@flareling/web --filter=@flareling/jobs --filter=@flareling/realtime
 
     # The bookmark to `wrangler d1 time-travel restore` to if a migration
     # goes wrong. Workers Free keeps 7 days of Time Travel history.
@@ -156,6 +157,18 @@ runs:
         WRANGLER_SEND_METRICS: "false"
       run: pnpm run deploy --secrets-file "$RUNNER_TEMP/jobs-secrets.json"
 
+    # Before web: web's Durable Object binding names this Worker's
+    # WorkspaceRoom class, which has to exist. No secrets. Its `migrations`
+    # create the class on the first deploy.
+    - name: Deploy apps/realtime
+      shell: bash
+      working-directory: apps/realtime
+      env:
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        WRANGLER_SEND_METRICS: "false"
+      run: pnpm run deploy
+
     # Deploys the config the build wrote to dist/ (the Vite plugin points
     # Wrangler at it), which sync-env's changes are in. The Turnstile site
     # key is public: the sign-in page reads it from the server.
@@ -213,6 +226,7 @@ runs:
       run: |
         (cd apps/web && pnpm run rollback --message "Smoke test failed for $GITHUB_SHA")
         (cd apps/jobs && pnpm run rollback --message "Smoke test failed for $GITHUB_SHA")
+        (cd apps/realtime && pnpm run rollback --message "Smoke test failed for $GITHUB_SHA")
 
     - name: Upload the Playwright report
       if: failure() && steps.smoke.outcome == 'failure'

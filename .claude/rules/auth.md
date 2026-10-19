@@ -9,6 +9,9 @@ paths:
   - "apps/web/src/routes/sign-in.tsx"
   - "apps/web/src/routes/auth.*"
   - "apps/web/src/routes/invite.tsx"
+  - "apps/web/src/routes/api/realtime.*"
+  - "apps/web/src/server/realtime/**"
+  - "apps/realtime/**"
   - "apps/web/src/routes/w/**"
   - "apps/web/src/routes/my/**"
   - "apps/web/src/components/passkeys.tsx"
@@ -42,6 +45,8 @@ The design and why it's ours: `docs/adr/0019-own-auth-magic-links-passkeys-d1-se
 - **Invite links never create a session.** Accepting needs a signed-in account with the invited address (`acceptInvite`). Don't make `/invite` sign anyone in, and don't act on page load.
 - **A workspace always keeps an owner.** Role changes, removals and leaving put the last-owner check (`anotherOwnerRemains`) inside the UPDATE or DELETE, along with the role as it was read. Don't move either into a read beforehand.
 - **Seat checks are in the write.** Inviting counts members plus unexpired open invites inside the INSERT; accepting counts members inside its INSERT. Don't replace them with a count read beforehand.
+- **Realtime sockets open only through apps/web** (`/api/realtime/$workspaceId`, ADR 0025), which checks Origin, the session and membership before forwarding. The room trusts the identity headers web sets; never give apps/realtime a public route or a workers.dev URL. Events carry no data, only "something changed", so a socket never becomes a read path that skips a server function's checks.
+- **Anything that removes access closes sockets.** Removal or leaving calls `disconnectMember`, and sign-out calls `disconnectSession`. A new way to lose access (revoking sessions, disabling an account) needs the same, or it waits up to an hour (`MAX_AGE_MS`).
 - **Times come from `nowOf(ctx)`**, never `Date.now()` or the database's clock, so tests can move time.
 
 ## Adding things

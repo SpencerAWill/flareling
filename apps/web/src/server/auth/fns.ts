@@ -3,6 +3,7 @@
  * call libs/auth through a dynamic import, which keeps the server-only code
  * (D1, bindings, cookies) out of the client bundle.
  */
+import type { AuthContext } from "@flareling/auth";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -37,19 +38,56 @@ export const requestMagicLinkFn = createServerFn({ method: "POST" })
     return requestMagicLink(authContext(), data);
   });
 
+/**
+ * Runs a sign-in. Signing in rotates out this browser's previous session,
+ * which takes that session's access with it, so its realtime sockets are
+ * closed too (ADR 0025). Reading the previous session first is the lookup
+ * every page request already does, so it adds nothing for abuse guards to
+ * stop.
+ */
+async function signingIn<T extends { readonly ok: boolean }>(
+  run: (ctx: AuthContext) => Promise<T>,
+): Promise<T> {
+  const { currentSessionId, getPrincipal } = await import("@flareling/auth");
+  const { authContext } = await import("./context.server.ts");
+  const ctx = authContext();
+  const [previous, previousSessionId] = await Promise.all([
+    getPrincipal(ctx),
+    currentSessionId(ctx),
+  ]);
+  const result = await run(ctx);
+  if (result.ok && previous && previousSessionId) {
+    const { disconnectSession } = await import("../realtime/rooms.server.ts");
+    await disconnectSession(previous.userId, previousSessionId);
+  }
+  return result;
+}
+
 export const consumeMagicLinkFn = createServerFn({ method: "POST" })
   .validator(z.object({ token: z.string().min(16).max(128) }))
   .handler(async ({ data }) => {
     const { consumeMagicLink } = await import("@flareling/auth");
-    const { authContext } = await import("./context.server.ts");
-    return consumeMagicLink(authContext(), data.token);
+    return signingIn((ctx) => consumeMagicLink(ctx, data.token));
   });
 
 export const signOutFn = createServerFn({ method: "POST" }).handler(
   async () => {
-    const { signOut } = await import("@flareling/auth");
+    const { currentSessionId, getPrincipal, signOut } = await import(
+      "@flareling/auth"
+    );
     const { authContext } = await import("./context.server.ts");
-    await signOut(authContext());
+    const ctx = authContext();
+    const [principal, sessionId] = await Promise.all([
+      getPrincipal(ctx),
+      currentSessionId(ctx),
+    ]);
+    await signOut(ctx);
+    // Realtime sockets this session opened outlive it otherwise (up to their
+    // maximum age); close them in every workspace it could have open.
+    if (principal && sessionId) {
+      const { disconnectSession } = await import("../realtime/rooms.server.ts");
+      await disconnectSession(principal.userId, sessionId);
+    }
     return { ok: true as const };
   },
 );
@@ -113,8 +151,7 @@ export const finishPasskeySignInFn = createServerFn({ method: "POST" })
   .validator(z.object({ response: webauthnResponse }))
   .handler(async ({ data }) => {
     const { finishPasskeyAuthentication } = await import("@flareling/auth");
-    const { authContext } = await import("./context.server.ts");
-    return finishPasskeyAuthentication(authContext(), data);
+    return signingIn((ctx) => finishPasskeyAuthentication(ctx, data));
   });
 
 export const listPasskeysFn = createServerFn({ method: "GET" }).handler(

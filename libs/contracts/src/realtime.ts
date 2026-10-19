@@ -1,0 +1,80 @@
+/**
+ * The realtime protocol between the browser, apps/web and apps/realtime's
+ * WorkspaceRoom (docs/adr/0025-realtime-through-web.md). Pure types and zod,
+ * so all three can import it, the browser included.
+ *
+ * Events say only that something changed, never what: a client refetches
+ * through the app's server functions, which check permissions. A socket is
+ * never a second read path.
+ */
+import { z } from "zod";
+
+/** The one message a client sends. The room answers it without waking. */
+export const PING = "ping";
+export const PONG = "pong";
+
+/**
+ * Close codes the room uses (4000-4999 are the application's). A client
+ * reconnects after `expired`, and stops after `removed` or `signedOut`. The
+ * room also says why in a `disconnect` message just before closing, since a
+ * close frame's code doesn't survive every hop (some proxies, and local
+ * development's Worker-to-Worker bridge, lose it).
+ */
+export const CLOSE = {
+  /** The connection reached its maximum age; reconnect, which re-checks. */
+  expired: 4000,
+  /** The session that opened it ended (sign-out). */
+  signedOut: 4401,
+  /** The user is no longer a member of the workspace. */
+  removed: 4403,
+} as const;
+
+/**
+ * Headers apps/web sets when it forwards an upgrade to the room. Only web
+ * can reach the room (a Durable Object binding), and it overwrites any
+ * copies a browser sent, so the room trusts them.
+ */
+export const CONNECTION_HEADERS = {
+  userId: "X-Realtime-User-Id",
+  sessionId: "X-Realtime-Session-Id",
+} as const;
+
+export const serverMessage = z.discriminatedUnion("type", [
+  /** Who has the workspace open: user ids, once each however many tabs. */
+  z.object({ type: z.literal("presence"), online: z.array(z.string()) }),
+  /** Membership changed (an invite, a role, someone joined or left). */
+  z.object({ type: z.literal("members_changed") }),
+  /** The room is about to close this socket, and why (see CLOSE). */
+  z.object({
+    type: z.literal("disconnect"),
+    // CLOSE's keys, so a new reason can't be sent without being accepted.
+    reason: z.enum(
+      Object.keys(CLOSE) as [keyof typeof CLOSE, ...(keyof typeof CLOSE)[]],
+    ),
+  }),
+]);
+
+/** Why a room closes a socket: a key of CLOSE. */
+export type DisconnectReason = keyof typeof CLOSE;
+
+/** The reason a close code stands for, if it's one of CLOSE's. */
+export function reasonForCode(code: number): DisconnectReason | undefined {
+  return (Object.keys(CLOSE) as DisconnectReason[]).find(
+    (key) => CLOSE[key] === code,
+  );
+}
+
+export type ServerMessage = z.infer<typeof serverMessage>;
+
+/** What apps/web may publish to a room. */
+export type RoomEvent = Extract<ServerMessage, { type: "members_changed" }>;
+
+/** The RPC methods apps/web calls on a WorkspaceRoom stub. */
+export interface WorkspaceRoomApi {
+  /** Sends `event` to every open socket. */
+  publish(event: RoomEvent): void;
+  /** Closes every socket `userId` has open here; returns how many. */
+  closeUser(userId: string, code: number): number;
+  /** Closes every socket opened by `sessionId`; returns how many. */
+  closeSession(sessionId: string): number;
+}

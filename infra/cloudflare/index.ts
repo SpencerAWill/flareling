@@ -3,6 +3,7 @@ import {
   accountId,
   authRateLimitNamespaceId,
   hostname,
+  realtimeRateLimitNamespaceId,
   resourcePrefix,
   zone,
 } from "./src/config.ts";
@@ -35,6 +36,7 @@ import { turnstileSecretKey, turnstileSiteKey } from "./src/turnstile.ts";
 export {
   authRateLimitNamespaceId,
   emailFrom,
+  realtimeRateLimitNamespaceId,
   resourcePrefix,
   webauthnRpId,
   webBaseUrl,

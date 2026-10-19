@@ -43,6 +43,15 @@ export const authRateLimitNamespaceId = config.requireNumber(
 );
 
 /**
+ * The same, for apps/web's REALTIME_RATE_LIMITER: socket connections per
+ * user. Its own namespace so a reconnect storm (a realtime redeploy, many
+ * tabs) never eats into sign-in's limits, and its own, higher limit.
+ */
+export const realtimeRateLimitNamespaceId = config.requireNumber(
+  "realtimeRateLimitNamespaceId",
+);
+
+/**
  * Whether apps/web's Worker (`<resourcePrefix>-web`) has been deployed in
  * this stack yet. A custom domain can only point at a Worker that exists, so
  * a new stack's first deploy runs with this off; set it to true afterwards

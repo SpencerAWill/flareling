@@ -34,9 +34,12 @@ export const securityHeaders: Readonly<Record<string, string>> = {
  * `response` with the security headers added, without overriding any it sets.
  * A response whose headers are immutable (from `Response.redirect`, or passed
  * through from a fetch) is copied rather than modified, since setting a header
- * on it throws.
+ * on it throws. A WebSocket upgrade (101) is passed through as it is.
  */
 export function withSecurityHeaders(response: Response): Response {
+  // A WebSocket upgrade: the headers would do nothing for a socket, and
+  // copying the response would drop its `webSocket`.
+  if (response.status === 101) return response;
   let target = response;
   for (const [name, value] of Object.entries(securityHeaders)) {
     if (target.headers.has(name)) continue;

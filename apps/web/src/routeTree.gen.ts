@@ -17,6 +17,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as DevOutboxRouteImport } from './routes/dev/outbox'
 import { Route as MyAccountRouteImport } from './routes/my/account'
 import { Route as WWorkspaceIdRouteRouteImport } from './routes/w/$workspaceId/route'
+import { Route as ApiRealtimeWorkspaceIdRouteImport } from './routes/api/realtime.$workspaceId'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as WWorkspaceIdIndexRouteImport } from './routes/w/$workspaceId/index'
 import { Route as WWorkspaceIdBillingRouteImport } from './routes/w/$workspaceId/billing'
@@ -62,6 +63,11 @@ const WWorkspaceIdRouteRoute = WWorkspaceIdRouteRouteImport.update({
   path: '/w/$workspaceId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRealtimeWorkspaceIdRoute = ApiRealtimeWorkspaceIdRouteImport.update({
+  id: '/api/realtime/$workspaceId',
+  path: '/api/realtime/$workspaceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe/webhook',
   path: '/api/stripe/webhook',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/outbox': typeof DevOutboxRoute
   '/my/account': typeof MyAccountRoute
+  '/api/realtime/$workspaceId': typeof ApiRealtimeWorkspaceIdRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
   '/w/$workspaceId/members': typeof WWorkspaceIdMembersRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/outbox': typeof DevOutboxRoute
   '/my/account': typeof MyAccountRoute
+  '/api/realtime/$workspaceId': typeof ApiRealtimeWorkspaceIdRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
   '/w/$workspaceId/members': typeof WWorkspaceIdMembersRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/outbox': typeof DevOutboxRoute
   '/my/account': typeof MyAccountRoute
+  '/api/realtime/$workspaceId': typeof ApiRealtimeWorkspaceIdRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
   '/w/$workspaceId/members': typeof WWorkspaceIdMembersRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/dev/outbox'
     | '/my/account'
+    | '/api/realtime/$workspaceId'
     | '/api/stripe/webhook'
     | '/w/$workspaceId/billing'
     | '/w/$workspaceId/members'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/dev/outbox'
     | '/my/account'
+    | '/api/realtime/$workspaceId'
     | '/api/stripe/webhook'
     | '/w/$workspaceId/billing'
     | '/w/$workspaceId/members'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/dev/outbox'
     | '/my/account'
+    | '/api/realtime/$workspaceId'
     | '/api/stripe/webhook'
     | '/w/$workspaceId/billing'
     | '/w/$workspaceId/members'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   DevOutboxRoute: typeof DevOutboxRoute
   MyAccountRoute: typeof MyAccountRoute
+  ApiRealtimeWorkspaceIdRoute: typeof ApiRealtimeWorkspaceIdRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WWorkspaceIdRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/realtime/$workspaceId': {
+      id: '/api/realtime/$workspaceId'
+      path: '/api/realtime/$workspaceId'
+      fullPath: '/api/realtime/$workspaceId'
+      preLoaderRoute: typeof ApiRealtimeWorkspaceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stripe/webhook': {
       id: '/api/stripe/webhook'
       path: '/api/stripe/webhook'
@@ -294,6 +314,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   DevOutboxRoute: DevOutboxRoute,
   MyAccountRoute: MyAccountRoute,
+  ApiRealtimeWorkspaceIdRoute: ApiRealtimeWorkspaceIdRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport

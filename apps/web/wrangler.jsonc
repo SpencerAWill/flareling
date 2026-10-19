@@ -67,6 +67,14 @@
       "name": "AUTH_RATE_LIMITER",
       "namespace_id": "1001",
       "simple": { "limit": 10, "period": 60 }
+    },
+    // Realtime socket connections per user (/api/realtime). Apart from
+    // sign-in's, and higher: every tab and workspace switch opens one, and a
+    // realtime redeploy reconnects them all at once.
+    {
+      "name": "REALTIME_RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 60, "period": 60 }
     }
   ],
 
@@ -74,6 +82,21 @@
   // deploys use the target stack's `resourcePrefix`.
   "queues": {
     "producers": [{ "binding": "JOBS_QUEUE", "queue": "flareling-dev-jobs" }]
+  },
+
+  // apps/realtime's rooms, one per workspace: /api/realtime/$workspaceId
+  // forwards WebSocket upgrades to them, and server functions publish
+  // events through them (src/server/realtime). The class lives in the
+  // realtime Worker, so it must be deployed first. sync-env points
+  // `script_name` at the stack's realtime Worker.
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "WORKSPACE_ROOM",
+        "class_name": "WorkspaceRoom",
+        "script_name": "flareling-realtime"
+      }
+    ]
   },
 
   // Non-secret configuration, validated by src/env.ts. These are the local

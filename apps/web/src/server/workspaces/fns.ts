@@ -10,6 +10,12 @@ import { z } from "zod";
 
 const workspaceInput = z.object({ workspaceId: z.uuid() });
 
+/**
+ * Pushes to the workspace's open tabs (src/server/realtime). Called after a
+ * change succeeds; best effort, never failing the change.
+ */
+const realtime = () => import("../realtime/rooms.server.ts");
+
 async function signedIn() {
   const { getPrincipal } = await import("@flareling/auth");
   const { authContext } = await import("../auth/context.server.ts");
@@ -107,9 +113,11 @@ export const inviteMemberFn = createServerFn({ method: "POST" })
       const result = await unlessRefused(() =>
         inviteMember(inviteContext(), principal, data),
       );
-      return result.ok
-        ? result.value
-        : { ok: false as const, reason: "forbidden" as const };
+      if (!result.ok)
+        return { ok: false as const, reason: "forbidden" as const };
+      if (result.value.ok)
+        await (await realtime()).membersChanged(data.workspaceId);
+      return result.value;
     } catch (err) {
       log.error("workspace.invite_failed", { error: errorMessage(err) });
       return { ok: false as const, reason: "unavailable" as const };
@@ -136,7 +144,9 @@ export const acceptInviteFn = createServerFn({ method: "POST" })
     const principal = await signedIn();
     if (!principal)
       return { ok: false as const, reason: "unauthorized" as const };
-    return acceptInvite(inviteContext(), principal, data.token);
+    const result = await acceptInvite(inviteContext(), principal, data.token);
+    if (result.ok) await (await realtime()).membersChanged(result.workspaceId);
+    return result;
   });
 
 export const declineInviteFn = createServerFn({ method: "POST" })
@@ -144,21 +154,42 @@ export const declineInviteFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { declineInvite } = await import("@flareling/core");
     const { inviteContext } = await import("./context.server.ts");
-    return declineInvite(inviteContext(), await signedIn(), data.token);
+    const { workspaceId } = await declineInvite(
+      inviteContext(),
+      await signedIn(),
+      data.token,
+    );
+    if (workspaceId) await (await realtime()).membersChanged(workspaceId);
+    // Which workspace it was is for the push, not the browser.
+    return { ok: true as const };
   });
 
 const memberInput = workspaceInput.extend({ userId: z.uuid() });
 
-/** Runs a membership change, mapping a refusal to `forbidden`. */
+/**
+ * Runs a membership change, mapping a refusal to `forbidden`. On success,
+ * runs `after` (closing sockets, if any), then tells the workspace's open
+ * tabs.
+ */
 async function membershipChange(
+  workspaceId: string,
   run: () => Promise<{ ok: true } | { ok: false; reason: string } | boolean>,
+  after?: (rooms: Awaited<ReturnType<typeof realtime>>) => Promise<void>,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const result = await unlessRefused(run);
-  if (!result.ok) return { ok: false, reason: "forbidden" };
-  if (typeof result.value === "boolean") {
-    return result.value ? { ok: true } : { ok: false, reason: "not_found" };
+  const refused = await unlessRefused(run);
+  if (!refused.ok) return { ok: false, reason: "forbidden" };
+  const result =
+    typeof refused.value === "boolean"
+      ? refused.value
+        ? ({ ok: true } as const)
+        : ({ ok: false, reason: "not_found" } as const)
+      : refused.value;
+  if (result.ok) {
+    const rooms = await realtime();
+    await after?.(rooms);
+    await rooms.membersChanged(workspaceId);
   }
-  return result.value;
+  return result;
 }
 
 export const changeRoleFn = createServerFn({ method: "POST" })
@@ -166,7 +197,7 @@ export const changeRoleFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { changeRole } = await import("@flareling/core");
     const principal = await signedIn();
-    return membershipChange(() =>
+    return membershipChange(data.workspaceId, () =>
       changeRole(principal, data.workspaceId, data.userId, data.role),
     );
   });
@@ -176,8 +207,10 @@ export const removeMemberFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { removeMember } = await import("@flareling/core");
     const principal = await signedIn();
-    return membershipChange(() =>
-      removeMember(principal, data.workspaceId, data.userId),
+    return membershipChange(
+      data.workspaceId,
+      () => removeMember(principal, data.workspaceId, data.userId),
+      (rooms) => rooms.disconnectMember(data.workspaceId, data.userId),
     );
   });
 
@@ -186,7 +219,14 @@ export const leaveWorkspaceFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { leaveWorkspace } = await import("@flareling/core");
     const principal = await signedIn();
-    return membershipChange(() => leaveWorkspace(principal, data.workspaceId));
+    return membershipChange(
+      data.workspaceId,
+      () => leaveWorkspace(principal, data.workspaceId),
+      async (rooms) => {
+        if (principal)
+          await rooms.disconnectMember(data.workspaceId, principal.userId);
+      },
+    );
   });
 
 export const revokeInviteFn = createServerFn({ method: "POST" })
@@ -194,7 +234,7 @@ export const revokeInviteFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { revokeInvite } = await import("@flareling/core");
     const principal = await signedIn();
-    return membershipChange(() =>
+    return membershipChange(data.workspaceId, () =>
       revokeInvite(principal, data.workspaceId, data.inviteId),
     );
   });

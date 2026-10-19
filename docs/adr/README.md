@@ -46,3 +46,4 @@ Small, easily reversed choices don't need one. When in doubt, write the short ve
 | [0022](./0022-dev-email-outbox.md) | A dev email outbox behind Cloudflare Access | Accepted |
 | [0023](./0023-resend-for-production-email.md) | Resend for production email, from a domain the template user brings | Accepted |
 | [0024](./0024-invites-never-sign-in.md) | Workspace invites never sign anyone in, and hold a seat | Accepted |
+| [0025](./0025-realtime-through-web.md) | Realtime through apps/web, with one Durable Object room per workspace | Accepted |

@@ -15,6 +15,7 @@ const prod = {
   jobsQueueName: "flareling-prod-jobs",
   jobsDeadLetterQueueName: "flareling-prod-jobs-dlq",
   authRateLimitNamespaceId: 2001,
+  realtimeRateLimitNamespaceId: 2002,
   webBaseUrl: "https://flareling.example.com",
   webauthnRpId: "flareling.example.com",
   emailFrom: "noreply@flareling.example.com",
@@ -44,6 +45,7 @@ describe("syncWranglerConfig on the committed configs", () => {
       { binding: "JOBS_QUEUE", queue: "flareling-prod-jobs" },
     ]);
     assert.equal(config.ratelimits[0].namespace_id, "2001");
+    assert.equal(config.ratelimits[1].namespace_id, "2002");
     assert.equal(config.vars.APP_BASE_URL, "https://flareling.example.com");
     assert.equal(config.vars.WEBAUTHN_RP_ID, "flareling.example.com");
     assert.equal(config.vars.EMAIL_FROM, "noreply@flareling.example.com");
@@ -53,6 +55,29 @@ describe("syncWranglerConfig on the committed configs", () => {
     assert.equal(config.vars.APP_NAME, "Flareling");
     // Comments survive.
     assert.match(text, /\/\/ Pinned rather than tracking "today"/);
+    // The rooms are the stack's realtime Worker's.
+    assert.deepEqual(config.durable_objects.bindings, [
+      {
+        name: "WORKSPACE_ROOM",
+        class_name: "WorkspaceRoom",
+        script_name: "flareling-prod-realtime",
+      },
+    ]);
+  });
+
+  it("renames apps/realtime and leaves its own classes and migrations", () => {
+    const config = parse(
+      syncWranglerConfig(committed("realtime"), "realtime", prod),
+    );
+    assert.equal(config.name, "flareling-prod-realtime");
+    assert.deepEqual(
+      config.durable_objects,
+      parse(committed("realtime")).durable_objects,
+    );
+    assert.deepEqual(
+      config.migrations,
+      parse(committed("realtime")).migrations,
+    );
   });
 
   it("points apps/jobs at the stack, dead-letter queue included", () => {
@@ -104,6 +129,14 @@ describe("syncWranglerConfig refuses what it doesn't know", () => {
     assert.throws(
       () => syncWranglerConfig(text, "web", prod),
       /queue "flareling-dev-other"/,
+    );
+  });
+
+  it("a Durable Object in a Worker it doesn't know", () => {
+    const text = `{ "name": "x", "durable_objects": { "bindings": [{ "name": "R", "class_name": "R", "script_name": "flareling-other" }] } }`;
+    assert.throws(
+      () => syncWranglerConfig(text, "web", prod),
+      /Worker "flareling-other"/,
     );
   });
 

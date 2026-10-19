@@ -1,6 +1,7 @@
 import { createFileRoute, notFound, Outlet } from "@tanstack/react-router";
 import { WorkspaceNav } from "#/components/workspace-nav.tsx";
 import { requireSignedIn } from "#/lib/auth.ts";
+import { WorkspaceRealtime } from "#/lib/realtime.tsx";
 import { listWorkspacesFn } from "#/server/auth/fns.ts";
 
 /**
@@ -27,7 +28,10 @@ function WorkspaceLayout() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-6 py-8">
       <WorkspaceNav current={workspace} workspaces={workspaces} />
-      <Outlet />
+      {/* Keyed, so switching workspaces opens a fresh socket and state. */}
+      <WorkspaceRealtime key={workspace.id} workspaceId={workspace.id}>
+        <Outlet />
+      </WorkspaceRealtime>
     </div>
   );
 }

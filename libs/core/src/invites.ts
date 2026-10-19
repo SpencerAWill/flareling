@@ -408,13 +408,15 @@ export async function acceptInvite(
 /**
  * Declines the invite `token` opens. Anyone holding the link may decline it,
  * signed in or not: it's a button on the invite page, never a page load, so
- * an email scanner can't. Unknown and closed invites are a no-op.
+ * an email scanner can't. Unknown and closed invites are a no-op. Returns
+ * the workspace whose invite was declined, for the app to notify; it's not
+ * for the browser.
  */
 export async function declineInvite(
   ctx: InviteContext,
   principal: Principal | null,
   token: string,
-): Promise<{ ok: true }> {
+): Promise<{ ok: true; workspaceId: string | null }> {
   const now = nowMs(ctx);
   const [declined] = await getDb()
     .update(workspaceInvites)
@@ -435,7 +437,7 @@ export async function declineInvite(
       metadata: { inviteId: declined.id },
     });
   }
-  return { ok: true };
+  return { ok: true, workspaceId: declined?.workspaceId ?? null };
 }
 
 export interface PendingInvite {
