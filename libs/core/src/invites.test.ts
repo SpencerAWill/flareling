@@ -121,6 +121,7 @@ describe("inviting and accepting", () => {
     expect(await acceptInvite(ctx, invitee, token)).toEqual({
       ok: true,
       workspaceId,
+      publicId: expect.stringMatching(/^[0-9a-z]{10}$/),
       alreadyMember: false,
     });
     // Joined on the context's clock, not the database's.

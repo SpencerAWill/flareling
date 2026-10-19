@@ -310,6 +310,8 @@ export type AcceptResult =
   | {
       readonly ok: true;
       readonly workspaceId: string;
+      /** For the workspace's URL (`/w/<publicId>`). */
+      readonly publicId: string;
       /** Already a member (another invite, or a second click); nothing changed. */
       readonly alreadyMember: boolean;
     }
@@ -340,9 +342,11 @@ export async function acceptInvite(
     .select({
       id: workspaceInvites.id,
       workspaceId: workspaceInvites.workspaceId,
+      publicId: workspaces.publicId,
       email: workspaceInvites.email,
     })
     .from(workspaceInvites)
+    .innerJoin(workspaces, eq(workspaces.id, workspaceInvites.workspaceId))
     .where(and(eq(workspaceInvites.tokenHash, tokenHash), isOpen(now)));
   if (!invite) return { ok: false, reason: "invalid" };
 
@@ -403,6 +407,7 @@ export async function acceptInvite(
   return {
     ok: true,
     workspaceId: invite.workspaceId,
+    publicId: invite.publicId,
     alreadyMember: added.length === 0,
   };
 }
