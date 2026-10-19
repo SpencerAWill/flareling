@@ -43,7 +43,22 @@ const tokenPermissions = {
   },
 } as const;
 
-export type TokenKind = keyof typeof tokenPermissions;
+/**
+ * `pulumi preview` on PRs (cicd.yml's `preview:` jobs, in the `preview`
+ * environment): the infra token's reach, read only. Derived rather than
+ * listed, so a permission added to the infra token reaches previews too.
+ */
+const readOnly = (names: readonly string[]) =>
+  names.map((name) => name.replace(/ Write$/, " Read"));
+const previewPermissions = {
+  account: readOnly(tokenPermissions.infra.account),
+  zone: readOnly(tokenPermissions.infra.zone),
+  dedicatedZone: readOnly(tokenPermissions.infra.dedicatedZone),
+};
+
+const allPermissions = { ...tokenPermissions, preview: previewPermissions };
+
+export type TokenKind = keyof typeof allPermissions;
 
 export function createCiTokens({
   accountId,
@@ -90,12 +105,14 @@ export function createCiTokens({
   });
 
   const mint = (kind: TokenKind) => {
-    const permissions = tokenPermissions[kind];
+    const permissions: {
+      readonly account: readonly string[];
+      readonly zone: readonly string[];
+      readonly dedicatedZone?: readonly string[];
+    } = allPermissions[kind];
     const zone = [
       ...permissions.zone,
-      ...(zoneDedicated && "dedicatedZone" in permissions
-        ? permissions.dedicatedZone
-        : []),
+      ...(zoneDedicated ? (permissions.dedicatedZone ?? []) : []),
     ];
     const { account } = permissions;
     const token = new cloudflare.AccountToken(`${kind}-token`, {
@@ -117,5 +134,9 @@ export function createCiTokens({
     return pulumi.secret(token.value);
   };
 
-  return { deploy: mint("deploy"), infra: mint("infra") };
+  return {
+    deploy: mint("deploy"),
+    infra: mint("infra"),
+    preview: mint("preview"),
+  };
 }

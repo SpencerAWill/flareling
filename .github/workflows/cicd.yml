@@ -1,6 +1,8 @@
 # Checks every change, then deploys main: dev on every push, prod once a
-# reviewer approves that same run (the `prod` environment). Check jobs are
-# `check: <what>` and deploy jobs `deploy: <environment>`; only `required`
+# reviewer approves that same run (the `prod` environment). PRs that touch
+# infra also get a `pulumi preview` comment per stack. Check jobs are
+# `check: <what>`, preview jobs `preview: <stack>` and deploy jobs
+# `deploy: <environment>`; only `required`
 # (which waits on every check) is a required status check, so renaming a check
 # never breaks the ruleset. The deploy steps live in the local action
 # .github/actions/deploy, used once per environment. Design: docs/adr/0021-one-pipeline-from-check-to-prod.md.
@@ -42,6 +44,7 @@ jobs:
     outputs:
       code: ${{ github.event_name == 'push' || steps.filter.outputs.code == 'true' }}
       workflows: ${{ github.event_name == 'push' || steps.filter.outputs.workflows == 'true' }}
+      infra: ${{ github.event_name == 'push' || steps.filter.outputs.infra == 'true' }}
     steps:
       - id: filter
         if: github.event_name == 'pull_request'
@@ -62,6 +65,15 @@ jobs:
               - '.github/zizmor.yml'
               - '.github/actions/**'
               - '.github/actionlint.yaml'
+            # What can change a `pulumi preview` of infra/cloudflare: the
+            # program and stack configs, provider versions, and the preview
+            # job and its renderer.
+            infra:
+              - 'infra/cloudflare/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/cicd.yml'
+              - 'tooling/scripts/src/*pulumi-preview*'
 
   # Walks the whole lockfile, so it runs on every change rather than by path.
   # Production dependencies only: dev tooling never ships in a Worker bundle.
@@ -312,6 +324,131 @@ jobs:
       # Any future ignore goes in .github/zizmor.yml with its reason.
       - name: zizmor
         run: ./zizmor --color always .github/workflows/
+
+  # A `pulumi preview` of each infra/cloudflare stack on PRs that touch infra,
+  # posted as one sticky comment per stack (updated on every push) and in full
+  # in the job summary. Add a stack's name to the matrix when adding a stack.
+  #
+  # Runs under the `preview` environment, never `dev` or `prod`, and that is a
+  # security boundary: any PR branch can trigger it, so its Cloudflare token
+  # (CLOUDFLARE_PREVIEW_API_TOKEN, minted by infra/github) can only read. The
+  # Pulumi token it gets through OIDC is personal, though, and can read every
+  # stack's secrets, including other repos'. So `preview` requires a
+  # reviewer: approve a run only for a branch whose changes you have read
+  # (README, "Pulumi previews on PRs"). One approval covers every stack in
+  # the run.
+  #
+  # Not part of `required`: a preview informs the review, it doesn't gate the
+  # merge, and the deploy runs `pulumi up --diff` again anyway. Skipped for
+  # forks and Dependabot, whose runs get no secrets (push any commit to a
+  # Dependabot branch to preview it as yourself), and until
+  # PULUMI_PREVIEWS_ENABLED is "true".
+  preview:
+    name: "preview: ${{ matrix.stack }}"
+    needs: paths
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.fork != true &&
+      github.actor != 'dependabot[bot]' &&
+      vars.PULUMI_PREVIEWS_ENABLED == 'true' &&
+      needs.paths.outputs.infra == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: [dev, prod]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: preview
+    permissions:
+      contents: read
+      id-token: write # the OIDC exchange with Pulumi Cloud
+      pull-requests: write # the sticky comment
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Exchanges this job's GitHub OIDC token for a short-lived Pulumi token
+      # and exports it as PULUMI_ACCESS_TOKEN. Pulumi Cloud trusts only the
+      # environments listed for this repo in the account's issuer (managed by
+      # SpencerAWill/spencerwill.com's infra/github); the variables come from
+      # this repo's infra/github.
+      - uses: pulumi/auth-actions@141415910c3beb54e03b48e9057c204c97b956f2 # v2.1.0
+        with:
+          organization: ${{ vars.PULUMI_ORGANIZATION }}
+          requested-token-type: urn:pulumi:token-type:access_token:personal
+          scope: user:${{ vars.PULUMI_USER_LOGIN }}
+          token-expiration: 1800
+
+      # No `command`: installs the CLI only. Same version as the deploy
+      # action's; bump them with @pulumi/pulumi in the catalog.
+      - uses: pulumi/actions@8e5e406f4007fca908480587cb9893c07090f58d # v7.0.0
+        with:
+          pulumi-version: 3.268.0
+
+      # Never fails the step, so the comment below reports a failed preview
+      # too; the last step fails the job.
+      - name: Preview
+        id: preview
+        working-directory: infra/cloudflare
+        env:
+          STACK: ${{ matrix.stack }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PREVIEW_API_TOKEN }}
+        run: |
+          status=0
+          pulumi preview --stack "$STACK" --json \
+            > "$RUNNER_TEMP/preview.json" 2> "$RUNNER_TEMP/preview.log" || status=$?
+          echo "exit-code=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Render the comment and job summary
+        env:
+          STACK: ${{ matrix.stack }}
+          EXIT_CODE: ${{ steps.preview.outputs.exit-code }}
+          COMMIT: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node tooling/scripts/src/render-pulumi-preview.ts \
+            --stack "$STACK" --exit-code "$EXIT_CODE" \
+            --preview "$RUNNER_TEMP/preview.json" --log "$RUNNER_TEMP/preview.log" \
+            --commit "$COMMIT" --run-url "$RUN_URL" \
+            --comment "$RUNNER_TEMP/comment.md" >> "$GITHUB_STEP_SUMMARY"
+
+      # One comment per stack, found again by its marker (the renderer's
+      # first line) and edited in place, so the PR keeps one current preview
+      # per stack rather than one per push.
+      - name: Post or update the stack's comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STACK: ${{ matrix.stack }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          marker="<!-- flareling:pulumi-preview:$STACK -->"
+          ids="$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id")"
+          # The first match; not `| head`, which pipefail would fail on SIGPIPE.
+          read -r id <<< "$ids"
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F "body=@$RUNNER_TEMP/comment.md" > /dev/null
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -F "body=@$RUNNER_TEMP/comment.md" > /dev/null
+          fi
+
+      - name: Fail if the preview failed
+        if: steps.preview.outputs.exit-code != '0'
+        env:
+          STACK: ${{ matrix.stack }}
+        run: |
+          echo "::error::pulumi preview of $STACK failed; its output is in the PR comment and the job summary."
+          exit 1
 
   # The one required status check (infra/github's ruleset). It passes when
   # every check passed or was skipped as irrelevant (a docs-only PR skips
