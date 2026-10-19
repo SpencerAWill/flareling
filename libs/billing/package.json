@@ -27,6 +27,7 @@
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "msw": "catalog:",
+    "temporal-polyfill": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

@@ -4,7 +4,7 @@ import type { EmailSender } from "@flareling/email";
 import { and, eq } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { describe, expect, it } from "vitest";
-import { addMember, createUser } from "../test/users.ts";
+import { addMember, createUser, T0 } from "../test/users.ts";
 import {
   acceptInvite,
   createWorkspace,
@@ -179,7 +179,7 @@ describe("inviting and accepting", () => {
   it("refuses personal workspaces and people who are already members", async () => {
     const ctx = inviteContext();
     const owner = await createUser();
-    const personal = await ensurePersonalWorkspace(owner.userId);
+    const personal = await ensurePersonalWorkspace(owner.userId, T0);
     expect(await invite(ctx, owner, personal, "a@example.com")).toEqual({
       ok: false,
       reason: "personal",

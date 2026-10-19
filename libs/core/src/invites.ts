@@ -185,6 +185,7 @@ export async function inviteMember(
     actorId: inviter.userId,
     targetType: "workspace",
     targetId: request.workspaceId,
+    at: new Date(now),
     metadata: {
       inviteId: written.id,
       role: request.role,
@@ -391,6 +392,7 @@ export async function acceptInvite(
     actorId: userId,
     targetType: "workspace",
     targetId: invite.workspaceId,
+    at: new Date(now),
     metadata: {
       inviteId: invite.id,
       // An existing member keeps their role, so the invite's grants nothing.
@@ -435,6 +437,7 @@ export async function declineInvite(
       targetType: "workspace",
       targetId: declined.workspaceId,
       metadata: { inviteId: declined.id },
+      at: new Date(now),
     });
   }
   return { ok: true, workspaceId: declined?.workspaceId ?? null };

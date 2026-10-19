@@ -2,7 +2,7 @@ import { getDb, schema } from "@flareling/db";
 import { eq } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { describe, expect, it } from "vitest";
-import { addMember, createUser } from "../test/users.ts";
+import { addMember, createUser, T0 } from "../test/users.ts";
 import {
   changeRole,
   createWorkspace,
@@ -17,7 +17,7 @@ import {
 
 async function teamOwnedBy(name = "Acme") {
   const owner = await createUser();
-  const result = await createWorkspace(owner, name);
+  const result = await createWorkspace(owner, name, T0);
   if (!result.ok) throw new Error("setup: workspace not created");
   return { owner, workspaceId: result.id };
 }
@@ -31,7 +31,7 @@ describe("listMembers", () => {
       workspaceId,
       member.userId,
       "member",
-      new Date(Date.now() + 60_000),
+      new Date(T0.add({ minutes: 1 }).epochMilliseconds),
     );
 
     expect(await listMembers(member, workspaceId)).toEqual([
@@ -166,7 +166,7 @@ describe("changeRole", () => {
     ).toEqual({ ok: false, reason: "not_member" });
 
     const solo = await createUser();
-    const personal = await ensurePersonalWorkspace(solo.userId);
+    const personal = await ensurePersonalWorkspace(solo.userId, T0);
     expect(await changeRole(solo, personal, solo.userId, "admin")).toEqual({
       ok: false,
       reason: "personal",
@@ -235,7 +235,7 @@ describe("leaveWorkspace", () => {
 
   it("doesn't leave a personal workspace", async () => {
     const solo = await createUser();
-    const personal = await ensurePersonalWorkspace(solo.userId);
+    const personal = await ensurePersonalWorkspace(solo.userId, T0);
     expect(await leaveWorkspace(solo, personal)).toEqual({
       ok: false,
       reason: "personal",
@@ -261,10 +261,12 @@ describe("revokeInvite", () => {
     if (!sent.ok) throw new Error("setup: invite not sent");
 
     await expect(
-      revokeInvite(member, workspaceId, sent.inviteId),
+      revokeInvite(member, workspaceId, sent.inviteId, T0),
     ).rejects.toMatchObject({ name: "ForbiddenError" });
     // Another workspace's admin can't reach it through their own workspace.
-    expect(await revokeInvite(otherOwner, other, sent.inviteId)).toBe(false);
+    expect(await revokeInvite(otherOwner, other, sent.inviteId, T0)).toBe(
+      false,
+    );
 
     const at = Temporal.Instant.from("2026-01-02T03:04:05Z");
     expect(await revokeInvite(owner, workspaceId, sent.inviteId, at)).toBe(
@@ -275,7 +277,15 @@ describe("revokeInvite", () => {
       .from(schema.workspaceInvites)
       .where(eq(schema.workspaceInvites.id, sent.inviteId));
     expect(row?.revokedAt).toEqual(new Date(at.epochMilliseconds));
+    // The audit row agrees with the change it records.
+    const [audit] = await getDb()
+      .select({ createdAt: schema.auditLog.createdAt })
+      .from(schema.auditLog)
+      .where(eq(schema.auditLog.action, "workspace.invite_revoked"));
+    expect(audit?.createdAt).toEqual(new Date(at.epochMilliseconds));
     expect(await listInvites(owner, workspaceId)).toEqual([]);
-    expect(await revokeInvite(owner, workspaceId, sent.inviteId)).toBe(false);
+    expect(await revokeInvite(owner, workspaceId, sent.inviteId, T0)).toBe(
+      false,
+    );
   });
 });

@@ -1,7 +1,7 @@
 import { getDb, newId, schema } from "@flareling/db";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createUser } from "../test/users.ts";
+import { createUser, T0 } from "../test/users.ts";
 import { createWorkspace } from "./index.ts";
 import { sweepWorkspaceInvites } from "./retention.ts";
 
@@ -10,7 +10,7 @@ const DAY = 24 * 60 * 60 * 1000;
 describe("sweepWorkspaceInvites", () => {
   it("deletes invites a month after they expire, answered or not", async () => {
     const owner = await createUser();
-    const created = await createWorkspace(owner, "Sweep");
+    const created = await createWorkspace(owner, "Sweep", T0);
     if (!created.ok) throw new Error("setup");
     const now = new Date("2026-10-19T03:17:00Z");
     const invite = (email: string, expiredDaysAgo: number) => ({

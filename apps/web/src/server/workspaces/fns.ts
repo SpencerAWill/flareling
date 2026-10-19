@@ -23,8 +23,9 @@ async function signedIn() {
 }
 
 /**
- * This request's clock (the AuthContext's), so writes and expiry checks use
- * the same time libs/auth does, and tests can move it.
+ * This request's clock: the AuthContext's (`nowOf`), the one libs/auth reads
+ * for the same request, so a write and the auth checks around it agree on
+ * the time.
  */
 async function requestNow() {
   const { nowOf } = await import("@flareling/auth");

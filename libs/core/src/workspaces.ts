@@ -16,7 +16,7 @@ import {
   schema,
 } from "@flareling/db";
 import { and, asc, eq, sql } from "drizzle-orm";
-import { Temporal } from "temporal-polyfill";
+import type { Temporal } from "temporal-polyfill";
 import { OWNED_WORKSPACE_LIMIT, WORKSPACE_NAME_MAX } from "./limits.ts";
 
 const { workspaces, workspaceMembers } = schema;
@@ -82,7 +82,7 @@ export async function listWorkspaces(
  */
 export async function ensurePersonalWorkspace(
   userId: string,
-  now: Temporal.Instant = Temporal.Now.instant(),
+  now: Temporal.Instant,
 ): Promise<string> {
   const db = getDb();
   const existing = await db
@@ -117,6 +117,7 @@ export async function ensurePersonalWorkspace(
     targetType: "workspace",
     targetId: id,
     metadata: { personal: true },
+    at: createdAt,
   });
   return id;
 }
@@ -134,7 +135,7 @@ export type CreateWorkspaceResult =
 export async function createWorkspace(
   principal: Principal | null,
   name: string,
-  now: Temporal.Instant = Temporal.Now.instant(),
+  now: Temporal.Instant,
 ): Promise<CreateWorkspaceResult> {
   const { userId } = requirePrincipal(principal);
   const normalized = normalizeWorkspaceName(name);
@@ -165,6 +166,7 @@ export async function createWorkspace(
     targetType: "workspace",
     targetId: id,
     metadata: { personal: false },
+    at: new Date(now.epochMilliseconds),
   });
   return { ok: true, id };
 }

@@ -5,7 +5,7 @@
 import { ForbiddenError, type Principal } from "@flareling/auth";
 import { getDb, recordAudit, schema } from "@flareling/db";
 import { and, asc, eq, isNull, ne, or, type SQL, sql } from "drizzle-orm";
-import { Temporal } from "temporal-polyfill";
+import type { Temporal } from "temporal-polyfill";
 import { mayManage, type WorkspaceRole } from "./roles.ts";
 import { requireWorkspaceRole, workspaceRole } from "./workspaces.ts";
 
@@ -230,7 +230,7 @@ export async function revokeInvite(
   principal: Principal | null,
   workspaceId: string,
   inviteId: string,
-  now: Temporal.Instant = Temporal.Now.instant(),
+  now: Temporal.Instant,
 ): Promise<boolean> {
   const { principal: actor } = await requireWorkspaceRole(
     principal,
@@ -258,6 +258,7 @@ export async function revokeInvite(
     targetType: "workspace",
     targetId: workspaceId,
     metadata: { inviteId },
+    at: new Date(now.epochMilliseconds),
   });
   return true;
 }
