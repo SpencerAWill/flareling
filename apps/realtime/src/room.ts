@@ -17,10 +17,10 @@ import { DurableObject } from "cloudflare:workers";
 import {
   CLOSE,
   CONNECTION_HEADERS,
-  type DisconnectReason,
   PING,
   PONG,
   type RoomEvent,
+  reasonForCode,
   type ServerMessage,
   type WorkspaceRoomApi,
 } from "@flareling/contracts";
@@ -52,7 +52,7 @@ export class WorkspaceRoom
 
   /** Accepts an upgrade forwarded by apps/web. */
   override async fetch(request: Request): Promise<Response> {
-    if (request.headers.get("Upgrade") !== "websocket") {
+    if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
       return new Response("Expected a WebSocket upgrade", { status: 426 });
     }
     const userId = request.headers.get(CONNECTION_HEADERS.userId);
@@ -120,9 +120,7 @@ export class WorkspaceRoom
    * `disconnect` message, which arrives even where the close code doesn't.
    */
   private disconnect(sockets: readonly WebSocket[], code: number): number {
-    const reason = (Object.keys(CLOSE) as DisconnectReason[]).find(
-      (key) => CLOSE[key] === code,
-    );
+    const reason = reasonForCode(code);
     if (reason) {
       const text = JSON.stringify({
         type: "disconnect",

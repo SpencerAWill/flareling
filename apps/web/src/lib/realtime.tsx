@@ -8,10 +8,10 @@
  * server says this user may see.
  */
 import {
-  CLOSE,
   type DisconnectReason,
   PING,
   PONG,
+  reasonForCode,
   type ServerMessage,
   serverMessage,
 } from "@flareling/contracts";
@@ -28,6 +28,13 @@ import {
 const PING_INTERVAL_MS = 30_000;
 /** Reconnect delays grow to this, with jitter, while the server is away. */
 const MAX_RETRY_MS = 30_000;
+/**
+ * Failed connects in a row before the page reloads its data. A browser can't
+ * see why an upgrade was refused (signed out, no longer a member), but the
+ * reload can: it shows the sign-in redirect or the 404, and unmounting
+ * stops the retries. A transient outage just keeps retrying.
+ */
+const FAILURES_BEFORE_RELOAD = 3;
 
 interface RealtimeState {
   /** User ids with the workspace open, this one included once connected. */
@@ -69,13 +76,6 @@ function parse(data: unknown): ServerMessage | null {
   }
 }
 
-/** The reason a close code stands for, if it's one of the room's. */
-function reasonFor(code: number): DisconnectReason | undefined {
-  return (Object.keys(CLOSE) as DisconnectReason[]).find(
-    (key) => CLOSE[key] === code,
-  );
-}
-
 function useWorkspaceSocket(workspaceId: string): RealtimeState {
   const router = useRouter();
   const [state, setState] = useState<RealtimeState>(OFFLINE);
@@ -84,6 +84,7 @@ function useWorkspaceSocket(workspaceId: string): RealtimeState {
     let socket: WebSocket | null = null;
     let stopped = false;
     let attempts = 0;
+    let opened = false;
     let retry: ReturnType<typeof setTimeout> | undefined;
     let ping: ReturnType<typeof setInterval> | undefined;
     /** Why the room is closing this socket, from its message or close code. */
@@ -98,7 +99,7 @@ function useWorkspaceSocket(workspaceId: string): RealtimeState {
         // workspace's 404, or the sign-in redirect.
         stopped = true;
         setState(OFFLINE);
-        void router.invalidate();
+        router.invalidate().catch(() => {}); // superseded by a navigation
       }
       // Closes from this end too, in case the room's close frame is lost;
       // for `expired`, the close handler then reconnects at once.
@@ -114,6 +115,7 @@ function useWorkspaceSocket(workspaceId: string): RealtimeState {
 
       ws.addEventListener("open", () => {
         attempts = 0;
+        opened = true;
         ping = setInterval(() => ws.send(PING), PING_INTERVAL_MS);
       });
       ws.addEventListener("message", (event) => {
@@ -121,7 +123,7 @@ function useWorkspaceSocket(workspaceId: string): RealtimeState {
         if (message?.type === "presence") {
           setState({ online: new Set(message.online), connected: true });
         } else if (message?.type === "members_changed") {
-          void router.invalidate();
+          router.invalidate().catch(() => {}); // superseded by a navigation
         } else if (message?.type === "disconnect") {
           disconnected(message.reason);
         }
@@ -129,7 +131,7 @@ function useWorkspaceSocket(workspaceId: string): RealtimeState {
       ws.addEventListener("close", (event) => {
         clearInterval(ping);
         setState(OFFLINE);
-        const why = reasonFor(event.code);
+        const why = reasonForCode(event.code);
         if (why) disconnected(why);
         if (stopped) return;
         // An expired socket reconnects at once; anything else backs off.
@@ -139,6 +141,10 @@ function useWorkspaceSocket(workspaceId: string): RealtimeState {
             : Math.min(MAX_RETRY_MS, 1000 * 2 ** attempts) *
               (0.5 + Math.random() / 2);
         attempts++;
+        if (!opened && attempts === FAILURES_BEFORE_RELOAD) {
+          router.invalidate().catch(() => {}); // superseded by a navigation
+        }
+        opened = false;
         retry = setTimeout(connect, delay);
       });
     };

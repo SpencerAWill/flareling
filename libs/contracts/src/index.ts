@@ -5,6 +5,7 @@ export {
   PING,
   PONG,
   type RoomEvent,
+  reasonForCode,
   type ServerMessage,
   serverMessage,
   type WorkspaceRoomApi,

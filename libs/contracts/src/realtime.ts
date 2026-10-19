@@ -47,12 +47,22 @@ export const serverMessage = z.discriminatedUnion("type", [
   /** The room is about to close this socket, and why (see CLOSE). */
   z.object({
     type: z.literal("disconnect"),
-    reason: z.enum(["expired", "signedOut", "removed"]),
+    // CLOSE's keys, so a new reason can't be sent without being accepted.
+    reason: z.enum(
+      Object.keys(CLOSE) as [keyof typeof CLOSE, ...(keyof typeof CLOSE)[]],
+    ),
   }),
 ]);
 
 /** Why a room closes a socket: a key of CLOSE. */
 export type DisconnectReason = keyof typeof CLOSE;
+
+/** The reason a close code stands for, if it's one of CLOSE's. */
+export function reasonForCode(code: number): DisconnectReason | undefined {
+  return (Object.keys(CLOSE) as DisconnectReason[]).find(
+    (key) => CLOSE[key] === code,
+  );
+}
 
 export type ServerMessage = z.infer<typeof serverMessage>;
 
