@@ -54,7 +54,7 @@ function Members() {
   const { workspace } = workspaceRoute.useLoaderData();
   const { members, invites, canManage, seats, viewerId, viewerRole } =
     Route.useLoaderData();
-  const { online, connected } = usePresence();
+  const { online, connected, stopped } = usePresence();
   const onlineHere = members.filter((m) => online.has(m.userId)).length;
   const full = seats.used >= seats.limit;
 
@@ -73,7 +73,7 @@ function Members() {
               </span>
               {onlineHere} online now
             </>
-          ) : (
+          ) : stopped ? null : (
             "Connecting…"
           )}
         </p>

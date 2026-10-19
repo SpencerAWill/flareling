@@ -69,69 +69,68 @@ function Account() {
           </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <h2 id="workspaces-heading">Workspaces</h2>
-            </CardTitle>
-            <CardDescription>
-              Your personal workspace is just for you. Team workspaces are for
-              working with others.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul
-              aria-labelledby="workspaces-heading"
-              className="-mx-2 flex flex-col"
-            >
-              {workspaces.map((workspace) => (
-                <li
-                  key={workspace.id}
-                  className="flex flex-wrap items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/60"
-                >
-                  <WorkspaceTile
-                    name={workspace.name}
-                    personal={workspace.personal}
-                    className="size-8 text-sm"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">
-                      {workspace.name}
+        <section aria-labelledby="workspaces-heading">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <h2 id="workspaces-heading">Workspaces</h2>
+              </CardTitle>
+              <CardDescription>
+                Your personal workspace is just for you. Team workspaces are for
+                working with others.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="-mx-2 flex flex-col">
+                {workspaces.map((workspace) => (
+                  <li
+                    key={workspace.id}
+                    className="flex flex-wrap items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/60"
+                  >
+                    <WorkspaceTile
+                      name={workspace.name}
+                      personal={workspace.personal}
+                      className="size-8 text-sm"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">
+                        {workspace.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {ROLE_NAMES[workspace.role]}
+                      </span>
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {ROLE_NAMES[workspace.role]}
+                    <span className="flex gap-1">
+                      <Link
+                        to="/w/$publicId/members"
+                        params={{ publicId: workspace.publicId }}
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "sm",
+                        })}
+                      >
+                        Members
+                      </Link>
+                      <Link
+                        to="/w/$publicId/billing"
+                        params={{ publicId: workspace.publicId }}
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "sm",
+                        })}
+                      >
+                        Billing
+                      </Link>
                     </span>
-                  </span>
-                  <span className="flex gap-1">
-                    <Link
-                      to="/w/$publicId/members"
-                      params={{ publicId: workspace.publicId }}
-                      className={buttonVariants({
-                        variant: "ghost",
-                        size: "sm",
-                      })}
-                    >
-                      Members
-                    </Link>
-                    <Link
-                      to="/w/$publicId/billing"
-                      params={{ publicId: workspace.publicId }}
-                      className={buttonVariants({
-                        variant: "ghost",
-                        size: "sm",
-                      })}
-                    >
-                      Billing
-                    </Link>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter className="border-t">
-            <NewWorkspace />
-          </CardFooter>
-        </Card>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter className="border-t">
+              <NewWorkspace />
+            </CardFooter>
+          </Card>
+        </section>
 
         <Passkeys passkeys={passkeys} />
       </main>

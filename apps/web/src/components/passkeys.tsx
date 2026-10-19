@@ -70,62 +70,64 @@ export function Passkeys({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h2 id="passkeys-heading">Passkeys</h2>
-        </CardTitle>
-        <CardDescription>
-          Sign in with your fingerprint, face or device PIN instead of an email
-          link. Email still works if you lose access to a device.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {passkeys.length > 0 && (
-          <ul
-            aria-labelledby="passkeys-heading"
-            className="flex flex-col gap-2"
-          >
-            {passkeys.map((passkey) => (
-              <li
-                key={passkey.id}
-                className="flex items-center gap-3 rounded-lg border px-3 py-2"
-              >
-                <span className="grid size-8 place-items-center rounded-md bg-accent text-accent-foreground">
-                  <FingerprintIcon className="size-4" aria-hidden />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">
-                    {passkey.nickname ?? "Passkey"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Added {passkey.createdAt.toLocaleDateString()}
-                  </span>
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    await remove({ data: { id: passkey.id } });
-                    await router.invalidate().catch(() => {}); // superseded by a navigation
-                  }}
+    <section aria-labelledby="passkeys-heading">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2 id="passkeys-heading">Passkeys</h2>
+          </CardTitle>
+          <CardDescription>
+            Sign in with your fingerprint, face or device PIN instead of an
+            email link. Email still works if you lose access to a device.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {passkeys.length > 0 && (
+            <ul
+              aria-labelledby="passkeys-heading"
+              className="flex flex-col gap-2"
+            >
+              {passkeys.map((passkey) => (
+                <li
+                  key={passkey.id}
+                  className="flex items-center gap-3 rounded-lg border px-3 py-2"
                 >
-                  Remove
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <Button variant="secondary" className="self-start" onClick={add}>
-          <PlusIcon />
-          Add a passkey
-        </Button>
-        {message && (
-          <p role="status" className="text-sm text-muted-foreground">
-            {message}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+                  <span className="grid size-8 place-items-center rounded-md bg-accent text-accent-foreground">
+                    <FingerprintIcon className="size-4" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">
+                      {passkey.nickname ?? "Passkey"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Added {passkey.createdAt.toLocaleDateString()}
+                    </span>
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      await remove({ data: { id: passkey.id } });
+                      await router.invalidate().catch(() => {}); // superseded by a navigation
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button variant="secondary" className="self-start" onClick={add}>
+            <PlusIcon />
+            Add a passkey
+          </Button>
+          {message && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {message}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </section>
   );
 }
