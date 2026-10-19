@@ -22,6 +22,16 @@ async function signedIn() {
   return getPrincipal(authContext());
 }
 
+/**
+ * This request's clock (the AuthContext's), so writes and expiry checks use
+ * the same time libs/auth does, and tests can move it.
+ */
+async function requestNow() {
+  const { nowOf } = await import("@flareling/auth");
+  const { authContext } = await import("../auth/context.server.ts");
+  return nowOf(authContext());
+}
+
 /** Runs `run`, turning a refused or anonymous request into `{ ok: false }`. */
 async function unlessRefused<T>(
   run: () => Promise<T>,
@@ -45,7 +55,7 @@ export const createWorkspaceFn = createServerFn({ method: "POST" })
     const principal = await signedIn();
     if (!principal)
       return { ok: false as const, reason: "unauthorized" as const };
-    return createWorkspace(principal, data.name);
+    return createWorkspace(principal, data.name, await requestNow());
   });
 
 /**
@@ -70,7 +80,7 @@ export const getMembersFn = createServerFn({ method: "GET" })
     });
     if (!result.ok) return result;
     const { members, invites, role, canManage, plan } = result.value;
-    const now = Date.now();
+    const now = (await requestNow()).epochMilliseconds;
     return {
       ok: true as const,
       viewerId: principal?.userId ?? "",
@@ -234,7 +244,8 @@ export const revokeInviteFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { revokeInvite } = await import("@flareling/core");
     const principal = await signedIn();
+    const now = await requestNow();
     return membershipChange(data.workspaceId, () =>
-      revokeInvite(principal, data.workspaceId, data.inviteId),
+      revokeInvite(principal, data.workspaceId, data.inviteId, now),
     );
   });
