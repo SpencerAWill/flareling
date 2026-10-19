@@ -402,7 +402,10 @@ describe("declineInvite", () => {
     await invite(ctx, owner, workspaceId, "no.thanks@example.com");
     const token = tokenSentTo(ctx, "no.thanks@example.com");
 
-    expect(await declineInvite(ctx, null, token)).toEqual({ ok: true });
+    expect(await declineInvite(ctx, null, token)).toEqual({
+      ok: true,
+      workspaceId,
+    });
     expect(await getInvite(ctx, token)).toBeNull();
     expect(await acceptInvite(ctx, invitee, token)).toEqual({
       ok: false,
@@ -428,6 +431,7 @@ describe("declineInvite", () => {
   it("does nothing for an unknown token", async () => {
     expect(await declineInvite(inviteContext(), null, newId())).toEqual({
       ok: true,
+      workspaceId: null,
     });
   });
 });
