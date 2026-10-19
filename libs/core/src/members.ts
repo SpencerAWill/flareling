@@ -5,7 +5,8 @@
 import { ForbiddenError, type Principal } from "@flareling/auth";
 import { getDb, recordAudit, schema } from "@flareling/db";
 import { and, asc, eq, isNull, ne, or, type SQL, sql } from "drizzle-orm";
-import { requireWorkspaceRole, type WorkspaceRole } from "./workspaces.ts";
+import { mayManage, type WorkspaceRole } from "./roles.ts";
+import { requireWorkspaceRole, workspaceRole } from "./workspaces.ts";
 
 const { userEmails, workspaceInvites, workspaceMembers, workspaces } = schema;
 
@@ -65,35 +66,6 @@ async function isPersonal(workspaceId: string): Promise<boolean> {
   return row?.personalUserId != null;
 }
 
-async function memberRole(
-  workspaceId: string,
-  userId: string,
-): Promise<WorkspaceRole | null> {
-  const [row] = await getDb()
-    .select({ role: workspaceMembers.role })
-    .from(workspaceMembers)
-    .where(
-      and(
-        eq(workspaceMembers.workspaceId, workspaceId),
-        eq(workspaceMembers.userId, userId),
-      ),
-    );
-  return row?.role ?? null;
-}
-
-/**
- * Whether `actor` may change `target`'s membership (role or removal). Admins
- * manage admins and members; only owners touch owners or make new ones.
- */
-function mayManage(
-  actor: WorkspaceRole,
-  target: WorkspaceRole,
-  newRole?: WorkspaceRole,
-): boolean {
-  if (actor === "owner") return true;
-  return actor === "admin" && target !== "owner" && newRole !== "owner";
-}
-
 export type MembershipResult =
   | { readonly ok: true }
   | {
@@ -111,7 +83,7 @@ async function whyUnchanged(
   userId: string,
   expected: WorkspaceRole,
 ): Promise<MembershipResult> {
-  const role = await memberRole(workspaceId, userId);
+  const role = await workspaceRole(userId, workspaceId);
   if (!role) return { ok: false, reason: "not_member" };
   return { ok: false, reason: role === expected ? "last_owner" : "changed" };
 }
@@ -133,7 +105,7 @@ export async function changeRole(
     "admin",
   );
   if (await isPersonal(workspaceId)) return { ok: false, reason: "personal" };
-  const current = await memberRole(workspaceId, userId);
+  const current = await workspaceRole(userId, workspaceId);
   if (!current) return { ok: false, reason: "not_member" };
   if (!mayManage(actorRole, current, role)) {
     throw new ForbiddenError("workspace:manage_member");
@@ -183,7 +155,7 @@ export async function removeMember(
     throw new ForbiddenError("workspace:remove_self");
   }
   if (await isPersonal(workspaceId)) return { ok: false, reason: "personal" };
-  const current = await memberRole(workspaceId, userId);
+  const current = await workspaceRole(userId, workspaceId);
   if (!current) return { ok: false, reason: "not_member" };
   if (!mayManage(actorRole, current)) {
     throw new ForbiddenError("workspace:manage_member");

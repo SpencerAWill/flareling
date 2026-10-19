@@ -20,20 +20,22 @@ import { OWNED_WORKSPACE_LIMIT, WORKSPACE_NAME_MAX } from "./limits.ts";
 
 const { workspaces, workspaceMembers } = schema;
 
-export type WorkspaceRole = "owner" | "admin" | "member";
+import type { WorkspaceRole } from "./roles.ts";
 
 /** Higher ranks can do everything lower ones can. */
 const RANK: Record<WorkspaceRole, number> = { member: 1, admin: 2, owner: 3 };
 
 /**
- * `name` as stored: NFC, control characters removed, whitespace collapsed.
- * Null if nothing is left or it's longer than WORKSPACE_NAME_MAX. Names
+ * `name` as stored: NFC, control and bidi characters removed, whitespace
+ * collapsed. Null if nothing is left or it's longer than WORKSPACE_NAME_MAX. Names
  * appear in invite emails, so they're kept to one plain line.
  */
 function normalizeWorkspaceName(name: string): string | null {
   const normalized = name
     .normalize("NFC")
     .replace(/\p{Cc}/gu, " ")
+    // Bidi controls could make a name read differently in an email.
+    .replace(/[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/gu, "")
     .replace(/\s+/g, " ")
     .trim();
   if (!normalized || [...normalized].length > WORKSPACE_NAME_MAX) return null;

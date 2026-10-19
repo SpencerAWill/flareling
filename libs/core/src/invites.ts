@@ -27,7 +27,7 @@ import {
   schema,
 } from "@flareling/db";
 import type { EmailSender } from "@flareling/email";
-import { and, eq, gt, isNull, or, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or, type SQL, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { requireWorkspaceRole } from "./workspaces.ts";
 
@@ -106,45 +106,46 @@ export async function inviteMember(
     readonly role: InviteRole;
   },
 ): Promise<InviteResult> {
+  // Abuse guards run before database work.
+  const { userId } = requirePrincipal(principal);
+  if (ctx.withinRateLimit && !(await ctx.withinRateLimit(`invite:${userId}`))) {
+    return { ok: false, reason: "rate_limited" };
+  }
   const { principal: inviter } = await requireWorkspaceRole(
     principal,
     request.workspaceId,
     "admin",
   );
-  if (
-    ctx.withinRateLimit &&
-    !(await ctx.withinRateLimit(`invite:${inviter.userId}`))
-  ) {
-    return { ok: false, reason: "rate_limited" };
-  }
 
   const db = getDb();
   const email = normalizeEmail(request.email);
-  const [[workspace], [existing]] = await db.batch([
-    db
-      .select({
-        name: workspaces.name,
-        personalUserId: workspaces.personalUserId,
-      })
-      .from(workspaces)
-      .where(eq(workspaces.id, request.workspaceId)),
-    db
-      .select({ userId: workspaceMembers.userId })
-      .from(workspaceMembers)
-      .innerJoin(userEmails, eq(userEmails.userId, workspaceMembers.userId))
-      .where(
-        and(
-          eq(workspaceMembers.workspaceId, request.workspaceId),
-          eq(userEmails.email, email),
+  const [[[workspace], [existing]], seats] = await Promise.all([
+    db.batch([
+      db
+        .select({
+          name: workspaces.name,
+          personalUserId: workspaces.personalUserId,
+        })
+        .from(workspaces)
+        .where(eq(workspaces.id, request.workspaceId)),
+      db
+        .select({ userId: workspaceMembers.userId })
+        .from(workspaceMembers)
+        .innerJoin(userEmails, eq(userEmails.userId, workspaceMembers.userId))
+        .where(
+          and(
+            eq(workspaceMembers.workspaceId, request.workspaceId),
+            eq(userEmails.email, email),
+          ),
         ),
-      ),
+    ]),
+    ctx.seats(request.workspaceId),
   ]);
   if (!workspace) throw new Error("workspace vanished after the role check");
   if (workspace.personalUserId !== null)
     return { ok: false, reason: "personal" };
   if (existing) return { ok: false, reason: "already_member" };
 
-  const seats = await ctx.seats(request.workspaceId);
   const token = randomToken();
   const tokenHash = await hashToken(token);
   const now = nowMs(ctx);
@@ -376,10 +377,13 @@ export async function acceptInvite(
   if (!acceptedAs) {
     if (!p.emails.includes(invite.email))
       return { ok: false, reason: "wrong_account" };
-    return {
-      ok: false,
-      reason: added.length === 0 ? "workspace_full" : "invalid",
-    };
+    // Nothing was written: either there was no seat, or the invite closed
+    // (revoked, declined, accepted elsewhere) since it was read.
+    const [stillOpen] = await db
+      .select({ id: workspaceInvites.id })
+      .from(workspaceInvites)
+      .where(and(eq(workspaceInvites.id, invite.id), isOpen(now)));
+    return { ok: false, reason: stillOpen ? "workspace_full" : "invalid" };
   }
 
   await recordAudit({
@@ -389,7 +393,8 @@ export async function acceptInvite(
     targetId: invite.workspaceId,
     metadata: {
       inviteId: invite.id,
-      role: acceptedAs.role,
+      // An existing member keeps their role, so the invite's grants nothing.
+      role: added.length === 0 ? null : acceptedAs.role,
       alreadyMember: added.length === 0,
     },
   });
@@ -450,7 +455,7 @@ export async function listInvites(
   workspaceId: string,
 ): Promise<PendingInvite[]> {
   await requireWorkspaceRole(principal, workspaceId, "admin");
-  const rows = await getDb()
+  return getDb()
     .select({
       id: workspaceInvites.id,
       email: workspaceInvites.email,
@@ -466,6 +471,6 @@ export async function listInvites(
         isNull(workspaceInvites.declinedAt),
         isNull(workspaceInvites.revokedAt),
       ),
-    );
-  return rows.sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime());
+    )
+    .orderBy(desc(workspaceInvites.createdAt));
 }

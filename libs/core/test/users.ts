@@ -1,6 +1,6 @@
 import type { Principal } from "@flareling/auth";
 import { getDb, newId, schema } from "@flareling/db";
-import type { WorkspaceRole } from "../src/workspaces.ts";
+import type { WorkspaceRole } from "../src/roles.ts";
 
 /** An account with a verified primary email, as the principal it signs in as. */
 export async function createUser(email?: string): Promise<Principal> {

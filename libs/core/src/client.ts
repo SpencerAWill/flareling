@@ -4,3 +4,4 @@
  * import the main entry from client code; it pulls in D1.
  */
 export { WORKSPACE_NAME_MAX } from "./limits.ts";
+export { mayManage, type WorkspaceRole } from "./roles.ts";

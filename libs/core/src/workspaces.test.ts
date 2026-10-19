@@ -77,9 +77,18 @@ describe("createWorkspace", () => {
     });
   });
 
+  it("drops bidi controls, which could make a name read backwards in an email", async () => {
+    const creator = await createUser();
+    const result = await createWorkspace(creator, "Acme\u202Emoc.live");
+    if (!result.ok) throw new Error("not created");
+    const [workspace] = await listWorkspaces(creator.userId);
+    expect(workspace?.name).toBe("Acmemoc.live");
+  });
+
   it.each([
     ["empty", ""],
     ["only whitespace and control characters", " \u0000\t "],
+    ["only bidi controls", "\u202E\u2066"],
     ["too long", "x".repeat(WORKSPACE_NAME_MAX + 1)],
   ])("refuses a name that's %s", async (_, name) => {
     expect(await createWorkspace(await createUser(), name)).toEqual({

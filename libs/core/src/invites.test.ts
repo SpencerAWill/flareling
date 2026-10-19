@@ -270,10 +270,26 @@ describe("inviting and accepting", () => {
     expect(
       await acceptInvite(ctx, both, tokenSentTo(ctx, "two@example.com")),
     ).toMatchObject({ ok: true, alreadyMember: true });
-    // The first role stands; a second invite doesn't promote anyone.
+    // The first role stands; a second invite doesn't promote anyone, and
+    // the audit doesn't claim it did.
     const members = await listMembers(owner, workspaceId);
     expect(members.find((m) => m.userId === invitee.userId)?.role).toBe(
       "member",
+    );
+    const accepted = await getDb()
+      .select({ metadata: schema.auditLog.metadataJson })
+      .from(schema.auditLog)
+      .where(
+        and(
+          eq(schema.auditLog.targetId, workspaceId),
+          eq(schema.auditLog.action, "workspace.invite_accepted"),
+        ),
+      );
+    expect(accepted.map((a) => JSON.parse(a.metadata ?? "{}"))).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: "member", alreadyMember: false }),
+        expect.objectContaining({ role: null, alreadyMember: true }),
+      ]),
     );
   });
 
