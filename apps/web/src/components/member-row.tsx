@@ -1,7 +1,18 @@
 import { mayManage, type WorkspaceRole } from "@flareling/core/client";
-import { Button } from "@flareling/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  NativeSelect,
+} from "@flareling/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { LogOutIcon, UserMinusIcon } from "lucide-react";
+import { motion } from "motion/react";
 import { useState } from "react";
 import { ROLE_NAMES } from "#/lib/workspaces.ts";
 import {
@@ -9,6 +20,7 @@ import {
   leaveWorkspaceFn,
   removeMemberFn,
 } from "#/server/workspaces/fns.ts";
+import { MemberAvatar } from "./avatars.tsx";
 
 const ERRORS: Record<string, string> = {
   last_owner: "A workspace needs an owner. Make someone else an owner first.",
@@ -66,24 +78,29 @@ export function MemberRow({
   }
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 py-2">
-      <span className="flex flex-wrap items-center gap-2 break-all">
-        {member.email}
+    <motion.li
+      layout
+      initial={{ y: 8, scale: 0.98 }}
+      animate={{ y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
+      className="flex flex-wrap items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/60"
+    >
+      <MemberAvatar email={member.email} online={online} />
+      <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
+        <span className="truncate font-medium">{member.email}</span>
         {isViewer && (
-          <span className="text-sm text-neutral-700 dark:text-neutral-300">
-            {" "}
-            (you)
-          </span>
+          <span className="text-xs text-muted-foreground">(you)</span>
         )}
         {online && (
-          <span className="rounded-full bg-green-100 px-2 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-100">
+          <Badge className="bg-success/15 text-success-foreground">
             Online
-          </span>
+          </Badge>
         )}
       </span>
       {editable ? (
-        <span className="flex items-center gap-2">
-          <select
+        <span className="flex items-center gap-1">
+          <NativeSelect
             aria-label={`Role for ${member.email}`}
             value={member.role}
             disabled={pending}
@@ -95,17 +112,19 @@ export function MemberRow({
                 }),
               );
             }}
-            className="rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            className="h-8 text-xs"
           >
             {roles.map((role) => (
               <option key={role} value={role}>
                 {ROLE_NAMES[role]}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           {!isViewer && (
             <Button
-              variant="secondary"
+              variant="ghost"
+              size="icon"
+              className="size-8 text-muted-foreground hover:text-destructive"
               disabled={pending}
               aria-label={`Remove ${member.email}`}
               onClick={() => {
@@ -118,24 +137,19 @@ export function MemberRow({
                 );
               }}
             >
-              Remove
+              <UserMinusIcon />
             </Button>
           )}
         </span>
       ) : (
-        <span className="text-sm text-neutral-700 dark:text-neutral-300">
-          {ROLE_NAMES[member.role]}
-        </span>
+        <Badge variant="outline">{ROLE_NAMES[member.role]}</Badge>
       )}
       {error && (
-        <p
-          role="alert"
-          className="w-full text-sm text-red-700 dark:text-red-400"
-        >
+        <p role="alert" className="w-full text-sm text-destructive">
           {error}
         </p>
       )}
-    </li>
+    </motion.li>
   );
 }
 
@@ -174,23 +188,28 @@ export function LeaveWorkspace({
   }
 
   return (
-    <section aria-labelledby="leave-heading" className="flex flex-col gap-2">
-      <h2 id="leave-heading" className="text-lg font-semibold">
-        Leave this workspace
-      </h2>
-      <Button
-        variant="secondary"
-        className="self-start"
-        disabled={pending}
-        onClick={onLeave}
-      >
-        Leave {workspaceName}
-      </Button>
-      {error && (
-        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-          {error}
-        </p>
-      )}
+    <section aria-labelledby="leave-heading">
+      <Card className="ring-destructive/20">
+        <CardHeader>
+          <CardTitle>
+            <h2 id="leave-heading">Leave this workspace</h2>
+          </CardTitle>
+          <CardDescription>
+            You'll lose access straight away. Coming back takes a new invite.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" disabled={pending} onClick={onLeave}>
+            <LogOutIcon />
+            Leave {workspaceName}
+          </Button>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </section>
   );
 }

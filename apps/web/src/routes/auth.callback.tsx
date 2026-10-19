@@ -1,9 +1,10 @@
 import { isSafeRedirect } from "@flareling/auth/client";
-import { Button } from "@flareling/ui";
+import { Button, buttonVariants } from "@flareling/ui";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { z } from "zod";
+import { AuthShell } from "#/components/auth-shell.tsx";
 import { afterSessionChange } from "#/lib/auth.ts";
 import { consumeMagicLinkFn } from "#/server/auth/fns.ts";
 
@@ -43,24 +44,37 @@ function Callback() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-6">
-      <h1 className="text-2xl font-semibold">Sign in to Flareling</h1>
+    <AuthShell
+      title="Sign in to Flareling"
+      description={
+        state === "invalid" || state === "limited"
+          ? undefined
+          : "One click and you're in. This link works once."
+      }
+    >
       {state === "invalid" || state === "limited" ? (
         <>
-          <p role="alert">
+          <p role="alert" className="text-center text-sm">
             {state === "limited"
               ? "Too many attempts. Wait a minute and try again."
               : "This link has expired or has already been used."}
           </p>
-          <Link to="/sign-in" className="underline">
+          <Link
+            to="/sign-in"
+            className={buttonVariants({ variant: "secondary" })}
+          >
             Get a new link
           </Link>
         </>
       ) : (
-        <Button onClick={onContinue} disabled={state === "working" || !token}>
-          Continue
+        <Button
+          variant="flare"
+          onClick={onContinue}
+          disabled={state === "working" || !token}
+        >
+          {state === "working" ? "Signing in…" : "Continue"}
         </Button>
       )}
-    </main>
+    </AuthShell>
   );
 }

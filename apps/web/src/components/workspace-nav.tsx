@@ -1,5 +1,16 @@
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@flareling/ui";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useId } from "react";
+import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from "lucide-react";
+import { motion } from "motion/react";
+import { WorkspaceTile } from "./avatars.tsx";
 
 interface Workspace {
   readonly id: string;
@@ -13,11 +24,20 @@ const SECTIONS = [
   { to: "/w/$publicId/billing", label: "Billing" },
 ] as const;
 
+/** The section of the workspace the current page is, from its path. */
+function useSection() {
+  const { pathname } = useLocation();
+  return (
+    SECTIONS.find((s) => pathname.endsWith(s.to.split("/").at(-1) ?? "")) ??
+    SECTIONS[0]
+  );
+}
+
 /**
- * The workspace switcher and the workspace's sections. Switching keeps the
+ * The current workspace, opening a menu of the others. Switching keeps the
  * section you're on, so Billing in one workspace goes to Billing in the next.
  */
-export function WorkspaceNav({
+export function WorkspaceSwitcher({
   current,
   workspaces,
 }: {
@@ -25,62 +45,81 @@ export function WorkspaceNav({
   workspaces: readonly Workspace[];
 }) {
   const navigate = useNavigate();
-  const selectId = useId();
-  const { pathname } = useLocation();
-  const section =
-    SECTIONS.find((s) => pathname.endsWith(s.to.split("/").at(-1) ?? "")) ??
-    SECTIONS[0];
+  const section = useSection();
 
   return (
-    <header className="flex flex-col gap-3 border-b border-neutral-200 pb-4 dark:border-neutral-800">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Labelled by id rather than by wrapping: a wrapping label's name
-            would include the selected option's text. */}
-        <div className="flex items-center gap-2">
-          <label htmlFor={selectId} className="text-sm font-medium">
-            Workspace
-          </label>
-          <select
-            id={selectId}
-            value={current.publicId}
-            onChange={(event) =>
-              navigate({
-                to: section.to,
-                params: { publicId: event.target.value },
-              })
-            }
-            className="rounded border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900"
-          >
-            {workspaces.map((w) => (
-              <option key={w.id} value={w.publicId}>
-                {w.personal ? `${w.name} (just you)` : w.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Link to="/my/account" className="text-sm underline">
-          Your account
-        </Link>
-      </div>
-      <nav aria-label="Workspace sections">
-        <ul className="flex gap-4">
-          {SECTIONS.map((s) => (
-            <li key={s.to}>
-              <Link
-                to={s.to}
-                params={{ publicId: current.publicId }}
-                className="text-sm"
-                activeProps={{
-                  className: "font-semibold underline",
-                  "aria-current": "page",
-                }}
-              >
-                {s.label}
-              </Link>
-            </li>
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium outline-none transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:bg-accent">
+        <WorkspaceTile name={current.name} personal={current.personal} />
+        <span className="truncate">{current.name}</span>
+        <span className="sr-only">(switch workspace)</span>
+        <ChevronsUpDownIcon
+          aria-hidden
+          className="size-4 shrink-0 text-muted-foreground"
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-64">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-xs text-muted-foreground">
+            Workspaces
+          </DropdownMenuLabel>
+          {workspaces.map((w) => (
+            <DropdownMenuItem
+              key={w.id}
+              onClick={() =>
+                navigate({ to: section.to, params: { publicId: w.publicId } })
+              }
+            >
+              <WorkspaceTile name={w.name} personal={w.personal} />
+              <span className="min-w-0 flex-1 truncate">
+                {w.name}
+                {w.personal && (
+                  <span className="text-muted-foreground"> (just you)</span>
+                )}
+              </span>
+              {w.id === current.id && <CheckIcon aria-label="Current" />}
+            </DropdownMenuItem>
           ))}
-        </ul>
-      </nav>
-    </header>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => navigate({ to: "/my/account" })}>
+          <PlusIcon />
+          New workspace
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** The workspace's sections, with an underline that slides between them. */
+export function WorkspaceTabs({ current }: { current: Workspace }) {
+  const section = useSection();
+  return (
+    <nav aria-label="Workspace sections" className="border-b">
+      <ul className="mx-auto flex max-w-5xl gap-6 px-4 sm:px-6">
+        {SECTIONS.map((s) => (
+          <li key={s.to}>
+            <Link
+              to={s.to}
+              params={{ publicId: current.publicId }}
+              className="relative block py-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
+              activeProps={{
+                className: "text-foreground",
+                "aria-current": "page",
+              }}
+            >
+              {s.label}
+              {section === s && (
+                <motion.span
+                  layoutId="workspace-section"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                  className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-flare"
+                />
+              )}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }

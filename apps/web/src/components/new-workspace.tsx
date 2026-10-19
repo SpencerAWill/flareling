@@ -1,8 +1,9 @@
 import { WORKSPACE_NAME_MAX } from "@flareling/core/client";
-import { Button } from "@flareling/ui";
+import { Button, Input, Label } from "@flareling/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { type FormEvent, useState } from "react";
+import { PlusIcon } from "lucide-react";
+import { type FormEvent, useId, useState } from "react";
 import { createWorkspaceFn } from "#/server/workspaces/fns.ts";
 
 const REASONS: Record<string, string> = {
@@ -17,6 +18,7 @@ const REASONS: Record<string, string> = {
 export function NewWorkspace() {
   const create = useServerFn(createWorkspaceFn);
   const navigate = useNavigate();
+  const nameId = useId();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,25 +43,24 @@ export function NewWorkspace() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2">
-      <label className="flex grow flex-col gap-1">
-        <span className="text-sm font-medium">New workspace</span>
-        <input
+    <form onSubmit={onSubmit} className="flex w-full flex-wrap items-end gap-2">
+      <div className="flex min-w-48 grow flex-col gap-2">
+        <Label htmlFor={nameId}>New workspace</Label>
+        <Input
+          id={nameId}
           name="name"
           required
           maxLength={WORKSPACE_NAME_MAX}
+          placeholder="Acme, Inc."
           autoComplete="organization"
-          className="rounded border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
         />
-      </label>
-      <Button type="submit" variant="secondary" disabled={pending}>
+      </div>
+      <Button type="submit" variant="flare" disabled={pending}>
+        <PlusIcon />
         Create workspace
       </Button>
       {error && (
-        <p
-          role="alert"
-          className="w-full text-sm text-red-700 dark:text-red-400"
-        >
+        <p role="alert" className="w-full text-sm text-destructive">
           {error}
         </p>
       )}

@@ -23,7 +23,7 @@ export const getBillingFn = createServerFn({ method: "GET" })
   .validator(workspaceInput)
   .handler(async ({ data }) => {
     const { listWorkspaces } = await import("@flareling/core");
-    const { workspacePlan } = await import("@flareling/billing");
+    const { PLANS, workspacePlan } = await import("@flareling/billing");
     const { billingContext } = await import("./context.server.ts");
     const principal = await signedIn();
     if (!principal) return { ok: false as const };
@@ -37,6 +37,11 @@ export const getBillingFn = createServerFn({ method: "GET" })
       workspace: { id: workspace.id, name: workspace.name },
       plan: plan.plan,
       members: plan.entitlements.members,
+      // Each plan's member limit, for the comparison on the page.
+      memberLimits: {
+        free: PLANS.free.entitlements.members,
+        pro: PLANS.pro.entitlements.members,
+      },
       subscription: plan.subscription
         ? {
             status: plan.subscription.status,

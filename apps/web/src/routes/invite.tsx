@@ -1,8 +1,10 @@
-import { Button } from "@flareling/ui";
+import { Badge, Button, buttonVariants } from "@flareling/ui";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
+import { AuthShell } from "#/components/auth-shell.tsx";
+import { WorkspaceTile } from "#/components/avatars.tsx";
 import { afterSessionChange } from "#/lib/auth.ts";
 import { signOutFn } from "#/server/auth/fns.ts";
 import {
@@ -30,7 +32,7 @@ export const Route = createFileRoute("/invite")({
   component: Invite,
 });
 
-const ROLES = { admin: "an admin", member: "a member" } as const;
+const ROLES = { admin: "Admin", member: "Member" } as const;
 
 function Invite() {
   const { invite } = Route.useLoaderData();
@@ -46,23 +48,27 @@ function Invite() {
 
   if (!invite || state === "invalid") {
     return (
-      <Page title="This invite is no longer valid">
-        <p>
-          It may have expired, been used, or been withdrawn. Ask whoever sent it
-          for a new one.
-        </p>
-        <Link to="/" className="self-start underline">
+      <AuthShell
+        title="This invite is no longer valid"
+        description="It may have expired, been used, or been withdrawn. Ask whoever sent it for a new one."
+      >
+        <Link to="/" className={buttonVariants({ variant: "secondary" })}>
           Go home
         </Link>
-      </Page>
+      </AuthShell>
     );
   }
 
   if (state === "declined") {
     return (
-      <Page title="Invite declined">
-        <p>You won't join {invite.workspaceName}. You can close this page.</p>
-      </Page>
+      <AuthShell
+        title="Invite declined"
+        description={`You won't join ${invite.workspaceName}. You can close this page.`}
+      >
+        <Link to="/" className={buttonVariants({ variant: "secondary" })}>
+          Go home
+        </Link>
+      </AuthShell>
     );
   }
 
@@ -100,41 +106,51 @@ function Invite() {
   }
 
   return (
-    <Page title={`Join ${invite.workspaceName}`}>
-      <p>
-        {invite.invitedBy ?? "Someone"} invited <strong>{invite.email}</strong>{" "}
-        to join {invite.workspaceName} as {ROLES[invite.role]}.
-      </p>
+    <AuthShell title={`Join ${invite.workspaceName}`}>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <WorkspaceTile
+          name={invite.workspaceName}
+          className="size-14 rounded-2xl text-2xl shadow-sm"
+        />
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">
+            {invite.invitedBy ?? "Someone"}
+          </span>{" "}
+          invited{" "}
+          <span className="font-medium text-foreground">{invite.email}</span> to
+          join as <Badge variant="secondary">{ROLES[invite.role]}</Badge>
+        </p>
+      </div>
 
       {!principal ? (
         <>
-          <p>
+          <p className="text-center text-sm text-muted-foreground">
             Sign in as {invite.email} to accept. New here? Signing in creates
             your account.
           </p>
           <Link
             to="/sign-in"
             search={{ redirect: here, email: invite.email }}
-            className="self-start rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+            className={buttonVariants({ variant: "flare" })}
           >
             Sign in to accept
           </Link>
         </>
       ) : !isInvitee ? (
         <>
-          <p role="alert">
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm"
+          >
             You're signed in as {principal.primaryEmail}, but this invite is for{" "}
             {invite.email}. Sign in with that address to accept it.
           </p>
-          <Button className="self-start" onClick={onSwitchAccount}>
+          <Button variant="secondary" onClick={onSwitchAccount}>
             Sign out and switch account
           </Button>
         </>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={onAccept} disabled={state === "working"}>
-            Accept and join
-          </Button>
+        <div className="grid grid-cols-2 gap-2">
           <Button
             variant="secondary"
             onClick={onDecline}
@@ -142,29 +158,27 @@ function Invite() {
           >
             Decline
           </Button>
+          <Button
+            variant="flare"
+            onClick={onAccept}
+            disabled={state === "working"}
+          >
+            Accept and join
+          </Button>
         </div>
       )}
 
       {state === "full" && (
-        <p role="alert" className="text-red-700 dark:text-red-400">
+        <p role="alert" className="text-sm text-destructive">
           {invite.workspaceName} is full right now. Ask whoever invited you to
           make room, then try again.
         </p>
       )}
       {state === "failed" && (
-        <p role="alert" className="text-red-700 dark:text-red-400">
+        <p role="alert" className="text-sm text-destructive">
           Something went wrong. Try again in a moment.
         </p>
       )}
-    </Page>
-  );
-}
-
-function Page({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-6">
-      <h1 className="text-2xl font-semibold">{title}</h1>
-      {children}
-    </main>
+    </AuthShell>
   );
 }
