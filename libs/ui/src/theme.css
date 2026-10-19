@@ -1,0 +1,126 @@
+/*
+ * The suite's design tokens, shadcn's names (docs/adr/0013-shadcn-on-base-ui.md):
+ * components use `bg-card`, `text-muted-foreground`, `ring-ring` and so on,
+ * and this file says what they are, for light and dark. Apps import it after
+ * Tailwind (apps/web/src/styles.css).
+ *
+ * Warm neutrals rather than grey, and one brand accent: the "flare", an
+ * amber-to-rose gradient used sparingly (the logo, the primary call to
+ * action, focus rings). Text colors keep WCAG AA contrast on their
+ * backgrounds; the e2e suite's axe checks hold them to it.
+ */
+@import "tw-animate-css";
+
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(0.985 0.004 75);
+  --foreground: oklch(0.21 0.015 50);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.24 0.02 45);
+  --primary-foreground: oklch(0.985 0.004 75);
+  --secondary: oklch(0.955 0.008 75);
+  --secondary-foreground: oklch(0.26 0.02 45);
+  --muted: oklch(0.955 0.008 75);
+  --muted-foreground: oklch(0.47 0.02 55);
+  --accent: oklch(0.95 0.025 65);
+  --accent-foreground: oklch(0.3 0.04 45);
+  --destructive: oklch(0.53 0.2 27);
+  --border: oklch(0.905 0.01 70);
+  --input: oklch(0.88 0.012 70);
+  --ring: oklch(0.7 0.17 50);
+
+  --flare-from: oklch(0.76 0.17 65);
+  --flare-to: oklch(0.6 0.22 18);
+  --success: oklch(0.56 0.14 150);
+  /* Success as text on a success tint (badges): darker, for AA contrast. */
+  --success-foreground: oklch(0.4 0.11 150);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.155 0.01 50);
+    --foreground: oklch(0.96 0.006 75);
+    --card: oklch(0.195 0.012 50);
+    --card-foreground: var(--foreground);
+    --popover: oklch(0.215 0.012 50);
+    --popover-foreground: var(--foreground);
+    --primary: oklch(0.96 0.006 75);
+    --primary-foreground: oklch(0.21 0.015 50);
+    --secondary: oklch(0.26 0.012 50);
+    --secondary-foreground: oklch(0.96 0.006 75);
+    --muted: oklch(0.26 0.012 50);
+    --muted-foreground: oklch(0.74 0.015 65);
+    --accent: oklch(0.28 0.025 50);
+    --accent-foreground: oklch(0.96 0.006 75);
+    --destructive: oklch(0.7 0.18 25);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.74 0.15 55);
+
+    --flare-from: oklch(0.8 0.15 70);
+    --flare-to: oklch(0.68 0.2 20);
+    --success: oklch(0.72 0.15 150);
+    --success-foreground: oklch(0.86 0.12 150);
+  }
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-flare-from: var(--flare-from);
+  --color-flare-to: var(--flare-to);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+/* The brand gradient, as text: the wordmark and the odd highlight. */
+@utility text-flare {
+  background-image: linear-gradient(120deg, var(--flare-from), var(--flare-to));
+  background-clip: text;
+  color: transparent;
+}
+
+/* The brand gradient, as a surface: the logo mark and primary buttons. */
+@utility bg-flare {
+  background-image: linear-gradient(135deg, var(--flare-from), var(--flare-to));
+}

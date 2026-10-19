@@ -22,3 +22,5 @@ Each component gets a story, and with it a Vitest browser test with an axe check
 - Components are source in this repo, so they can be changed freely, and updates from shadcn are pulled deliberately rather than by a version bump.
 - Base UI is added to the catalog when the first component that needs it lands.
 - shadcn examples written for Radix need adapting; the shadcn docs show both.
+- Adding a component: the shadcn CLI's `base-vega` style, `npx shadcn@latest add <name>`, writes into `libs/ui/src/components/` (with a temporary `components.json` and an `@/*` path alias in libs/ui, removed afterwards). Then point each file's `cn` import at `../cn.ts`, add any new dependency to the pnpm catalog by hand, and export what an app uses from `src/index.ts`. Don't let the CLI install dependencies: with this setup it resolved its `cn` placeholder to an unrelated npm package named `cn`. Generated files are kept whole (knip ignores their unused exports), so they can be compared with the registry later.
+- The tokens components use (`bg-card`, `text-muted-foreground`, ...) are defined once, for light and dark, in `libs/ui/src/theme.css`, which apps import after Tailwind.

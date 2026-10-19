@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./theme.css": "./src/theme.css"
   },
   "scripts": {
     "typecheck": "tsc",
@@ -15,8 +16,12 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@base-ui/react": "catalog:",
+    "class-variance-authority": "catalog:",
     "clsx": "catalog:",
-    "tailwind-merge": "catalog:"
+    "lucide-react": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tw-animate-css": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",

@@ -1,4 +1,5 @@
 /* Tailwind for Storybook only. Apps load libs/ui's classes through their own
    stylesheet, which lists this package with `@source`. */
 @import "tailwindcss";
+@import "../src/theme.css";
 @source "../src";
