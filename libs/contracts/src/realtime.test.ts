@@ -9,6 +9,9 @@ describe("serverMessage", () => {
     expect(serverMessage.parse({ type: "members_changed" })).toEqual({
       type: "members_changed",
     });
+    expect(
+      serverMessage.parse({ type: "disconnect", reason: "removed" }),
+    ).toEqual({ type: "disconnect", reason: "removed" });
   });
 
   it("refuses anything else", () => {
@@ -16,6 +19,7 @@ describe("serverMessage", () => {
       { type: "presence" },
       { type: "presence", online: [1] },
       { type: "unknown" },
+      { type: "disconnect", reason: "bored" },
       "pong",
       null,
     ]) {

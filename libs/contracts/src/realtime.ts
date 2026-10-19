@@ -15,7 +15,10 @@ export const PONG = "pong";
 
 /**
  * Close codes the room uses (4000-4999 are the application's). A client
- * reconnects after `expired`, and stops after `removed` or `signedOut`.
+ * reconnects after `expired`, and stops after `removed` or `signedOut`. The
+ * room also says why in a `disconnect` message just before closing, since a
+ * close frame's code doesn't survive every hop (some proxies, and local
+ * development's Worker-to-Worker bridge, lose it).
  */
 export const CLOSE = {
   /** The connection reached its maximum age; reconnect, which re-checks. */
@@ -41,7 +44,15 @@ export const serverMessage = z.discriminatedUnion("type", [
   z.object({ type: z.literal("presence"), online: z.array(z.string()) }),
   /** Membership changed (an invite, a role, someone joined or left). */
   z.object({ type: z.literal("members_changed") }),
+  /** The room is about to close this socket, and why (see CLOSE). */
+  z.object({
+    type: z.literal("disconnect"),
+    reason: z.enum(["expired", "signedOut", "removed"]),
+  }),
 ]);
+
+/** Why a room closes a socket: a key of CLOSE. */
+export type DisconnectReason = keyof typeof CLOSE;
 
 export type ServerMessage = z.infer<typeof serverMessage>;
 

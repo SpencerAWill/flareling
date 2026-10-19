@@ -126,6 +126,14 @@ describe("WorkspaceRoom", () => {
     await b.presence(["a", "b"]);
 
     expect(await room.closeUser("a", CLOSE.removed)).toBe(2);
+    await a1.until(() =>
+      a1.messages.some(
+        (m) =>
+          typeof m === "object" &&
+          m.type === "disconnect" &&
+          m.reason === "removed",
+      ),
+    );
     await a1.closedWith(CLOSE.removed);
     await a2.closedWith(CLOSE.removed);
     await b.presence(["b"]);

@@ -17,6 +17,7 @@ import { DurableObject } from "cloudflare:workers";
 import {
   CLOSE,
   CONNECTION_HEADERS,
+  type DisconnectReason,
   PING,
   PONG,
   type RoomEvent,
@@ -77,11 +78,11 @@ export class WorkspaceRoom
   }
 
   closeUser(userId: string, code: number): number {
-    return this.closeAll(this.ctx.getWebSockets(userTag(userId)), code);
+    return this.disconnect(this.ctx.getWebSockets(userTag(userId)), code);
   }
 
   closeSession(sessionId: string): number {
-    return this.closeAll(
+    return this.disconnect(
       this.ctx.getWebSockets(sessionTag(sessionId)),
       CLOSE.signedOut,
     );
@@ -110,8 +111,30 @@ export class WorkspaceRoom
     const expired = this.ctx
       .getWebSockets()
       .filter((ws) => attachment(ws).connectedAt + MAX_AGE_MS <= now);
-    this.closeAll(expired, CLOSE.expired);
+    this.disconnect(expired, CLOSE.expired);
     await this.scheduleExpiry();
+  }
+
+  /**
+   * Closes `sockets` with one of CLOSE's codes, first telling each why in a
+   * `disconnect` message, which arrives even where the close code doesn't.
+   */
+  private disconnect(sockets: readonly WebSocket[], code: number): number {
+    const reason = (Object.keys(CLOSE) as DisconnectReason[]).find(
+      (key) => CLOSE[key] === code,
+    );
+    if (reason) {
+      const text = JSON.stringify({
+        type: "disconnect",
+        reason,
+      } satisfies ServerMessage);
+      for (const ws of sockets) {
+        try {
+          ws.send(text);
+        } catch {}
+      }
+    }
+    return this.closeAll(sockets, code);
   }
 
   private closeAll(

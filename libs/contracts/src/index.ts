@@ -1,6 +1,7 @@
 export {
   CLOSE,
   CONNECTION_HEADERS,
+  type DisconnectReason,
   PING,
   PONG,
   type RoomEvent,
