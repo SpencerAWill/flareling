@@ -231,7 +231,7 @@ Each deploy (the `deploy: dev` and `deploy: prod` jobs in `cicd.yml`, both runni
 4. **Record a D1 Time Travel bookmark**, the way back if a migration goes wrong, since migrations have no "down".
 5. **`wrangler d1 migrations apply --remote`** before any code that needs the new schema. Migrations only add (expand, then contract in a later release).
 6. **`wrangler deploy`** `apps/jobs`, then `apps/web` (consumers before producers), each with its secrets in the same upload (`--secrets-file`).
-7. **Smoke test:** the `@smoke` Playwright specs against the deployed site. Nothing signs in: deployed sign-in emails go to real inboxes.
+7. **Smoke test:** the `@smoke` Playwright specs against the deployed site, through browser page loads only: the zone's Bot Fight Mode challenges any other request from a CI runner, and the Free plan can't exempt it (#14). Nothing signs in: deployed sign-in emails go to real inboxes.
 8. **Prod only, if the smoke test fails:** `wrangler rollback` of both Workers. Code only; D1 stays as migrated.
 
 Prod deploys are the commit dev just deployed and smoke-tested, rebuilt with prod config (a Worker version can't move between two Workers). They wait on the `prod` environment's required reviewer, which needs a public repo on GitHub Free. Each environment deploys one run at a time and is never cancelled halfway. Design and alternatives: [ADR 0021](./docs/adr/0021-one-pipeline-from-check-to-prod.md).
