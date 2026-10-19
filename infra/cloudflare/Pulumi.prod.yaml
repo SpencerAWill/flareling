@@ -17,3 +17,6 @@ config:
     stack: SpencerAWill/spencerwill-shared/prod
     apiKeyOutput: flarelingResendApiKey
     fromOutput: flarelingFromEmail
+  # flareling-prod-web exists (first deployed 2026-10-19), so the hostname can
+  # be attached to it (src/apps.ts).
+  flareling-cloudflare:webDeployed: "true"
