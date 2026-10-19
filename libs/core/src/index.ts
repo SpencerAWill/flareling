@@ -1,3 +1,4 @@
+export { listMembers } from "./members.ts";
 export {
   createWorkspace,
   ensurePersonalWorkspace,
