@@ -224,7 +224,7 @@ describe("processStripeEvent", () => {
     );
     expect(await workspacePlan(workspaceId)).toEqual({
       plan: "free",
-      entitlements: { members: 1 },
+      entitlements: { members: 3 },
     });
   });
 
@@ -258,7 +258,7 @@ describe("workspacePlan", () => {
     const { workspaceId } = await createOwner();
     expect(await workspacePlan(workspaceId)).toEqual({
       plan: "free",
-      entitlements: { members: 1 },
+      entitlements: { members: 3 },
     });
   });
 

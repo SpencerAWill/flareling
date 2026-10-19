@@ -16,7 +16,7 @@ export interface Entitlements {
 export const PLANS = {
   free: {
     name: "Free",
-    entitlements: { members: 1 },
+    entitlements: { members: 3 },
   },
   pro: {
     name: "Pro",
