@@ -53,6 +53,29 @@ describe("syncWranglerConfig on the committed configs", () => {
     assert.equal(config.vars.APP_NAME, "Flareling");
     // Comments survive.
     assert.match(text, /\/\/ Pinned rather than tracking "today"/);
+    // The rooms are the stack's realtime Worker's.
+    assert.deepEqual(config.durable_objects.bindings, [
+      {
+        name: "WORKSPACE_ROOM",
+        class_name: "WorkspaceRoom",
+        script_name: "flareling-prod-realtime",
+      },
+    ]);
+  });
+
+  it("renames apps/realtime and leaves its own classes and migrations", () => {
+    const config = parse(
+      syncWranglerConfig(committed("realtime"), "realtime", prod),
+    );
+    assert.equal(config.name, "flareling-prod-realtime");
+    assert.deepEqual(
+      config.durable_objects,
+      parse(committed("realtime")).durable_objects,
+    );
+    assert.deepEqual(
+      config.migrations,
+      parse(committed("realtime")).migrations,
+    );
   });
 
   it("points apps/jobs at the stack, dead-letter queue included", () => {
@@ -104,6 +127,14 @@ describe("syncWranglerConfig refuses what it doesn't know", () => {
     assert.throws(
       () => syncWranglerConfig(text, "web", prod),
       /queue "flareling-dev-other"/,
+    );
+  });
+
+  it("a Durable Object in a Worker it doesn't know", () => {
+    const text = `{ "name": "x", "durable_objects": { "bindings": [{ "name": "R", "class_name": "R", "script_name": "flareling-other" }] } }`;
+    assert.throws(
+      () => syncWranglerConfig(text, "web", prod),
+      /Worker "flareling-other"/,
     );
   });
 

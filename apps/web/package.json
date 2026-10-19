@@ -29,6 +29,7 @@
   "dependencies": {
     "@flareling/auth": "workspace:*",
     "@flareling/billing": "workspace:*",
+    "@flareling/contracts": "workspace:*",
     "@flareling/core": "workspace:*",
     "@flareling/email": "workspace:*",
     "@flareling/env": "workspace:*",

@@ -10,7 +10,13 @@ export {
   listPasskeys,
   removePasskey,
 } from "./passkeys.ts";
-export { getPrincipal, loadPrincipal, signIn, signOut } from "./principal.ts";
+export {
+  currentSessionId,
+  getPrincipal,
+  loadPrincipal,
+  signIn,
+  signOut,
+} from "./principal.ts";
 export {
   ForbiddenError,
   hasAnyPermission,

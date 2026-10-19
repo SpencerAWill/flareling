@@ -34,7 +34,11 @@ export default defineConfig(({ command }) => {
         // messages the app queues (Stripe webhooks) are consumed locally too.
         // Each Worker still deploys on its own; this only shares a local
         // runtime (and its local D1 and queues) between them.
-        auxiliaryWorkers: [{ configPath: "../jobs/wrangler.jsonc" }],
+        // apps/realtime too, so WebSockets reach real WorkspaceRooms.
+        auxiliaryWorkers: [
+          { configPath: "../jobs/wrangler.jsonc" },
+          { configPath: "../realtime/wrangler.jsonc" },
+        ],
       }),
       tailwindcss(),
       tanstackStart(),

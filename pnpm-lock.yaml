@@ -523,6 +523,9 @@ importers:
       '@flareling/billing':
         specifier: workspace:*
         version: link:../../libs/billing
+      '@flareling/contracts':
+        specifier: workspace:*
+        version: link:../../libs/contracts
       '@flareling/core':
         specifier: workspace:*
         version: link:../../libs/core

@@ -76,6 +76,21 @@
     "producers": [{ "binding": "JOBS_QUEUE", "queue": "flareling-dev-jobs" }]
   },
 
+  // apps/realtime's rooms, one per workspace: /api/realtime/$workspaceId
+  // forwards WebSocket upgrades to them, and server functions publish
+  // events through them (src/server/realtime). The class lives in the
+  // realtime Worker, so it must be deployed first. sync-env points
+  // `script_name` at the stack's realtime Worker.
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "WORKSPACE_ROOM",
+        "class_name": "WorkspaceRoom",
+        "script_name": "flareling-realtime"
+      }
+    ]
+  },
+
   // Non-secret configuration, validated by src/env.ts. These are the local
   // development values; deploys override them per environment. Secrets
   // (TURNSTILE_SECRET_KEY, STRIPE_*, RESEND_API_KEY) and dev-only settings

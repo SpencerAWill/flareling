@@ -1,4 +1,5 @@
-import { cloudflareTest } from "@cloudflare/vitest-plugin";
+import path from "node:path";
+import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin";
 import { coverage } from "@flareling/config/vitest/coverage";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
@@ -10,7 +11,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 // from wrangler.jsonc.
 export default defineConfig({
   plugins: [
-    cloudflareTest({
+    cloudflareTest(async () => ({
       // wrangler.jsonc's `main` is a package specifier, which the test pool
       // would resolve as a path relative to this directory. This local module
       // re-exports the same entry.
@@ -22,9 +23,16 @@ export default defineConfig({
         bindings: {
           STRIPE_SECRET_KEY: "sk_test_123",
           STRIPE_WEBHOOK_SECRET: "whsec_test",
+          // For the files that need the schema (test/realtime.test.ts).
+          TEST_MIGRATIONS: await readD1Migrations(
+            path.join(import.meta.dirname, "../../libs/db/migrations"),
+          ),
         },
+        // The real WorkspaceRoom is apps/realtime's, another Worker the test
+        // runtime doesn't load; test/worker.ts has a stand-in.
+        durableObjects: { WORKSPACE_ROOM: "TestWorkspaceRoom" },
       },
-    }),
+    })),
     // Provides the virtual modules (the route tree, the router entry) that
     // Start's server entry imports. Without it the Worker fails at load.
     tanstackStart(),

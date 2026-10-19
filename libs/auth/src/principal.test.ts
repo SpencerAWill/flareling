@@ -3,7 +3,13 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { nextRequest, testContext } from "../test/context.ts";
 import { createUser } from "../test/users.ts";
-import { getPrincipal, loadPrincipal, signIn } from "./index.ts";
+import {
+  currentSessionId,
+  getPrincipal,
+  loadPrincipal,
+  signIn,
+  signOut,
+} from "./index.ts";
 
 const { permissions, rolePermissions, roles } = schema;
 
@@ -80,5 +86,31 @@ describe("getPrincipal", () => {
 
   it("is null when no one is signed in", async () => {
     expect(await getPrincipal(testContext())).toBeNull();
+  });
+});
+
+describe("currentSessionId", () => {
+  it("names this browser's session, and is null once it signs out", async () => {
+    const userId = await createUser("session-id@example.com");
+    const phone = testContext();
+    const laptop = testContext();
+    await signIn(phone, userId);
+    await signIn(laptop, userId);
+
+    const phoneId = await currentSessionId(nextRequest(phone));
+    const laptopId = await currentSessionId(nextRequest(laptop));
+    expect(phoneId).toEqual(expect.any(String));
+    expect(laptopId).toEqual(expect.any(String));
+    expect(phoneId).not.toBe(laptopId);
+
+    const request = nextRequest(phone);
+    expect(await currentSessionId(request)).toBe(phoneId);
+    await signOut(request);
+    expect(await currentSessionId(request)).toBeNull();
+    expect(await currentSessionId(nextRequest(phone))).toBeNull();
+  });
+
+  it("is null when no one is signed in", async () => {
+    expect(await currentSessionId(testContext())).toBeNull();
   });
 });

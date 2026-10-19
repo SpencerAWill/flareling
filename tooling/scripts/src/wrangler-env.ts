@@ -11,6 +11,9 @@
  *   - Queues: producer, consumer and dead-letter queue names.
  *   - Rate Limiting: `namespace_id`, which is account-wide, so a shared one
  *     would share counters between stacks.
+ *   - Durable Objects bound from another Worker: `script_name`, the stack's
+ *     copy of that Worker (apps/web's binding to apps/realtime's rooms). A
+ *     Worker's own classes and its `migrations` aren't per stack.
  *   - Vars that differ per stack (the app's URL, the passkey RP ID, the
  *     sender address), wherever a config declares them.
  *   - Cron Triggers: removed (an empty list, which also unschedules any
@@ -85,6 +88,15 @@ const RATE_LIMITS: Record<string, (o: StackOutputs) => number> = {
   AUTH_RATE_LIMITER: (o) => o.authRateLimitNamespaceId,
 };
 
+/**
+ * Workers another app binds to by script name, by the dev name as
+ * committed. Each is `<resourcePrefix>-<app>`, the name sync-env gives that
+ * app (above).
+ */
+const SCRIPTS: Record<string, (o: StackOutputs) => string> = {
+  "flareling-realtime": (o) => `${o.resourcePrefix}-realtime`,
+};
+
 /** Per-stack vars, by name, set wherever a config declares them. */
 const VARS: Record<string, (o: StackOutputs) => string> = {
   APP_BASE_URL: (o) => o.webBaseUrl,
@@ -118,6 +130,8 @@ const KNOWN_KEYS = new Set([
   "d1_databases",
   "queues",
   "ratelimits",
+  "durable_objects",
+  "migrations",
 ]);
 
 const PLACEHOLDER_ID = "00000000-0000-0000-0000-000000000000";
@@ -137,6 +151,9 @@ interface WranglerConfig {
     }[];
   };
   readonly ratelimits?: readonly { name: string }[];
+  readonly durable_objects?: {
+    readonly bindings?: readonly { script_name?: string }[];
+  };
 }
 
 export class SyncError extends Error {
@@ -216,6 +233,14 @@ export function syncWranglerConfig(
     changes.push([
       ["ratelimits", i, "namespace_id"],
       String(lookup(RATE_LIMITS, r.name, "the rate limiter")),
+    ]);
+  });
+
+  config.durable_objects?.bindings?.forEach((b, i) => {
+    if (b.script_name === undefined) return;
+    changes.push([
+      ["durable_objects", "bindings", i, "script_name"],
+      lookup(SCRIPTS, b.script_name, "the Worker"),
     ]);
   });
 

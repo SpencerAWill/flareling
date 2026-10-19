@@ -7,7 +7,12 @@ import { getDb, inJsonArray, schema } from "@flareling/db";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import type { AuthContext } from "./context.ts";
 import type { Principal } from "./rbac.ts";
-import { closeSession, loadSession, rotateSession } from "./session.ts";
+import {
+  closeSession,
+  loadSession,
+  rotateSession,
+  type Session,
+} from "./session.ts";
 
 const { userEmails, userRoles, roles, rolePermissions, permissions } = schema;
 
@@ -73,7 +78,18 @@ export async function loadPrincipal(userId: string): Promise<Principal | null> {
   };
 }
 
+const sessionsByContext = new WeakMap<AuthContext, Promise<Session | null>>();
 const principals = new WeakMap<AuthContext, Promise<Principal | null>>();
+
+/** This request's session, loaded once per AuthContext. */
+function currentSession(ctx: AuthContext): Promise<Session | null> {
+  let session = sessionsByContext.get(ctx);
+  if (!session) {
+    session = loadSession(ctx);
+    sessionsByContext.set(ctx, session);
+  }
+  return session;
+}
 
 /**
  * The signed-in principal for this request, or null. Memoized per AuthContext,
@@ -83,12 +99,23 @@ const principals = new WeakMap<AuthContext, Promise<Principal | null>>();
 export function getPrincipal(ctx: AuthContext): Promise<Principal | null> {
   let principal = principals.get(ctx);
   if (!principal) {
-    principal = loadSession(ctx).then((session) =>
+    principal = currentSession(ctx).then((session) =>
       session ? loadPrincipal(session.userId) : null,
     );
     principals.set(ctx, principal);
   }
   return principal;
+}
+
+/**
+ * The id of this request's session, or null when signed out: a non-secret
+ * handle (not the cookie's token), for tagging what the session opened, such
+ * as realtime sockets, so signing out can close them.
+ */
+export async function currentSessionId(
+  ctx: AuthContext,
+): Promise<string | null> {
+  return (await currentSession(ctx))?.sessionId ?? null;
 }
 
 /**
@@ -98,11 +125,13 @@ export function getPrincipal(ctx: AuthContext): Promise<Principal | null> {
  */
 export async function signIn(ctx: AuthContext, userId: string): Promise<void> {
   await rotateSession(ctx, userId);
+  sessionsByContext.delete(ctx);
   principals.delete(ctx);
 }
 
 /** Signs this browser out. */
 export async function signOut(ctx: AuthContext): Promise<void> {
   await closeSession(ctx);
+  sessionsByContext.delete(ctx);
   principals.delete(ctx);
 }
