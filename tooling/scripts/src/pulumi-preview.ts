@@ -16,7 +16,7 @@
 
 /** GitHub rejects a comment body over 65,536 characters; leave headroom. */
 export const COMMENT_LIMIT = 60_000;
-/** GitHub's job summary limit is 1 MiB per step. */
+/** GitHub's job summary limit is 1 MiB per step, in bytes. */
 export const SUMMARY_LIMIT = 1_000_000;
 
 /** Pulumi's placeholder for a value only known once applied. */
@@ -138,14 +138,20 @@ export function renderPreview(
   return { comment, summary };
 }
 
-/** `prefix` and the first tier that fits within `limit`, else the last. */
+/**
+ * `prefix` and the first tier that fits within `limit` UTF-8 bytes, else the
+ * last. Bytes, since the job summary's limit is in bytes; for the comment's
+ * character limit, bytes are never fewer than characters.
+ */
 function firstThatFits(
   prefix: string,
   limit: number,
   tiers: readonly string[],
 ): string {
   const tier =
-    tiers.find((candidate) => prefix.length + candidate.length <= limit) ??
+    tiers.find(
+      (candidate) => Buffer.byteLength(`${prefix}${candidate}`) <= limit,
+    ) ??
     tiers.at(-1) ??
     "";
   return `${prefix}${tier}`;
@@ -295,10 +301,15 @@ function fullLines(resource: Resource): string[] {
 
 function briefLine(resource: Resource): string {
   const properties = [
-    ...new Set(resource.changes.map((change) => change.path.split(/[.[]/)[0])),
+    ...new Set(resource.changes.map((change) => topLevelKey(change.path))),
   ];
   const list = properties.length > 0 ? `  (${properties.join(", ")})` : "";
   return `${resourceLine(resource)}${list}`;
+}
+
+/** The first segment of a `join`ed path: `a` of `a.b[0]`, `["k-k"]` of `["k-k"].c`. */
+function topLevelKey(path: string): string {
+  return path.match(/^(?:\[(?:"(?:[^"\\]|\\.)*"|\d+)\]|[^.[]+)/)?.[0] ?? path;
 }
 
 function resourceLine(resource: Resource): string {

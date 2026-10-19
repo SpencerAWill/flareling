@@ -43,8 +43,8 @@ jobs:
       pull-requests: read # paths-filter lists the PR's files via the API
     outputs:
       code: ${{ github.event_name == 'push' || steps.filter.outputs.code == 'true' }}
-      workflows: ${{ github.event_name == 'push' || steps.filter.outputs.workflows == 'true' }}
-      infra: ${{ github.event_name == 'push' || steps.filter.outputs.infra == 'true' }}
+      workflows: ${{ github.event_name == 'push' || steps.filter-any.outputs.workflows == 'true' }}
+      infra: ${{ github.event_name == 'push' || steps.filter-any.outputs.infra == 'true' }}
     steps:
       - id: filter
         if: github.event_name == 'pull_request'
@@ -60,6 +60,13 @@ jobs:
               - '!LICENSE'
               - '!.devcontainer/**'
               - '!.zed/**'
+      # Lists of alternatives, so a file matches if it matches any pattern
+      # (the default quantifier). Under `every` above they could never match.
+      - id: filter-any
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
             workflows:
               - '.github/workflows/**'
               - '.github/zizmor.yml'
@@ -428,10 +435,9 @@ jobs:
       - name: Post or update the stack's comment
         env:
           GH_TOKEN: ${{ github.token }}
-          STACK: ${{ matrix.stack }}
           PR: ${{ github.event.pull_request.number }}
         run: |
-          marker="<!-- flareling:pulumi-preview:$STACK -->"
+          marker="$(head -n 1 "$RUNNER_TEMP/comment.md")"
           ids="$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
             --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id")"
           # The first match; not `| head`, which pipefail would fail on SIGPIPE.

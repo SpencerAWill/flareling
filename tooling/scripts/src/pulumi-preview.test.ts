@@ -108,6 +108,24 @@ describe("renderPreview", () => {
     assert.ok(summary.includes('+     a: "new-0"'));
   });
 
+  it("names a quoted top-level key in the brief list", () => {
+    const { comment } = renderPreview(
+      {
+        changeSummary: { update: 400 },
+        steps: Array.from({ length: 400 }, (_, i) => ({
+          op: "update",
+          urn: urn("cloudflare:index/thing:Thing", `thing-${i}`),
+          oldState: { inputs: { "kebab-key": { a: "y".repeat(200) } } },
+          newState: { inputs: { "kebab-key": { a: "z".repeat(200) } } },
+        })),
+      },
+      context,
+    );
+    assert.ok(
+      comment.includes('~ cloudflare:Thing  thing-0  (["kebab-key"])\n'),
+    );
+  });
+
   it("falls back to the counts when even the names don't fit", () => {
     const { comment } = renderPreview(manyChanges(3000, 1), context);
     assert.ok(comment.length <= COMMENT_LIMIT);

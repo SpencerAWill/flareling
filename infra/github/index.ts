@@ -83,6 +83,7 @@ const tokens =
         zoneId: cloudflareZoneId,
         zoneDedicated: cloudflareZoneDedicated,
         repositoryName,
+        preview: pulumiPreviews,
       })
     : undefined;
 
@@ -143,7 +144,12 @@ if (pulumiPreviews) {
     throw new Error(`pulumiPreviews needs ${missing.join(", ")}.`);
   }
 }
-if (pulumiPreviews && tokens && pulumiOrganization && pulumiUserLogin) {
+if (
+  pulumiPreviews &&
+  tokens?.preview &&
+  pulumiOrganization &&
+  pulumiUserLogin
+) {
   const preview = new github.RepositoryEnvironment("preview", {
     repository: repository.name,
     environment: "preview",

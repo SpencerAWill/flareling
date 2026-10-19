@@ -49,7 +49,16 @@ const tokenPermissions = {
  * listed, so a permission added to the infra token reaches previews too.
  */
 const readOnly = (names: readonly string[]) =>
-  names.map((name) => name.replace(/ Write$/, " Read"));
+  names.map((name) => {
+    const read = name.replace(/ Write$/, " Read");
+    // A write permission named otherwise ("... Edit") must not reach PRs.
+    if (!read.endsWith(" Read")) {
+      throw new Error(
+        `No read-only form of "${name}" for the preview token: map it in readOnly.`,
+      );
+    }
+    return read;
+  });
 const previewPermissions = {
   account: readOnly(tokenPermissions.infra.account),
   zone: readOnly(tokenPermissions.infra.zone),
@@ -65,12 +74,17 @@ export function createCiTokens({
   zoneId,
   zoneDedicated,
   repositoryName,
+  preview,
 }: {
   readonly accountId: string;
   readonly zoneId: string;
   readonly zoneDedicated: boolean;
   readonly repositoryName: string;
-}): Record<TokenKind, pulumi.Output<string>> {
+  /** Also mint the read-only `preview` token (infra/github's pulumiPreviews). */
+  readonly preview: boolean;
+}): Record<Exclude<TokenKind, "preview">, pulumi.Output<string>> & {
+  readonly preview?: pulumi.Output<string>;
+} {
   const groups = cloudflare.getAccountApiTokenPermissionGroupsListOutput({
     accountId,
     maxItems: 1000,
@@ -137,6 +151,6 @@ export function createCiTokens({
   return {
     deploy: mint("deploy"),
     infra: mint("infra"),
-    preview: mint("preview"),
+    ...(preview && { preview: mint("preview") }),
   };
 }
