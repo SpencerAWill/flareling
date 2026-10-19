@@ -6,8 +6,10 @@ import {
 } from "./fixtures.ts";
 
 test.describe("home", { tag: "@smoke" }, () => {
-  test("renders", async ({ page }) => {
+  test("renders and hydrates", async ({ page }) => {
     await page.goto("/");
+    // Also gives the console-error check time to see a hydration error.
+    await waitForHydration(page);
 
     await expect(page).toHaveTitle("Flareling");
     await expect(
