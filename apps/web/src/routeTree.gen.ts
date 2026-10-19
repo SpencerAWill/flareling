@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -24,6 +25,11 @@ import { Route as WWorkspaceIdMembersRouteImport } from './routes/w/$workspaceId
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInRoute = SignInRouteImport.update({
@@ -79,6 +85,7 @@ const WWorkspaceIdMembersRoute = WWorkspaceIdMembersRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/invite': typeof InviteRoute
   '/sign-in': typeof SignInRoute
   '/w/$workspaceId': typeof WWorkspaceIdRouteRouteWithChildren
   '/api/health': typeof ApiHealthRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/invite': typeof InviteRoute
   '/sign-in': typeof SignInRoute
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -105,6 +113,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/invite': typeof InviteRoute
   '/sign-in': typeof SignInRoute
   '/w/$workspaceId': typeof WWorkspaceIdRouteRouteWithChildren
   '/api/health': typeof ApiHealthRoute
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/invite'
     | '/sign-in'
     | '/w/$workspaceId'
     | '/api/health'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/invite'
     | '/sign-in'
     | '/api/health'
     | '/auth/callback'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/invite'
     | '/sign-in'
     | '/w/$workspaceId'
     | '/api/health'
@@ -159,6 +171,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  InviteRoute: typeof InviteRoute
   SignInRoute: typeof SignInRoute
   WWorkspaceIdRouteRoute: typeof WWorkspaceIdRouteRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
@@ -175,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in': {
@@ -267,6 +287,7 @@ const WWorkspaceIdRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  InviteRoute: InviteRoute,
   SignInRoute: SignInRoute,
   WWorkspaceIdRouteRoute: WWorkspaceIdRouteRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,

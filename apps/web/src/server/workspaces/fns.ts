@@ -42,22 +42,106 @@ export const createWorkspaceFn = createServerFn({ method: "POST" })
     return createWorkspace(principal, data.name);
   });
 
-/** The workspace's members, for any member. */
-export const listMembersFn = createServerFn({ method: "GET" })
+/**
+ * Everything the members page shows: the members, for anyone in the
+ * workspace, plus open invites and seats for its admins and owners.
+ */
+export const getMembersFn = createServerFn({ method: "GET" })
   .validator(workspaceInput)
   .handler(async ({ data }) => {
-    const { listMembers } = await import("@flareling/core");
+    const { listInvites, listMembers } = await import("@flareling/core");
+    const { workspacePlan } = await import("@flareling/billing");
     const principal = await signedIn();
-    const result = await unlessRefused(() =>
-      listMembers(principal, data.workspaceId),
-    );
+    const result = await unlessRefused(async () => {
+      const members = await listMembers(principal, data.workspaceId);
+      const role = members.find((m) => m.userId === principal?.userId)?.role;
+      const canManage = role === "owner" || role === "admin";
+      const [invites, plan] = await Promise.all([
+        canManage ? listInvites(principal, data.workspaceId) : [],
+        workspacePlan(data.workspaceId),
+      ]);
+      return { members, invites, canManage, plan };
+    });
     if (!result.ok) return result;
+    const { members, invites, canManage, plan } = result.value;
+    const now = Date.now();
     return {
       ok: true as const,
-      members: result.value.map((m) => ({
+      viewerId: principal?.userId ?? "",
+      canManage,
+      // ISO strings: Start's serializer and the client both handle them.
+      members: members.map((m) => ({
         ...m,
-        // ISO strings: Start's serializer and the client both handle them.
         joinedAt: m.joinedAt.toISOString(),
       })),
+      invites: invites.map((i) => ({
+        ...i,
+        sentAt: i.sentAt.toISOString(),
+        expired: i.expiresAt.getTime() <= now,
+      })),
+      seats: {
+        limit: plan.entitlements.members,
+        // As libs/core counts them: members plus unexpired open invites.
+        used:
+          members.length +
+          invites.filter((i) => i.expiresAt.getTime() > now).length,
+      },
     };
+  });
+
+/** Emails an invite to join the workspace; resends an open one. */
+export const inviteMemberFn = createServerFn({ method: "POST" })
+  .validator(
+    workspaceInput.extend({
+      email: z.email().max(254),
+      role: z.enum(["admin", "member"]),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const { inviteMember } = await import("@flareling/core");
+    const { errorMessage, log } = await import("@flareling/log");
+    const { inviteContext } = await import("./context.server.ts");
+    const principal = await signedIn();
+    try {
+      const result = await unlessRefused(() =>
+        inviteMember(inviteContext(), principal, data),
+      );
+      return result.ok
+        ? result.value
+        : { ok: false as const, reason: "forbidden" as const };
+    } catch (err) {
+      log.error("workspace.invite_failed", { error: errorMessage(err) });
+      return { ok: false as const, reason: "unavailable" as const };
+    }
+  });
+
+const tokenInput = z.object({ token: z.string().min(16).max(128) });
+
+/** What an invite link opens, or null if it's no longer valid. */
+export const getInviteFn = createServerFn({ method: "GET" })
+  .validator(tokenInput)
+  .handler(async ({ data }) => {
+    const { getInvite } = await import("@flareling/core");
+    const { inviteContext } = await import("./context.server.ts");
+    const invite = await getInvite(inviteContext(), data.token);
+    return invite && { ...invite, expiresAt: invite.expiresAt.toISOString() };
+  });
+
+export const acceptInviteFn = createServerFn({ method: "POST" })
+  .validator(tokenInput)
+  .handler(async ({ data }) => {
+    const { acceptInvite } = await import("@flareling/core");
+    const { inviteContext } = await import("./context.server.ts");
+    const principal = await signedIn();
+    if (!principal)
+      return { ok: false as const, reason: "unauthorized" as const };
+    return acceptInvite(inviteContext(), principal, data.token);
+  });
+
+export const declineInviteFn = createServerFn({ method: "POST" })
+  .validator(tokenInput)
+  .handler(async ({ data }) => {
+    const { declineInvite } = await import("@flareling/core");
+    const { inviteContext } = await import("./context.server.ts");
+    return declineInvite(inviteContext(), await signedIn(), data.token);
   });
