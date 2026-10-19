@@ -60,14 +60,15 @@ export const getMembersFn = createServerFn({ method: "GET" })
         canManage ? listInvites(principal, data.workspaceId) : [],
         workspacePlan(data.workspaceId),
       ]);
-      return { members, invites, canManage, plan };
+      return { members, invites, role, canManage, plan };
     });
     if (!result.ok) return result;
-    const { members, invites, canManage, plan } = result.value;
+    const { members, invites, role, canManage, plan } = result.value;
     const now = Date.now();
     return {
       ok: true as const,
       viewerId: principal?.userId ?? "",
+      viewerRole: role ?? "member",
       canManage,
       // ISO strings: Start's serializer and the client both handle them.
       members: members.map((m) => ({
@@ -144,4 +145,56 @@ export const declineInviteFn = createServerFn({ method: "POST" })
     const { declineInvite } = await import("@flareling/core");
     const { inviteContext } = await import("./context.server.ts");
     return declineInvite(inviteContext(), await signedIn(), data.token);
+  });
+
+const memberInput = workspaceInput.extend({ userId: z.uuid() });
+
+/** Runs a membership change, mapping a refusal to `forbidden`. */
+async function membershipChange(
+  run: () => Promise<{ ok: true } | { ok: false; reason: string } | boolean>,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const result = await unlessRefused(run);
+  if (!result.ok) return { ok: false, reason: "forbidden" };
+  if (typeof result.value === "boolean") {
+    return result.value ? { ok: true } : { ok: false, reason: "not_found" };
+  }
+  return result.value;
+}
+
+export const changeRoleFn = createServerFn({ method: "POST" })
+  .validator(memberInput.extend({ role: z.enum(["owner", "admin", "member"]) }))
+  .handler(async ({ data }) => {
+    const { changeRole } = await import("@flareling/core");
+    const principal = await signedIn();
+    return membershipChange(() =>
+      changeRole(principal, data.workspaceId, data.userId, data.role),
+    );
+  });
+
+export const removeMemberFn = createServerFn({ method: "POST" })
+  .validator(memberInput)
+  .handler(async ({ data }) => {
+    const { removeMember } = await import("@flareling/core");
+    const principal = await signedIn();
+    return membershipChange(() =>
+      removeMember(principal, data.workspaceId, data.userId),
+    );
+  });
+
+export const leaveWorkspaceFn = createServerFn({ method: "POST" })
+  .validator(workspaceInput)
+  .handler(async ({ data }) => {
+    const { leaveWorkspace } = await import("@flareling/core");
+    const principal = await signedIn();
+    return membershipChange(() => leaveWorkspace(principal, data.workspaceId));
+  });
+
+export const revokeInviteFn = createServerFn({ method: "POST" })
+  .validator(workspaceInput.extend({ inviteId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const { revokeInvite } = await import("@flareling/core");
+    const principal = await signedIn();
+    return membershipChange(() =>
+      revokeInvite(principal, data.workspaceId, data.inviteId),
+    );
   });

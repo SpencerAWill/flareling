@@ -7,9 +7,14 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
+import { LeaveWorkspace, MemberRow } from "#/components/member-row.tsx";
 import { workspaceTitle } from "#/lib/workspaces.ts";
-import { getMembersFn, inviteMemberFn } from "#/server/workspaces/fns.ts";
+import {
+  getMembersFn,
+  inviteMemberFn,
+  revokeInviteFn,
+} from "#/server/workspaces/fns.ts";
 
 const workspaceRoute = getRouteApi("/w/$workspaceId");
 
@@ -36,7 +41,8 @@ const ROLE_NAMES = {
 
 function Members() {
   const { workspace } = workspaceRoute.useLoaderData();
-  const { members, invites, canManage, seats } = Route.useLoaderData();
+  const { members, invites, canManage, seats, viewerId, viewerRole } =
+    Route.useLoaderData();
   const full = seats.used >= seats.limit;
 
   return (
@@ -86,15 +92,14 @@ function Members() {
         </h2>
         <ul className="flex flex-col divide-y divide-neutral-200 dark:divide-neutral-800">
           {members.map((member) => (
-            <li
+            <MemberRow
               key={member.userId}
-              className="flex flex-wrap items-center justify-between gap-2 py-2"
-            >
-              <span className="break-all">{member.email}</span>
-              <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                {ROLE_NAMES[member.role]}
-              </span>
-            </li>
+              workspaceId={workspace.id}
+              member={member}
+              viewerId={viewerId}
+              viewerRole={viewerRole}
+              personal={workspace.personal}
+            />
           ))}
         </ul>
       </section>
@@ -117,6 +122,13 @@ function Members() {
             ))}
           </ul>
         </section>
+      )}
+
+      {!workspace.personal && (
+        <LeaveWorkspace
+          workspaceId={workspace.id}
+          workspaceName={workspace.name}
+        />
       )}
     </main>
   );
@@ -145,6 +157,7 @@ function useInvite(workspaceId: string) {
 
 function InviteForm({ workspaceId }: { workspaceId: string }) {
   const invite = useInvite(workspaceId);
+  const roleId = useId();
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState<
     { kind: "sent"; email: string } | { kind: "error"; message: string } | null
@@ -185,9 +198,14 @@ function InviteForm({ workspaceId }: { workspaceId: string }) {
           className="rounded border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
         />
       </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Role</span>
+      {/* Labelled by id: a wrapping label's name would include the
+          selected option. */}
+      <div className="flex flex-col gap-1">
+        <label htmlFor={roleId} className="text-sm font-medium">
+          Role
+        </label>
         <select
+          id={roleId}
           name="role"
           defaultValue="member"
           className="rounded border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
@@ -195,7 +213,7 @@ function InviteForm({ workspaceId }: { workspaceId: string }) {
           <option value="member">Member</option>
           <option value="admin">Admin</option>
         </select>
-      </label>
+      </div>
       <Button type="submit" disabled={pending}>
         Send invite
       </Button>
@@ -230,6 +248,8 @@ function PendingInvite({
   };
 }) {
   const resend = useInvite(workspaceId);
+  const revoke = useServerFn(revokeInviteFn);
+  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sent = new Date(invite.sentAt).toLocaleDateString(undefined, {
@@ -246,6 +266,19 @@ function PendingInvite({
     }
   }
 
+  async function onRevoke() {
+    setPending(true);
+    setError(null);
+    const result = await revoke({
+      data: { workspaceId, inviteId: invite.id },
+    }).catch(() => ({ ok: false as const, reason: "unavailable" }));
+    // Not found means it was accepted, declined or revoked meanwhile:
+    // refreshing shows which.
+    if (result.ok || result.reason === "not_found") await router.invalidate();
+    else setError(INVITE_ERRORS.unavailable ?? "");
+    setPending(false);
+  }
+
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 py-2">
       <span className="flex flex-col">
@@ -255,14 +288,24 @@ function PendingInvite({
           {invite.expired ? "Expired" : `Sent ${sent}`}
         </span>
       </span>
-      <Button
-        variant="secondary"
-        disabled={pending}
-        onClick={onResend}
-        aria-label={`Resend the invite to ${invite.email}`}
-      >
-        Resend
-      </Button>
+      <span className="flex gap-2">
+        <Button
+          variant="secondary"
+          disabled={pending}
+          onClick={onResend}
+          aria-label={`Resend the invite to ${invite.email}`}
+        >
+          Resend
+        </Button>
+        <Button
+          variant="secondary"
+          disabled={pending}
+          onClick={onRevoke}
+          aria-label={`Revoke the invite to ${invite.email}`}
+        >
+          Revoke
+        </Button>
+      </span>
       {error && (
         <p
           role="alert"

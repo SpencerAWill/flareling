@@ -29,7 +29,7 @@ test("an owner invites someone new, who signs up from the invite and joins", asy
   await expect(page.getByText("1 of 3 seats used")).toBeVisible();
 
   await page.getByLabel("Email").fill(inviteeEmail);
-  await page.getByLabel("Role").selectOption("admin");
+  await page.getByLabel("Role", { exact: true }).selectOption("admin");
   await page.getByRole("button", { name: "Send invite" }).click();
   await expect(page.getByRole("status")).toHaveText(
     `Invite sent to ${inviteeEmail}.`,
@@ -94,6 +94,52 @@ test("an owner invites someone new, who signs up from the invite and joins", asy
   ).toContainText("Owner");
   await invitee.waitForLoadState("networkidle");
   await context.close();
+
+  // Back with the owner: change the new admin's role, then remove them.
+  await page.goto(invitee.url().replace(/^https?:\/\/[^/]+/, ""));
+  await waitForHydration(page);
+  await page.getByLabel(`Role for ${inviteeEmail}`).selectOption("member");
+  await page.reload();
+  await waitForHydration(page);
+  await expect(page.getByLabel(`Role for ${inviteeEmail}`)).toHaveValue(
+    "member",
+  );
+
+  // The only owner can't step down.
+  await page.getByLabel(`Role for ${ownerEmail}`).selectOption("admin");
+  await expect(page.getByRole("alert")).toHaveText(
+    "A workspace needs an owner. Make someone else an owner first.",
+  );
+  await expect(page.getByLabel(`Role for ${ownerEmail}`)).toHaveValue("owner");
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: `Remove ${inviteeEmail}` }).click();
+  await expect(page.getByText(inviteeEmail)).toHaveCount(0);
+  await expect(page.getByText("1 of 3 seats used")).toBeVisible();
+});
+
+test("a revoked invite's link stops working", async ({ page }, testInfo) => {
+  const stamp = `${testInfo.project.name}-${Date.now()}`;
+  const inviteeEmail = `e2e-revoked-${stamp}@example.com`;
+  await signInByEmail(page, `e2e-revoker-${stamp}@example.com`);
+  await createTeam(page, `Revoke Team ${stamp}`);
+
+  await page.getByLabel("Email").fill(inviteeEmail);
+  await page.getByRole("button", { name: "Send invite" }).click();
+  await expect(page.getByRole("status")).toBeVisible();
+  const invite = await latestLinkTo(inviteeEmail, { pathname: "/invite" });
+
+  await page
+    .getByRole("button", { name: `Revoke the invite to ${inviteeEmail}` })
+    .click();
+  await expect(page.getByRole("region", { name: "Open invites" })).toHaveCount(
+    0,
+  );
+
+  await page.goto(invite.pathname + invite.search);
+  await expect(
+    page.getByRole("heading", { name: "This invite is no longer valid" }),
+  ).toBeVisible();
 });
 
 test("a used or unknown invite link says it's no longer valid", async ({
