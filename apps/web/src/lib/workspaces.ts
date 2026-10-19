@@ -8,14 +8,14 @@ export const ROLE_NAMES: Record<WorkspaceRole, string> = {
 };
 
 /**
- * The current workspace's name, from the /w/$workspaceId layout's loader, for
+ * The current workspace's name, from the /w/$publicId layout's loader, for
  * a page's title. Head functions see every match's loader data, not just
  * their own route's.
  */
 export function workspaceTitle(
   matches: readonly { routeId: string; loaderData?: unknown }[],
 ): string {
-  const layout = matches.find((m) => m.routeId === "/w/$workspaceId");
+  const layout = matches.find((m) => m.routeId === "/w/$publicId");
   const data = layout?.loaderData as
     | { workspace?: { name: string } }
     | undefined;

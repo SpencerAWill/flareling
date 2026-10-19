@@ -25,7 +25,7 @@ async function joinFromInvite(browser: Browser, email: string): Promise<Page> {
   await expect(page).toHaveURL(/\/invite\?token=/);
   await waitForHydration(page);
   await page.getByRole("button", { name: "Accept and join" }).click();
-  await expect(page).toHaveURL(/\/w\/[0-9a-f-]+\/members$/);
+  await expect(page).toHaveURL(/\/w\/[0-9a-z]{10}\/members$/);
   await waitForHydration(page);
   return page;
 }
@@ -47,7 +47,7 @@ test("members see each other online, and membership changes arrive without a rel
   await signInByEmail(page, ownerEmail);
   await page.getByLabel("New workspace").fill(`Realtime ${stamp}`);
   await page.getByRole("button", { name: "Create workspace" }).click();
-  await expect(page).toHaveURL(/\/w\/[0-9a-f-]+\/members$/);
+  await expect(page).toHaveURL(/\/w\/[0-9a-z]{10}\/members$/);
   await waitForHydration(page);
   await expect(row(page, ownerEmail)).toContainText("Online");
   await expect(page.getByText("1 online now")).toBeVisible();

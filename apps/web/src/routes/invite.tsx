@@ -74,8 +74,8 @@ function Invite() {
     const result = await accept({ data: { token } }).catch(() => null);
     if (result?.ok) {
       await router.navigate({
-        to: "/w/$workspaceId/members",
-        params: { workspaceId: result.workspaceId },
+        to: "/w/$publicId/members",
+        params: { publicId: result.publicId },
       });
       return;
     }

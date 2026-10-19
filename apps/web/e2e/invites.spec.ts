@@ -11,7 +11,7 @@ import { latestLinkTo } from "./mailpit.ts";
 async function createTeam(page: Page, name: string) {
   await page.getByLabel("New workspace").fill(name);
   await page.getByRole("button", { name: "Create workspace" }).click();
-  await expect(page).toHaveURL(/\/w\/[0-9a-f-]+\/members$/);
+  await expect(page).toHaveURL(/\/w\/[0-9a-z]{10}\/members$/);
   await waitForHydration(page);
 }
 
@@ -81,7 +81,7 @@ test("an owner invites someone new, who signs up from the invite and joins", asy
   await waitForHydration(invitee);
   await invitee.getByRole("button", { name: "Accept and join" }).click();
 
-  await expect(invitee).toHaveURL(/\/w\/[0-9a-f-]+\/members$/);
+  await expect(invitee).toHaveURL(/\/w\/[0-9a-z]{10}\/members$/);
   await expect(
     invitee.getByRole("heading", { name: `Members of ${team}` }),
   ).toBeVisible();

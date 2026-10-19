@@ -24,3 +24,4 @@ UUIDv7 is for primary keys only. Tokens (magic links, sessions, invites, API key
 - Ids are 36 characters, larger than an integer. That is acceptable at D1's scale.
 - A UUIDv7 reveals roughly when its row was created, which is why tokens don't use one.
 - The default runs in application code, not SQL, so rows inserted with raw SQL must supply an id.
+- Ids that appear in URLs aren't primary keys. Workspaces have a `public_id` from `newPublicId()` (10 random lowercase letters and digits, about 51 bits), and pages live at `/w/<publicId>`. A UUID in the address bar is long, and a UUIDv7 would also show when the workspace was made. Server functions and everything internal keep using the primary key.

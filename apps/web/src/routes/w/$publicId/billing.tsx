@@ -9,11 +9,11 @@ import {
   startCheckoutFn,
 } from "#/server/billing/fns.ts";
 
-export const Route = createFileRoute("/w/$workspaceId/billing")({
+export const Route = createFileRoute("/w/$publicId/billing")({
   validateSearch: z.object({ checkout: z.literal("success").optional() }),
-  loader: async ({ params }) => {
+  loader: async ({ context }) => {
     const billing = await getBillingFn({
-      data: { workspaceId: params.workspaceId },
+      data: { workspaceId: context.workspace.id },
     }).catch(() => ({ ok: false as const }));
     // Non-members, unknown ids and malformed ids all look the same.
     if (!billing.ok) throw notFound();

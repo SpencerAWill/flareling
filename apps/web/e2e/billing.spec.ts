@@ -21,7 +21,7 @@ test("an owner sees the workspace's plan and goes to Stripe Checkout to upgrade"
   );
 
   await page.getByRole("link", { name: "Billing" }).click();
-  await expect(page).toHaveURL(/\/w\/[0-9a-f-]+\/billing$/);
+  await expect(page).toHaveURL(/\/w\/[0-9a-z]{10}\/billing$/);
   await expect(
     page.getByRole("heading", { name: "Current plan: Free" }),
   ).toBeVisible();

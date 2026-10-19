@@ -31,8 +31,8 @@ export function NewWorkspace() {
     }));
     if (result.ok) {
       await navigate({
-        to: "/w/$workspaceId/members",
-        params: { workspaceId: result.id },
+        to: "/w/$publicId/members",
+        params: { publicId: result.publicId },
       });
       return;
     }
