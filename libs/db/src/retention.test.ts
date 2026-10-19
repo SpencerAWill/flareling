@@ -82,6 +82,11 @@ describe("deleteBefore", () => {
     ],
     ["stripe_events", schema.stripeEvents, schema.stripeEvents.processedAt],
     ["email_outbox", schema.emailOutbox, schema.emailOutbox.createdAt],
+    [
+      "workspace_invites",
+      schema.workspaceInvites,
+      schema.workspaceInvites.expiresAt,
+    ],
   ] as const)(
     "finds %s rows by index, not a table scan",
     async (name, table, column) => {

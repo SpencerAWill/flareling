@@ -325,6 +325,49 @@ export const workspaceMembers = sqliteTable(
   ],
 );
 
+/**
+ * Emailed invitations to join a workspace. The link's token is random and
+ * stored only as a hash, like a magic link's, but it never signs anyone in:
+ * accepting needs a signed-in account that has the invited address. An
+ * invite is open until it's accepted, declined or revoked; the daily sweep
+ * deletes it once it expires either way (the audit log keeps what happened).
+ */
+export const workspaceInvites = sqliteTable(
+  "workspace_invites",
+  {
+    id: text("id").primaryKey().$defaultFn(newId),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    // Normalized; the address the invite was sent to.
+    email: text("email").notNull(),
+    // Never owner: ownership is granted to a member, not by email.
+    role: text("role", { enum: ["admin", "member"] }).notNull(),
+    tokenHash: text("token_hash").notNull(),
+    // Who sent it. Not a foreign key, so the invite outlives the inviter's
+    // account, and so this isn't another child of `users` (see above).
+    invitedBy: text("invited_by").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    acceptedAt: integer("accepted_at", { mode: "timestamp_ms" }),
+    declinedAt: integer("declined_at", { mode: "timestamp_ms" }),
+    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+  },
+  (t) => [
+    uniqueIndex("workspace_invites_token_hash_unique").on(t.tokenHash),
+    // One open invite per address per workspace; inviting again resends it.
+    // Also how a workspace's open invites are listed and counted.
+    uniqueIndex("workspace_invites_open_unique")
+      .on(t.workspaceId, t.email)
+      .where(
+        sql`${t.acceptedAt} IS NULL AND ${t.declinedAt} IS NULL AND ${t.revokedAt} IS NULL`,
+      ),
+    index("workspace_invites_expires_at_idx").on(t.expiresAt),
+  ],
+);
+
 // ── Billing ─────────────────────────────────────────────────────────────────
 //
 // Stripe is the source of truth; these tables are its latest state, as

@@ -18,7 +18,11 @@ import {
 } from "#/server/auth/fns.ts";
 
 export const Route = createFileRoute("/sign-in")({
-  validateSearch: z.object({ redirect: z.string().optional() }),
+  validateSearch: z.object({
+    redirect: z.string().optional(),
+    // Prefills the address, e.g. from an invite for it.
+    email: z.string().max(254).optional(),
+  }),
   beforeLoad: ({ context }) => {
     if (context.principal) throw redirect({ to: "/my/account" });
   },
@@ -28,7 +32,7 @@ export const Route = createFileRoute("/sign-in")({
 });
 
 function SignIn() {
-  const { redirect: next } = Route.useSearch();
+  const { redirect: next, email: suggestedEmail } = Route.useSearch();
   const router = useRouter();
   const requestMagicLink = useServerFn(requestMagicLinkFn);
   const beginPasskey = useServerFn(beginPasskeySignInFn);
@@ -113,6 +117,7 @@ function SignIn() {
               name="email"
               type="email"
               required
+              defaultValue={suggestedEmail}
               autoComplete="username webauthn"
               className="rounded border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
             />

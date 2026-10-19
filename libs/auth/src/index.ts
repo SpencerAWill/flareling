@@ -1,4 +1,5 @@
 export type { AuthContext } from "./context.ts";
+export { withinRateLimit } from "./guards.ts";
 export { isSafeRedirect, normalizeEmail } from "./input.ts";
 export { consumeMagicLink, requestMagicLink } from "./magic-link.ts";
 export {
@@ -22,3 +23,4 @@ export {
 } from "./rbac.ts";
 export { revokeUserSessions } from "./session.ts";
 export { sweepExpiredAuthRows } from "./sweep.ts";
+export { hashToken, randomToken } from "./tokens.ts";

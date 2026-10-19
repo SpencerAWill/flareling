@@ -22,4 +22,4 @@ Workspace roles are separate from the platform roles in `libs/auth` (`system_adm
 
 - One schema and one migration path. D1's database size limit (500 MB on Workers Free, 10 GB on Paid; ADR 0020) becomes the ceiling for all tenants together, so a very large tenant would need to move to its own database later.
 - Isolation depends on every query filtering by `workspace_id`. A query that forgets is a cross-tenant leak, so workspace-scoped repository functions take the id as a required argument, and tests cover cross-workspace access.
-- Inviting members, switching workspaces in the UI and transferring ownership are follow-up work; the data model supports them.
+- Inviting members (ADR 0024) and switching workspaces in the UI came next. There's no separate ownership transfer: an owner makes someone else an owner, then steps down or leaves.

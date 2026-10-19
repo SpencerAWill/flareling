@@ -10,17 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as DevOutboxRouteImport } from './routes/dev/outbox'
 import { Route as MyAccountRouteImport } from './routes/my/account'
+import { Route as WWorkspaceIdRouteRouteImport } from './routes/w/$workspaceId/route'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as WWorkspaceIdIndexRouteImport } from './routes/w/$workspaceId/index'
 import { Route as WWorkspaceIdBillingRouteImport } from './routes/w/$workspaceId/billing'
+import { Route as WWorkspaceIdMembersRouteImport } from './routes/w/$workspaceId/members'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInRoute = SignInRouteImport.update({
@@ -48,29 +57,49 @@ const MyAccountRoute = MyAccountRouteImport.update({
   path: '/my/account',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WWorkspaceIdRouteRoute = WWorkspaceIdRouteRouteImport.update({
+  id: '/w/$workspaceId',
+  path: '/w/$workspaceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe/webhook',
   path: '/api/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WWorkspaceIdIndexRoute = WWorkspaceIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WWorkspaceIdRouteRoute,
+} as any)
 const WWorkspaceIdBillingRoute = WWorkspaceIdBillingRouteImport.update({
-  id: '/w/$workspaceId/billing',
-  path: '/w/$workspaceId/billing',
-  getParentRoute: () => rootRouteImport,
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => WWorkspaceIdRouteRoute,
+} as any)
+const WWorkspaceIdMembersRoute = WWorkspaceIdMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => WWorkspaceIdRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/invite': typeof InviteRoute
   '/sign-in': typeof SignInRoute
+  '/w/$workspaceId': typeof WWorkspaceIdRouteRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/outbox': typeof DevOutboxRoute
   '/my/account': typeof MyAccountRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
+  '/w/$workspaceId/members': typeof WWorkspaceIdMembersRoute
+  '/w/$workspaceId/': typeof WWorkspaceIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/invite': typeof InviteRoute
   '/sign-in': typeof SignInRoute
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -78,32 +107,43 @@ export interface FileRoutesByTo {
   '/my/account': typeof MyAccountRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
+  '/w/$workspaceId/members': typeof WWorkspaceIdMembersRoute
+  '/w/$workspaceId': typeof WWorkspaceIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/invite': typeof InviteRoute
   '/sign-in': typeof SignInRoute
+  '/w/$workspaceId': typeof WWorkspaceIdRouteRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/outbox': typeof DevOutboxRoute
   '/my/account': typeof MyAccountRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/w/$workspaceId/billing': typeof WWorkspaceIdBillingRoute
+  '/w/$workspaceId/members': typeof WWorkspaceIdMembersRoute
+  '/w/$workspaceId/': typeof WWorkspaceIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/invite'
     | '/sign-in'
+    | '/w/$workspaceId'
     | '/api/health'
     | '/auth/callback'
     | '/dev/outbox'
     | '/my/account'
     | '/api/stripe/webhook'
     | '/w/$workspaceId/billing'
+    | '/w/$workspaceId/members'
+    | '/w/$workspaceId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/invite'
     | '/sign-in'
     | '/api/health'
     | '/auth/callback'
@@ -111,27 +151,34 @@ export interface FileRouteTypes {
     | '/my/account'
     | '/api/stripe/webhook'
     | '/w/$workspaceId/billing'
+    | '/w/$workspaceId/members'
+    | '/w/$workspaceId'
   id:
     | '__root__'
     | '/'
+    | '/invite'
     | '/sign-in'
+    | '/w/$workspaceId'
     | '/api/health'
     | '/auth/callback'
     | '/dev/outbox'
     | '/my/account'
     | '/api/stripe/webhook'
     | '/w/$workspaceId/billing'
+    | '/w/$workspaceId/members'
+    | '/w/$workspaceId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  InviteRoute: typeof InviteRoute
   SignInRoute: typeof SignInRoute
+  WWorkspaceIdRouteRoute: typeof WWorkspaceIdRouteRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   DevOutboxRoute: typeof DevOutboxRoute
   MyAccountRoute: typeof MyAccountRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
-  WWorkspaceIdBillingRoute: typeof WWorkspaceIdBillingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -141,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in': {
@@ -178,6 +232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/w/$workspaceId': {
+      id: '/w/$workspaceId'
+      path: '/w/$workspaceId'
+      fullPath: '/w/$workspaceId'
+      preLoaderRoute: typeof WWorkspaceIdRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stripe/webhook': {
       id: '/api/stripe/webhook'
       path: '/api/stripe/webhook'
@@ -185,25 +246,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/w/$workspaceId/': {
+      id: '/w/$workspaceId/'
+      path: '/'
+      fullPath: '/w/$workspaceId/'
+      preLoaderRoute: typeof WWorkspaceIdIndexRouteImport
+      parentRoute: typeof WWorkspaceIdRouteRoute
+    }
     '/w/$workspaceId/billing': {
       id: '/w/$workspaceId/billing'
-      path: '/w/$workspaceId/billing'
+      path: '/billing'
       fullPath: '/w/$workspaceId/billing'
       preLoaderRoute: typeof WWorkspaceIdBillingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof WWorkspaceIdRouteRoute
+    }
+    '/w/$workspaceId/members': {
+      id: '/w/$workspaceId/members'
+      path: '/members'
+      fullPath: '/w/$workspaceId/members'
+      preLoaderRoute: typeof WWorkspaceIdMembersRouteImport
+      parentRoute: typeof WWorkspaceIdRouteRoute
     }
   }
 }
 
+interface WWorkspaceIdRouteRouteChildren {
+  WWorkspaceIdBillingRoute: typeof WWorkspaceIdBillingRoute
+  WWorkspaceIdMembersRoute: typeof WWorkspaceIdMembersRoute
+  WWorkspaceIdIndexRoute: typeof WWorkspaceIdIndexRoute
+}
+
+const WWorkspaceIdRouteRouteChildren: WWorkspaceIdRouteRouteChildren = {
+  WWorkspaceIdBillingRoute: WWorkspaceIdBillingRoute,
+  WWorkspaceIdMembersRoute: WWorkspaceIdMembersRoute,
+  WWorkspaceIdIndexRoute: WWorkspaceIdIndexRoute,
+}
+
+const WWorkspaceIdRouteRouteWithChildren =
+  WWorkspaceIdRouteRoute._addFileChildren(WWorkspaceIdRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  InviteRoute: InviteRoute,
   SignInRoute: SignInRoute,
+  WWorkspaceIdRouteRoute: WWorkspaceIdRouteRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   DevOutboxRoute: DevOutboxRoute,
   MyAccountRoute: MyAccountRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
-  WWorkspaceIdBillingRoute: WWorkspaceIdBillingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

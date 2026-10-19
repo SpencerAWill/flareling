@@ -2,10 +2,14 @@
 paths:
   - "libs/auth/**"
   - "libs/core/src/workspaces*"
+  - "libs/core/src/members*"
+  - "libs/core/src/invites*"
   - "apps/web/src/server/auth/**"
   - "apps/web/src/lib/auth.ts"
   - "apps/web/src/routes/sign-in.tsx"
   - "apps/web/src/routes/auth.*"
+  - "apps/web/src/routes/invite.tsx"
+  - "apps/web/src/routes/w/**"
   - "apps/web/src/routes/my/**"
   - "apps/web/src/components/passkeys.tsx"
   - "apps/web/src/components/turnstile.tsx"
@@ -15,7 +19,7 @@ paths:
 
 # Auth, sessions and RBAC
 
-The design and why it's ours: `docs/adr/0019-own-auth-magic-links-passkeys-d1-sessions.md`. Workspaces (tenants): ADR 0017. This file is the rules for changing it.
+The design and why it's ours: `docs/adr/0019-own-auth-magic-links-passkeys-d1-sessions.md`. Workspaces (tenants): ADR 0017; invites: ADR 0024. This file is the rules for changing it.
 
 ## Where things go
 
@@ -35,12 +39,15 @@ The design and why it's ours: `docs/adr/0019-own-auth-magic-links-passkeys-d1-se
 - **Abuse guards run before database work**, and `withinRateLimit` fails open by design. The E2E bypass (`E2E_BYPASS_RATE_LIMIT`) is ignored over https; keep it that way.
 - **Emails are normalized** with `normalizeEmail` before every insert and lookup; `user_emails.email` is globally unique.
 - **Redirect targets go through `isSafeRedirect`** (a path on this origin), on the server and the client.
+- **Invite links never create a session.** Accepting needs a signed-in account with the invited address (`acceptInvite`). Don't make `/invite` sign anyone in, and don't act on page load.
+- **A workspace always keeps an owner.** Role changes, removals and leaving put the last-owner check (`anotherOwnerRemains`) inside the UPDATE or DELETE, along with the role as it was read. Don't move either into a read beforehand.
+- **Seat checks are in the write.** Inviting counts members plus unexpired open invites inside the INSERT; accepting counts members inside its INSERT. Don't replace them with a count read beforehand.
 - **Times come from `nowOf(ctx)`**, never `Date.now()` or the database's clock, so tests can move time.
 
 ## Adding things
 
 - **A permission** is a migration (a row in `permissions`, plus grants in `role_permissions`), not just a string in code.
-- **A table with expiring rows** needs an index on its expiry column and an entry in a sweep (`libs/auth/src/sweep.ts`, run daily by `apps/jobs`). `libs/db/src/retention.test.ts` checks the delete uses the index; add the table there too.
+- **A table with expiring rows** needs an index on its expiry column and an entry in a sweep (`libs/auth/src/sweep.ts`, or the owning lib's `retention.ts`, run daily by `apps/jobs`). `libs/db/src/retention.test.ts` checks the delete uses the index; add the table there too.
 - **A new cookie** uses `cookieName()` (gets `__Host-` over https) and `isSecure()`.
 - **The dev outbox** (`/dev/outbox`, ADR 0022) holds working sign-in links. Keep both locks: Access in front, and `accessViewer`'s own token check in the handler. Never enable it for prod, and never render its content unescaped or link to other origins.
 - **Audit** security-relevant changes with `recordAudit` (sign-in, passkey added or removed, role changes).

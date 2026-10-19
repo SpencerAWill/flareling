@@ -1,4 +1,22 @@
 export {
+  acceptInvite,
+  declineInvite,
+  getInvite,
+  type InviteContext,
+  inviteMember,
+  listInvites,
+} from "./invites.ts";
+export { OWNED_WORKSPACE_LIMIT, WORKSPACE_NAME_MAX } from "./limits.ts";
+export {
+  changeRole,
+  leaveWorkspace,
+  listMembers,
+  removeMember,
+  revokeInvite,
+} from "./members.ts";
+export { sweepWorkspaceInvites } from "./retention.ts";
+export {
+  createWorkspace,
   ensurePersonalWorkspace,
   listWorkspaces,
   requireWorkspaceRole,

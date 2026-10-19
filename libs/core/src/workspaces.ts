@@ -15,14 +15,32 @@ import {
   recordAudit,
   schema,
 } from "@flareling/db";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
+import { OWNED_WORKSPACE_LIMIT, WORKSPACE_NAME_MAX } from "./limits.ts";
 
 const { workspaces, workspaceMembers } = schema;
 
-export type WorkspaceRole = "owner" | "admin" | "member";
+import type { WorkspaceRole } from "./roles.ts";
 
 /** Higher ranks can do everything lower ones can. */
 const RANK: Record<WorkspaceRole, number> = { member: 1, admin: 2, owner: 3 };
+
+/**
+ * `name` as stored: NFC, control and bidi characters removed, whitespace
+ * collapsed. Null if nothing is left or it's longer than WORKSPACE_NAME_MAX. Names
+ * appear in invite emails, so they're kept to one plain line.
+ */
+function normalizeWorkspaceName(name: string): string | null {
+  const normalized = name
+    .normalize("NFC")
+    .replace(/\p{Cc}/gu, " ")
+    // Bidi controls could make a name read differently in an email.
+    .replace(/[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized || [...normalized].length > WORKSPACE_NAME_MAX) return null;
+  return normalized;
+}
 
 export interface WorkspaceMembership {
   readonly id: string;
@@ -96,6 +114,53 @@ export async function ensurePersonalWorkspace(userId: string): Promise<string> {
     metadata: { personal: true },
   });
   return id;
+}
+
+export type CreateWorkspaceResult =
+  | { readonly ok: true; readonly id: string }
+  | { readonly ok: false; readonly reason: "invalid_name" | "limit_reached" };
+
+/**
+ * Creates a team workspace owned by the principal. Refused once they own
+ * OWNED_WORKSPACE_LIMIT team workspaces. The limit is checked inside the
+ * insert, so concurrent requests can't each see room for one more; the
+ * owner row is inserted only if the workspace was.
+ */
+export async function createWorkspace(
+  principal: Principal | null,
+  name: string,
+): Promise<CreateWorkspaceResult> {
+  const { userId } = requirePrincipal(principal);
+  const normalized = normalizeWorkspaceName(name);
+  if (!normalized) return { ok: false, reason: "invalid_name" };
+
+  const db = getDb();
+  const id = newId();
+  // INSERT ... SELECT lists every column in table order, hence the explicit
+  // nulls and created_at.
+  const [created] = await db.batch([
+    db.insert(workspaces).select(sql`
+      SELECT ${id}, ${normalized}, NULL, unixepoch() * 1000
+      WHERE (
+        SELECT count(*) FROM workspace_members m
+        JOIN workspaces w ON w.id = m.workspace_id
+        WHERE m.user_id = ${userId} AND m.role = 'owner'
+          AND w.personal_user_id IS NULL
+      ) < ${OWNED_WORKSPACE_LIMIT}`),
+    db.insert(workspaceMembers).select(sql`
+      SELECT ${id}, ${userId}, 'owner', unixepoch() * 1000
+      WHERE EXISTS (SELECT 1 FROM workspaces WHERE id = ${id})`),
+  ]);
+  if (created.meta.changes === 0) return { ok: false, reason: "limit_reached" };
+
+  await recordAudit({
+    action: "workspace.created",
+    actorId: userId,
+    targetType: "workspace",
+    targetId: id,
+    metadata: { personal: false },
+  });
+  return { ok: true, id };
 }
 
 /** `userId`'s role in `workspaceId`, or null if they aren't a member. */
