@@ -16,6 +16,7 @@ import {
   schema,
 } from "@flareling/db";
 import { and, asc, eq, sql } from "drizzle-orm";
+import type { Temporal } from "temporal-polyfill";
 import { OWNED_WORKSPACE_LIMIT, WORKSPACE_NAME_MAX } from "./limits.ts";
 
 const { workspaces, workspaceMembers } = schema;
@@ -79,7 +80,10 @@ export async function listWorkspaces(
  * call concurrently: the unique personal_user_id index lets only one creation
  * win, and the loser uses the winner's.
  */
-export async function ensurePersonalWorkspace(userId: string): Promise<string> {
+export async function ensurePersonalWorkspace(
+  userId: string,
+  now: Temporal.Instant,
+): Promise<string> {
   const db = getDb();
   const existing = await db
     .select({ id: workspaces.id })
@@ -88,14 +92,15 @@ export async function ensurePersonalWorkspace(userId: string): Promise<string> {
   if (existing[0]) return existing[0].id;
 
   const id = newId();
+  const createdAt = new Date(now.epochMilliseconds);
   try {
     await db.batch([
       db
         .insert(workspaces)
-        .values({ id, name: "Personal", personalUserId: userId }),
+        .values({ id, name: "Personal", personalUserId: userId, createdAt }),
       db
         .insert(workspaceMembers)
-        .values({ workspaceId: id, userId, role: "owner" }),
+        .values({ workspaceId: id, userId, role: "owner", createdAt }),
     ]);
   } catch (err) {
     if (!isUniqueViolation(err, "workspaces.personal_user_id")) throw err;
@@ -112,6 +117,7 @@ export async function ensurePersonalWorkspace(userId: string): Promise<string> {
     targetType: "workspace",
     targetId: id,
     metadata: { personal: true },
+    at: createdAt,
   });
   return id;
 }
@@ -129,6 +135,7 @@ export type CreateWorkspaceResult =
 export async function createWorkspace(
   principal: Principal | null,
   name: string,
+  now: Temporal.Instant,
 ): Promise<CreateWorkspaceResult> {
   const { userId } = requirePrincipal(principal);
   const normalized = normalizeWorkspaceName(name);
@@ -140,7 +147,7 @@ export async function createWorkspace(
   // nulls and created_at.
   const [created] = await db.batch([
     db.insert(workspaces).select(sql`
-      SELECT ${id}, ${normalized}, NULL, unixepoch() * 1000
+      SELECT ${id}, ${normalized}, NULL, ${now.epochMilliseconds}
       WHERE (
         SELECT count(*) FROM workspace_members m
         JOIN workspaces w ON w.id = m.workspace_id
@@ -148,7 +155,7 @@ export async function createWorkspace(
           AND w.personal_user_id IS NULL
       ) < ${OWNED_WORKSPACE_LIMIT}`),
     db.insert(workspaceMembers).select(sql`
-      SELECT ${id}, ${userId}, 'owner', unixepoch() * 1000
+      SELECT ${id}, ${userId}, 'owner', ${now.epochMilliseconds}
       WHERE EXISTS (SELECT 1 FROM workspaces WHERE id = ${id})`),
   ]);
   if (created.meta.changes === 0) return { ok: false, reason: "limit_reached" };
@@ -159,6 +166,7 @@ export async function createWorkspace(
     targetType: "workspace",
     targetId: id,
     metadata: { personal: false },
+    at: new Date(now.epochMilliseconds),
   });
   return { ok: true, id };
 }

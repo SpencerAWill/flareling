@@ -750,6 +750,9 @@ importers:
       msw:
         specifier: 'catalog:'
         version: 3.0.2(@types/node@24.19.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      temporal-polyfill:
+        specifier: 'catalog:'
+        version: 1.0.5
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

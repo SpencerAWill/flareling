@@ -180,9 +180,10 @@ export const listWorkspacesFn = createServerFn({ method: "GET" }).handler(
     const { ensurePersonalWorkspace, listWorkspaces } = await import(
       "@flareling/core"
     );
-    const { principal } = await signedIn();
+    const { nowOf } = await import("@flareling/auth");
+    const { ctx, principal } = await signedIn();
     if (!principal) return [];
-    await ensurePersonalWorkspace(principal.userId);
+    await ensurePersonalWorkspace(principal.userId, nowOf(ctx));
     return listWorkspaces(principal.userId);
   },
 );

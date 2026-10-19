@@ -4,7 +4,7 @@ import type { EmailSender } from "@flareling/email";
 import { and, eq } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { describe, expect, it } from "vitest";
-import { addMember, createUser } from "../test/users.ts";
+import { addMember, createUser, T0 } from "../test/users.ts";
 import {
   acceptInvite,
   createWorkspace,
@@ -23,10 +23,13 @@ interface TestInviteContext extends InviteContext {
   setSeats(seats: number): void;
 }
 
+/** Where every test's clock starts. */
+const START = Temporal.Instant.from("2026-10-19T12:00:00Z");
+
 function inviteContext(
   options: { seats?: number; withinRateLimit?: () => Promise<boolean> } = {},
 ): TestInviteContext {
-  let now = Temporal.Instant.from("2026-10-19T12:00:00Z");
+  let now = START;
   let seats = options.seats ?? 25;
   const sent: Parameters<EmailSender["send"]>[0][] = [];
   return {
@@ -59,7 +62,12 @@ function tokenSentTo(ctx: TestInviteContext, to: string): string {
 
 async function team(name = "Acme") {
   const owner = await createUser();
-  const result = await createWorkspace(owner, name);
+  // An hour before the tests' clocks start, so the owner joined first.
+  const result = await createWorkspace(
+    owner,
+    name,
+    START.subtract({ hours: 1 }),
+  );
   if (!result.ok) throw new Error("setup: workspace not created");
   return { owner, workspaceId: result.id };
 }
@@ -109,11 +117,17 @@ describe("inviting and accepting", () => {
       expiresAt: new Date("2026-10-26T12:00:00Z"),
     });
 
+    ctx.advance({ minutes: 5 });
     expect(await acceptInvite(ctx, invitee, token)).toEqual({
       ok: true,
       workspaceId,
       alreadyMember: false,
     });
+    // Joined on the context's clock, not the database's.
+    const joined = (await listMembers(owner, workspaceId)).find(
+      (m) => m.userId === invitee.userId,
+    );
+    expect(joined?.joinedAt).toEqual(new Date("2026-10-19T12:05:00Z"));
     expect(
       (await listMembers(owner, workspaceId)).map((m) => [m.email, m.role]),
     ).toEqual([
@@ -165,7 +179,7 @@ describe("inviting and accepting", () => {
   it("refuses personal workspaces and people who are already members", async () => {
     const ctx = inviteContext();
     const owner = await createUser();
-    const personal = await ensurePersonalWorkspace(owner.userId);
+    const personal = await ensurePersonalWorkspace(owner.userId, T0);
     expect(await invite(ctx, owner, personal, "a@example.com")).toEqual({
       ok: false,
       reason: "personal",

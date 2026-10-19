@@ -2,6 +2,7 @@ import type { Principal } from "@flareling/auth";
 import { ensurePersonalWorkspace } from "@flareling/core";
 import { getDb, newId, schema } from "@flareling/db";
 import { setupNetwork } from "@msw/cloudflare";
+import { Temporal } from "temporal-polyfill";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
 import { createStripe } from "../src/index.ts";
 
@@ -52,7 +53,7 @@ export async function createOwner(): Promise<{
       permissions: [],
       isSystemAdmin: false,
     },
-    workspaceId: await ensurePersonalWorkspace(userId),
+    workspaceId: await ensurePersonalWorkspace(userId, Temporal.Now.instant()),
   };
 }
 

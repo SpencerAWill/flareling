@@ -1,6 +1,13 @@
 import type { Principal } from "@flareling/auth";
 import { getDb, newId, schema } from "@flareling/db";
+import { Temporal } from "temporal-polyfill";
 import type { WorkspaceRole } from "../src/roles.ts";
+
+/**
+ * A fixed time for tests that write workspace timestamps, so nothing they
+ * assert depends on when they run.
+ */
+export const T0 = Temporal.Instant.from("2026-10-19T09:00:00Z");
 
 /** An account with a verified primary email, as the principal it signs in as. */
 export async function createUser(email?: string): Promise<Principal> {
@@ -31,8 +38,9 @@ export async function addMember(
   workspaceId: string,
   userId: string,
   role: WorkspaceRole,
+  joinedAt: Date = new Date(),
 ): Promise<void> {
   await getDb()
     .insert(schema.workspaceMembers)
-    .values({ workspaceId, userId, role });
+    .values({ workspaceId, userId, role, createdAt: joinedAt });
 }

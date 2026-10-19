@@ -12,6 +12,11 @@ export interface AuditEntry {
   readonly metadata?: Readonly<
     Record<string, string | number | boolean | null>
   >;
+  /**
+   * When it happened, from the caller's clock, so a change and its record
+   * agree. Unset uses the database's clock.
+   */
+  readonly at?: Date;
 }
 
 /** The row for `entry`, for adding an audit write to a larger `db.batch`. */
@@ -24,6 +29,7 @@ export function auditRow(
     targetType: entry.targetType ?? null,
     targetId: entry.targetId ?? null,
     metadataJson: entry.metadata ? JSON.stringify(entry.metadata) : null,
+    ...(entry.at ? { createdAt: entry.at } : {}),
   };
 }
 

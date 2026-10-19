@@ -1,7 +1,9 @@
 import type { Principal } from "@flareling/auth";
 import { getDb, newId, schema } from "@flareling/db";
 import { eq } from "drizzle-orm";
+import { Temporal } from "temporal-polyfill";
 import { describe, expect, it } from "vitest";
+import { T0 } from "../test/users.ts";
 import {
   createWorkspace,
   ensurePersonalWorkspace,
@@ -37,19 +39,30 @@ async function addMember(
 describe("personal workspaces", () => {
   it("creates one on first use, owned by the account, and reuses it after", async () => {
     const { userId } = await createUser();
-    const first = await ensurePersonalWorkspace(userId);
-    expect(await ensurePersonalWorkspace(userId)).toBe(first);
+    const first = await ensurePersonalWorkspace(userId, T0);
+    expect(await ensurePersonalWorkspace(userId, T0)).toBe(first);
     expect(await listWorkspaces(userId)).toEqual([
       { id: first, name: "Personal", role: "owner", personal: true },
     ]);
   });
 
+  it("stamps a new personal workspace with the given time", async () => {
+    const { userId } = await createUser();
+    const at = Temporal.Instant.from("2026-01-02T03:04:05Z");
+    const id = await ensurePersonalWorkspace(userId, at);
+    const [row] = await getDb()
+      .select({ createdAt: schema.workspaces.createdAt })
+      .from(schema.workspaces)
+      .where(eq(schema.workspaces.id, id));
+    expect(row?.createdAt).toEqual(new Date(at.epochMilliseconds));
+  });
+
   it("creates exactly one when first requests race", async () => {
     const { userId } = await createUser();
     const ids = await Promise.all([
-      ensurePersonalWorkspace(userId),
-      ensurePersonalWorkspace(userId),
-      ensurePersonalWorkspace(userId),
+      ensurePersonalWorkspace(userId, T0),
+      ensurePersonalWorkspace(userId, T0),
+      ensurePersonalWorkspace(userId, T0),
     ]);
     expect(new Set(ids).size).toBe(1);
     expect(await listWorkspaces(userId)).toHaveLength(1);
@@ -59,7 +72,7 @@ describe("personal workspaces", () => {
 describe("createWorkspace", () => {
   it("creates a team workspace owned by its creator", async () => {
     const creator = await createUser();
-    const result = await createWorkspace(creator, "  Acme \n Corp ");
+    const result = await createWorkspace(creator, "  Acme \n Corp ", T0);
     expect(result).toEqual({ ok: true, id: expect.any(String) });
     if (!result.ok) return;
 
@@ -77,9 +90,27 @@ describe("createWorkspace", () => {
     });
   });
 
+  it("stamps the workspace and its owner with the given time", async () => {
+    const creator = await createUser();
+    const at = Temporal.Instant.from("2026-01-02T03:04:05Z");
+    const result = await createWorkspace(creator, "Clocked", at);
+    if (!result.ok) throw new Error("not created");
+
+    const [workspace] = await getDb()
+      .select({ createdAt: schema.workspaces.createdAt })
+      .from(schema.workspaces)
+      .where(eq(schema.workspaces.id, result.id));
+    const [owner] = await getDb()
+      .select({ createdAt: schema.workspaceMembers.createdAt })
+      .from(schema.workspaceMembers)
+      .where(eq(schema.workspaceMembers.workspaceId, result.id));
+    expect(workspace?.createdAt).toEqual(new Date(at.epochMilliseconds));
+    expect(owner?.createdAt).toEqual(new Date(at.epochMilliseconds));
+  });
+
   it("drops bidi controls, which could make a name read backwards in an email", async () => {
     const creator = await createUser();
-    const result = await createWorkspace(creator, "Acme\u202Emoc.live");
+    const result = await createWorkspace(creator, "Acme\u202Emoc.live", T0);
     if (!result.ok) throw new Error("not created");
     const [workspace] = await listWorkspaces(creator.userId);
     expect(workspace?.name).toBe("Acmemoc.live");
@@ -91,7 +122,7 @@ describe("createWorkspace", () => {
     ["only bidi controls", "\u202E\u2066"],
     ["too long", "x".repeat(WORKSPACE_NAME_MAX + 1)],
   ])("refuses a name that's %s", async (_, name) => {
-    expect(await createWorkspace(await createUser(), name)).toEqual({
+    expect(await createWorkspace(await createUser(), name, T0)).toEqual({
       ok: false,
       reason: "invalid_name",
     });
@@ -100,18 +131,18 @@ describe("createWorkspace", () => {
   it("stops at the limit, counting only team workspaces the account owns", async () => {
     const creator = await createUser();
     const other = await createUser();
-    await ensurePersonalWorkspace(creator.userId);
+    await ensurePersonalWorkspace(creator.userId, T0);
     // Admin of someone else's workspace: not owned, so not counted.
-    const theirs = await createWorkspace(other, "Theirs");
+    const theirs = await createWorkspace(other, "Theirs", T0);
     if (!theirs.ok) throw new Error("setup");
     await addMember(theirs.id, creator.userId, "admin");
 
     for (let i = 0; i < OWNED_WORKSPACE_LIMIT; i++) {
-      expect(await createWorkspace(creator, `Team ${i}`)).toMatchObject({
+      expect(await createWorkspace(creator, `Team ${i}`, T0)).toMatchObject({
         ok: true,
       });
     }
-    expect(await createWorkspace(creator, "One too many")).toEqual({
+    expect(await createWorkspace(creator, "One too many", T0)).toEqual({
       ok: false,
       reason: "limit_reached",
     });
@@ -123,10 +154,10 @@ describe("createWorkspace", () => {
   it("can't be raced past the limit", async () => {
     const creator = await createUser();
     for (let i = 0; i < OWNED_WORKSPACE_LIMIT - 1; i++) {
-      await createWorkspace(creator, `Team ${i}`);
+      await createWorkspace(creator, `Team ${i}`, T0);
     }
     const results = await Promise.all(
-      [1, 2, 3].map((i) => createWorkspace(creator, `Race ${i}`)),
+      [1, 2, 3].map((i) => createWorkspace(creator, `Race ${i}`, T0)),
     );
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     const owned = await listWorkspaces(creator.userId);
@@ -134,7 +165,7 @@ describe("createWorkspace", () => {
   });
 
   it("refuses an anonymous request", async () => {
-    await expect(createWorkspace(null, "Acme")).rejects.toMatchObject({
+    await expect(createWorkspace(null, "Acme", T0)).rejects.toMatchObject({
       name: "UnauthorizedError",
     });
   });
@@ -144,8 +175,8 @@ describe("listWorkspaces", () => {
   it("lists the personal workspace first, then shared ones", async () => {
     const owner = await createUser();
     const member = await createUser();
-    const shared = await ensurePersonalWorkspace(owner.userId);
-    const own = await ensurePersonalWorkspace(member.userId);
+    const shared = await ensurePersonalWorkspace(owner.userId, T0);
+    const own = await ensurePersonalWorkspace(member.userId, T0);
     await addMember(shared, member.userId, "member");
 
     expect(await listWorkspaces(member.userId)).toEqual([
@@ -159,7 +190,7 @@ describe("requireWorkspaceRole", () => {
   it("allows a role at or above the minimum", async () => {
     const owner = await createUser();
     const admin = await createUser();
-    const workspaceId = await ensurePersonalWorkspace(owner.userId);
+    const workspaceId = await ensurePersonalWorkspace(owner.userId, T0);
     await addMember(workspaceId, admin.userId, "admin");
 
     await expect(
@@ -178,7 +209,7 @@ describe("requireWorkspaceRole", () => {
     const owner = await createUser();
     const member = await createUser();
     const outsider = await createUser();
-    const workspaceId = await ensurePersonalWorkspace(owner.userId);
+    const workspaceId = await ensurePersonalWorkspace(owner.userId, T0);
     await addMember(workspaceId, member.userId, "member");
 
     for (const who of [member, outsider]) {
@@ -197,7 +228,7 @@ describe("requireWorkspaceRole", () => {
       isSystemAdmin: true,
       roles: ["system_admin"],
     };
-    const workspaceId = await ensurePersonalWorkspace(owner.userId);
+    const workspaceId = await ensurePersonalWorkspace(owner.userId, T0);
     await expect(
       requireWorkspaceRole(staff, workspaceId, "member"),
     ).rejects.toMatchObject({
