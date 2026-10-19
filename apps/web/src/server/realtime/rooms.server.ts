@@ -65,12 +65,20 @@ export function disconnectMember(
   );
 }
 
-/** Closes the sockets a session opened, in each of `workspaceIds`. */
+/**
+ * Closes the sockets a session opened, in every workspace `userId` belongs
+ * to. Listing the workspaces is part of the best effort too: a sign-out that
+ * already closed the session must not fail over its sockets.
+ */
 export function disconnectSession(
-  workspaceIds: readonly string[],
+  userId: string,
   sessionId: string,
 ): Promise<void> {
-  return bestEffort("close_session", () =>
-    Promise.all(workspaceIds.map((id) => room(id).closeSession(sessionId))),
-  );
+  return bestEffort("close_session", async () => {
+    const { listWorkspaces } = await import("@flareling/core");
+    const workspaces = await listWorkspaces(userId);
+    await Promise.all(
+      workspaces.map((w) => room(w.id).closeSession(sessionId)),
+    );
+  });
 }
