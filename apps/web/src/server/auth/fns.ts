@@ -47,9 +47,27 @@ export const consumeMagicLinkFn = createServerFn({ method: "POST" })
 
 export const signOutFn = createServerFn({ method: "POST" }).handler(
   async () => {
-    const { signOut } = await import("@flareling/auth");
+    const { currentSessionId, getPrincipal, signOut } = await import(
+      "@flareling/auth"
+    );
     const { authContext } = await import("./context.server.ts");
-    await signOut(authContext());
+    const ctx = authContext();
+    const [principal, sessionId] = await Promise.all([
+      getPrincipal(ctx),
+      currentSessionId(ctx),
+    ]);
+    await signOut(ctx);
+    // Realtime sockets this session opened outlive it otherwise (up to their
+    // maximum age); close them in every workspace it could have open.
+    if (principal && sessionId) {
+      const { listWorkspaces } = await import("@flareling/core");
+      const { disconnectSession } = await import("../realtime/rooms.server.ts");
+      const workspaces = await listWorkspaces(principal.userId);
+      await disconnectSession(
+        workspaces.map((w) => w.id),
+        sessionId,
+      );
+    }
     return { ok: true as const };
   },
 );

@@ -9,9 +9,11 @@
  */
 import { env } from "cloudflare:workers";
 import {
+  CLOSE,
   CONNECTION_HEADERS,
   type WorkspaceRoomApi,
 } from "@flareling/contracts";
+import { errorMessage, log } from "@flareling/log";
 
 type RoomNamespace = DurableObjectNamespace<
   WorkspaceRoomApi & Rpc.DurableObjectBranded
@@ -36,4 +38,39 @@ export function forwardUpgrade(
   headers.set(CONNECTION_HEADERS.userId, identity.userId);
   headers.set(CONNECTION_HEADERS.sessionId, identity.sessionId);
   return room(workspaceId).fetch(new Request(request, { headers }));
+}
+
+async function bestEffort(what: string, run: () => Promise<unknown>) {
+  try {
+    await run();
+  } catch (err) {
+    log.warn("realtime.push_failed", { what, error: errorMessage(err) });
+  }
+}
+
+/** Tells the workspace's open tabs its membership changed. */
+export function membersChanged(workspaceId: string): Promise<void> {
+  return bestEffort("members_changed", () =>
+    room(workspaceId).publish({ type: "members_changed" }),
+  );
+}
+
+/** Closes `userId`'s sockets in a workspace they no longer belong to. */
+export function disconnectMember(
+  workspaceId: string,
+  userId: string,
+): Promise<void> {
+  return bestEffort("close_user", () =>
+    room(workspaceId).closeUser(userId, CLOSE.removed),
+  );
+}
+
+/** Closes the sockets a session opened, in each of `workspaceIds`. */
+export function disconnectSession(
+  workspaceIds: readonly string[],
+  sessionId: string,
+): Promise<void> {
+  return bestEffort("close_session", () =>
+    Promise.all(workspaceIds.map((id) => room(id).closeSession(sessionId))),
+  );
 }
