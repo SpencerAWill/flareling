@@ -1,4 +1,4 @@
-import { Avatar, AvatarBadge, AvatarFallback } from "@flareling/ui";
+import { Avatar, AvatarBadge, AvatarFallback, cn } from "@flareling/ui";
 
 /** A stable hue for `key`, so a person or workspace keeps its color. */
 function hueOf(key: string): number {
@@ -7,9 +7,17 @@ function hueOf(key: string): number {
   return hash;
 }
 
-/** Two letters from an address: "ada.lovelace@..." is AL, "ada@..." is AD. */
+/** `key`'s color: dark enough for white text at AA contrast, whatever the hue. */
+function colorOf(key: string): string {
+  return `oklch(0.47 0.13 ${hueOf(key)})`;
+}
+
+/**
+ * Two letters from an address: "ada.lovelace@..." is AL, "ada@..." is AD.
+ * A "+tag" isn't part of the name: "ada+work@..." is AD.
+ */
 function initialsOf(email: string): string {
-  const local = email.split("@")[0] ?? email;
+  const local = email.split("@")[0]?.split("+")[0] || email;
   const parts = local.split(/[._+-]+/).filter(Boolean);
   const letters =
     parts.length > 1
@@ -35,8 +43,7 @@ export function MemberAvatar({
     <Avatar size={size} aria-hidden>
       <AvatarFallback
         className="font-medium text-white"
-        // Dark enough for white initials at AA contrast, whatever the hue.
-        style={{ backgroundColor: `oklch(0.47 0.13 ${hueOf(email)})` }}
+        style={{ backgroundColor: colorOf(email) }}
       >
         {initialsOf(email)}
       </AvatarFallback>
@@ -60,12 +67,12 @@ export function WorkspaceTile({
   return (
     <span
       aria-hidden
-      className={`grid shrink-0 place-items-center rounded-md font-semibold text-white ${personal ? "bg-flare" : ""} ${className}`}
-      style={
-        personal
-          ? undefined
-          : { backgroundColor: `oklch(0.47 0.13 ${hueOf(name)})` }
-      }
+      className={cn(
+        "grid shrink-0 place-items-center rounded-md font-semibold text-white",
+        personal && "bg-flare",
+        className,
+      )}
+      style={personal ? undefined : { backgroundColor: colorOf(name) }}
     >
       {name.trim().charAt(0).toUpperCase() || "?"}
     </span>

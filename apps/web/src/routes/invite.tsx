@@ -6,6 +6,7 @@ import { z } from "zod";
 import { AuthShell } from "#/components/auth-shell.tsx";
 import { WorkspaceTile } from "#/components/avatars.tsx";
 import { afterSessionChange } from "#/lib/auth.ts";
+import { ROLE_NAMES } from "#/lib/workspaces.ts";
 import { signOutFn } from "#/server/auth/fns.ts";
 import {
   acceptInviteFn,
@@ -31,8 +32,6 @@ export const Route = createFileRoute("/invite")({
   head: () => ({ meta: [{ title: "Invite · Flareling" }] }),
   component: Invite,
 });
-
-const ROLES = { admin: "Admin", member: "Member" } as const;
 
 function Invite() {
   const { invite } = Route.useLoaderData();
@@ -118,7 +117,7 @@ function Invite() {
           </span>{" "}
           invited{" "}
           <span className="font-medium text-foreground">{invite.email}</span> to
-          join as <Badge variant="secondary">{ROLES[invite.role]}</Badge>
+          join as <Badge variant="secondary">{ROLE_NAMES[invite.role]}</Badge>
         </p>
       </div>
 

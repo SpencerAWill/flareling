@@ -1,3 +1,4 @@
+import { cn } from "@flareling/ui";
 import { Link } from "@tanstack/react-router";
 import { FlameIcon } from "lucide-react";
 
@@ -6,7 +7,10 @@ export function LogoMark({ className = "size-8" }: { className?: string }) {
   return (
     <span
       aria-hidden
-      className={`grid shrink-0 place-items-center rounded-[28%] bg-flare text-white shadow-sm shadow-flare-to/30 ${className}`}
+      className={cn(
+        "grid shrink-0 place-items-center rounded-[28%] bg-flare text-white shadow-sm shadow-flare-to/30",
+        className,
+      )}
     >
       <FlameIcon className="size-[55%]" strokeWidth={2.25} />
     </span>

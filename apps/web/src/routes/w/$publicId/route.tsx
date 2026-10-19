@@ -20,9 +20,9 @@ import { listWorkspacesFn } from "#/server/auth/fns.ts";
  * (`parentMatchPromise`) for their server functions. In the loader, not
  * beforeLoad: loader data travels with the server-rendered page, while
  * beforeLoad runs again in the browser on hydration, which would fetch the
- * workspace list twice per page. A workspace the account doesn't belong to is a 404, the same
- * as one that doesn't exist. Navigation only; each page's server functions
- * check membership themselves.
+ * workspace list twice per page. A workspace the account doesn't belong to
+ * is a 404, the same as one that doesn't exist. Navigation only; each page's
+ * server functions check membership themselves.
  */
 export const Route = createFileRoute("/w/$publicId")({
   beforeLoad: ({ context, location }) => ({

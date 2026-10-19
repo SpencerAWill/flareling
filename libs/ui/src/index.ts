@@ -4,6 +4,7 @@
 // (docs/adr/0013-shadcn-on-base-ui.md).
 
 export { Button, buttonVariants } from "./button.tsx";
+export { cn } from "./cn.ts";
 export {
   Avatar,
   AvatarBadge,

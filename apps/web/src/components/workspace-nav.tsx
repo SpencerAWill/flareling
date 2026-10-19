@@ -102,11 +102,14 @@ export function WorkspaceTabs({ current }: { current: Workspace }) {
             <Link
               to={s.to}
               params={{ publicId: current.publicId }}
-              className="relative block py-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
+              // Each color in its own state: as two classes on one element,
+              // the CSS order (not the class order) would pick the winner.
+              className="relative block py-3 text-sm font-medium outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
               activeProps={{
                 className: "text-foreground",
                 "aria-current": "page",
               }}
+              inactiveProps={{ className: "text-muted-foreground" }}
             >
               {s.label}
               {section === s && (

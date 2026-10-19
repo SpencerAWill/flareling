@@ -86,29 +86,6 @@ function Billing() {
       })
     : null;
 
-  const upgradeButtons = (
-    <div className="grid gap-2 sm:grid-cols-2">
-      <Button
-        variant="flare"
-        disabled={pending}
-        onClick={() =>
-          go(() => startCheckout({ data: { workspaceId, interval: "month" } }))
-        }
-      >
-        Upgrade to Pro, monthly
-      </Button>
-      <Button
-        variant="secondary"
-        disabled={pending}
-        onClick={() =>
-          go(() => startCheckout({ data: { workspaceId, interval: "year" } }))
-        }
-      >
-        Upgrade to Pro, yearly
-      </Button>
-    </div>
-  );
-
   return (
     <main className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">
@@ -177,7 +154,7 @@ function Billing() {
                   <PlanTile
                     name="Free"
                     members={billing.memberLimits.free}
-                    current={billing.plan === "free"}
+                    current
                   />
                   <PlanTile
                     name="Pro"
@@ -185,7 +162,34 @@ function Billing() {
                     highlight
                   />
                 </div>
-                {upgradeButtons}
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    variant="flare"
+                    disabled={pending}
+                    onClick={() =>
+                      go(() =>
+                        startCheckout({
+                          data: { workspaceId, interval: "month" },
+                        }),
+                      )
+                    }
+                  >
+                    Upgrade to Pro, monthly
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    disabled={pending}
+                    onClick={() =>
+                      go(() =>
+                        startCheckout({
+                          data: { workspaceId, interval: "year" },
+                        }),
+                      )
+                    }
+                  >
+                    Upgrade to Pro, yearly
+                  </Button>
+                </div>
               </>
             ) : (
               <Button
