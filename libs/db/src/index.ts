@@ -14,5 +14,5 @@ export {
   rowsPerInsertStatement,
   runBatch,
 } from "./d1.ts";
-export { newId } from "./id.ts";
+export { newId, newPublicId, PUBLIC_ID_LENGTH } from "./id.ts";
 export { type DeleteBeforeResult, deleteBefore } from "./retention.ts";
