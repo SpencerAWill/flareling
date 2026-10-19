@@ -1,5 +1,6 @@
 import { getDb, schema } from "@flareling/db";
 import { eq } from "drizzle-orm";
+import { Temporal } from "temporal-polyfill";
 import { describe, expect, it } from "vitest";
 import { addMember, createUser } from "../test/users.ts";
 import {
@@ -25,7 +26,13 @@ describe("listMembers", () => {
   it("lists every member with their primary address and role, earliest first", async () => {
     const { owner, workspaceId } = await teamOwnedBy();
     const member = await createUser();
-    await addMember(workspaceId, member.userId, "member");
+    // A minute after the owner, so "earliest first" has an answer.
+    await addMember(
+      workspaceId,
+      member.userId,
+      "member",
+      new Date(Date.now() + 60_000),
+    );
 
     expect(await listMembers(member, workspaceId)).toEqual([
       {
@@ -259,7 +266,15 @@ describe("revokeInvite", () => {
     // Another workspace's admin can't reach it through their own workspace.
     expect(await revokeInvite(otherOwner, other, sent.inviteId)).toBe(false);
 
-    expect(await revokeInvite(owner, workspaceId, sent.inviteId)).toBe(true);
+    const at = Temporal.Instant.from("2026-01-02T03:04:05Z");
+    expect(await revokeInvite(owner, workspaceId, sent.inviteId, at)).toBe(
+      true,
+    );
+    const [row] = await getDb()
+      .select({ revokedAt: schema.workspaceInvites.revokedAt })
+      .from(schema.workspaceInvites)
+      .where(eq(schema.workspaceInvites.id, sent.inviteId));
+    expect(row?.revokedAt).toEqual(new Date(at.epochMilliseconds));
     expect(await listInvites(owner, workspaceId)).toEqual([]);
     expect(await revokeInvite(owner, workspaceId, sent.inviteId)).toBe(false);
   });

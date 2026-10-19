@@ -350,7 +350,7 @@ export async function acceptInvite(
     db
       .insert(workspaceMembers)
       .select(sql`
-        SELECT workspace_id, ${userId}, role, unixepoch() * 1000 FROM workspace_invites
+        SELECT workspace_id, ${userId}, role, ${now} FROM workspace_invites
         WHERE id = ${invite.id}
           AND accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL
           AND expires_at > ${now}

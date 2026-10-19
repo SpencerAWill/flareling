@@ -1,6 +1,7 @@
 import type { Principal } from "@flareling/auth";
 import { getDb, newId, schema } from "@flareling/db";
 import { eq } from "drizzle-orm";
+import { Temporal } from "temporal-polyfill";
 import { describe, expect, it } from "vitest";
 import {
   createWorkspace,
@@ -44,6 +45,17 @@ describe("personal workspaces", () => {
     ]);
   });
 
+  it("stamps a new personal workspace with the given time", async () => {
+    const { userId } = await createUser();
+    const at = Temporal.Instant.from("2026-01-02T03:04:05Z");
+    const id = await ensurePersonalWorkspace(userId, at);
+    const [row] = await getDb()
+      .select({ createdAt: schema.workspaces.createdAt })
+      .from(schema.workspaces)
+      .where(eq(schema.workspaces.id, id));
+    expect(row?.createdAt).toEqual(new Date(at.epochMilliseconds));
+  });
+
   it("creates exactly one when first requests race", async () => {
     const { userId } = await createUser();
     const ids = await Promise.all([
@@ -75,6 +87,24 @@ describe("createWorkspace", () => {
       actorId: creator.userId,
       metadataJson: JSON.stringify({ personal: false }),
     });
+  });
+
+  it("stamps the workspace and its owner with the given time", async () => {
+    const creator = await createUser();
+    const at = Temporal.Instant.from("2026-01-02T03:04:05Z");
+    const result = await createWorkspace(creator, "Clocked", at);
+    if (!result.ok) throw new Error("not created");
+
+    const [workspace] = await getDb()
+      .select({ createdAt: schema.workspaces.createdAt })
+      .from(schema.workspaces)
+      .where(eq(schema.workspaces.id, result.id));
+    const [owner] = await getDb()
+      .select({ createdAt: schema.workspaceMembers.createdAt })
+      .from(schema.workspaceMembers)
+      .where(eq(schema.workspaceMembers.workspaceId, result.id));
+    expect(workspace?.createdAt).toEqual(new Date(at.epochMilliseconds));
+    expect(owner?.createdAt).toEqual(new Date(at.epochMilliseconds));
   });
 
   it("drops bidi controls, which could make a name read backwards in an email", async () => {

@@ -31,8 +31,9 @@ export async function addMember(
   workspaceId: string,
   userId: string,
   role: WorkspaceRole,
+  joinedAt: Date = new Date(),
 ): Promise<void> {
   await getDb()
     .insert(schema.workspaceMembers)
-    .values({ workspaceId, userId, role });
+    .values({ workspaceId, userId, role, createdAt: joinedAt });
 }
