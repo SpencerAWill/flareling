@@ -98,7 +98,15 @@ test("an owner invites someone new, who signs up from the invite and joins", asy
   // Back with the owner: change the new admin's role, then remove them.
   await page.goto(invitee.url().replace(/^https?:\/\/[^/]+/, ""));
   await waitForHydration(page);
+  // Wait for the change to be saved: reloading sooner would abort it...
+  const saved = page.waitForResponse(
+    (r) => r.request().method() === "POST" && r.url().includes("/_serverFn/"),
+  );
   await page.getByLabel(`Role for ${inviteeEmail}`).selectOption("member");
+  await saved;
+  // ...and for the list refresh that follows (WebKit reports an aborted
+  // request as "Load failed").
+  await page.waitForLoadState("networkidle");
   await page.reload();
   await waitForHydration(page);
   await expect(page.getByLabel(`Role for ${inviteeEmail}`)).toHaveValue(
