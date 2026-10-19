@@ -22,9 +22,23 @@ test.describe("home", { tag: "@smoke" }, () => {
 });
 
 test.describe("not found", { tag: "@smoke" }, () => {
-  test("returns 404 and links home", async ({ page }) => {
+  test("returns 404 with a link home", async ({ page }) => {
     const response = await page.goto("/missing");
     expect(response?.status()).toBe(404);
+    await expect(page.getByRole("link", { name: "Go home" })).toBeVisible();
+  });
+
+  test("has no accessibility violations", async ({ page }) => {
+    await page.goto("/missing");
+    await expectNoA11yViolations(page);
+  });
+});
+
+// Not @smoke: the client-side navigation calls a server function, which the
+// zone's bot protection challenges from CI (see smoke.spec.ts).
+test.describe("not found, after hydrating", () => {
+  test("links home without a full page load", async ({ page }) => {
+    await page.goto("/missing");
 
     // The router must handle the click without a full page load, which only
     // happens once the page has hydrated. A value set on `window` survives a
@@ -41,10 +55,5 @@ test.describe("not found", { tag: "@smoke" }, () => {
     expect(
       await page.evaluate(() => (window as { e2eMarker?: boolean }).e2eMarker),
     ).toBe(true);
-  });
-
-  test("has no accessibility violations", async ({ page }) => {
-    await page.goto("/missing");
-    await expectNoA11yViolations(page);
   });
 });
