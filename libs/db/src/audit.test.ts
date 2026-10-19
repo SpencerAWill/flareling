@@ -29,6 +29,21 @@ describe("recordAudit", () => {
     expect(row?.createdAt.getTime()).toBeGreaterThanOrEqual(before - 1000);
   });
 
+  it("takes the caller's time when given one", async () => {
+    const at = new Date("2026-01-02T03:04:05Z");
+    await recordAudit({
+      action: "role.assigned",
+      actorId: "user_clocked",
+      targetId: "clocked_target",
+      at,
+    });
+    const [row] = await getDb()
+      .select()
+      .from(schema.auditLog)
+      .where(inJsonArray(schema.auditLog.targetId, ["clocked_target"]));
+    expect(row?.createdAt).toEqual(at);
+  });
+
   it("stores system actions and missing targets as nulls", () => {
     expect(auditRow({ action: "retention.swept", actorId: null })).toEqual({
       action: "retention.swept",
