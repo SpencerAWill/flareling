@@ -14,7 +14,7 @@ test("someone creates a team workspace and switches between workspaces", async (
 
   await page.getByLabel("New workspace").fill("E2E Team");
   await page.getByRole("button", { name: "Create workspace" }).click();
-  await expect(page).toHaveURL(/\/w\/[0-9a-f-]+\/members$/);
+  await expect(page).toHaveURL(/\/w\/[0-9a-z]{10}\/members$/);
   await waitForHydration(page);
   await expect(
     page.getByRole("heading", { name: "Members of E2E Team" }),

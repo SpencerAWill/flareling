@@ -1,5 +1,5 @@
 /**
- * The workspace's realtime socket, as React state. The /w/$workspaceId
+ * The workspace's realtime socket, as React state. The /w/$publicId
  * layout opens one per tab (WorkspaceRealtime); pages read presence with
  * usePresence().
  *

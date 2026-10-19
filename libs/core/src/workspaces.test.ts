@@ -4,6 +4,10 @@ import { eq } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { describe, expect, it } from "vitest";
 import { T0 } from "../test/users.ts";
+
+/** Any public id: newPublicId's shape, or the migration's backfill. */
+const PUBLIC_ID = expect.stringMatching(/^[0-9a-z]{10}$/);
+
 import {
   createWorkspace,
   ensurePersonalWorkspace,
@@ -42,7 +46,13 @@ describe("personal workspaces", () => {
     const first = await ensurePersonalWorkspace(userId, T0);
     expect(await ensurePersonalWorkspace(userId, T0)).toBe(first);
     expect(await listWorkspaces(userId)).toEqual([
-      { id: first, name: "Personal", role: "owner", personal: true },
+      {
+        id: first,
+        publicId: PUBLIC_ID,
+        name: "Personal",
+        role: "owner",
+        personal: true,
+      },
     ]);
   });
 
@@ -73,11 +83,21 @@ describe("createWorkspace", () => {
   it("creates a team workspace owned by its creator", async () => {
     const creator = await createUser();
     const result = await createWorkspace(creator, "  Acme \n Corp ", T0);
-    expect(result).toEqual({ ok: true, id: expect.any(String) });
+    expect(result).toEqual({
+      ok: true,
+      id: expect.any(String),
+      publicId: PUBLIC_ID,
+    });
     if (!result.ok) return;
 
     expect(await listWorkspaces(creator.userId)).toEqual([
-      { id: result.id, name: "Acme Corp", role: "owner", personal: false },
+      {
+        id: result.id,
+        publicId: PUBLIC_ID,
+        name: "Acme Corp",
+        role: "owner",
+        personal: false,
+      },
     ]);
     const [audit] = await getDb()
       .select()
@@ -88,6 +108,25 @@ describe("createWorkspace", () => {
       actorId: creator.userId,
       metadataJson: JSON.stringify({ personal: false }),
     });
+  });
+
+  it("gives each workspace its own public id, which doesn't change", async () => {
+    const creator = await createUser();
+    const personal = await ensurePersonalWorkspace(creator.userId, T0);
+    const a = await createWorkspace(creator, "A", T0);
+    const b = await createWorkspace(creator, "B", T0);
+    if (!a.ok || !b.ok) throw new Error("not created");
+
+    const listed = await listWorkspaces(creator.userId);
+    const ids = listed.map((w) => w.publicId);
+    expect(new Set(ids).size).toBe(3);
+    expect(listed.find((w) => w.id === a.id)?.publicId).toBe(a.publicId);
+    // Reusing the personal workspace keeps its id.
+    await ensurePersonalWorkspace(creator.userId, T0);
+    expect(
+      (await listWorkspaces(creator.userId)).find((w) => w.id === personal)
+        ?.publicId,
+    ).toBe(listed.find((w) => w.id === personal)?.publicId);
   });
 
   it("stamps the workspace and its owner with the given time", async () => {
@@ -180,8 +219,20 @@ describe("listWorkspaces", () => {
     await addMember(shared, member.userId, "member");
 
     expect(await listWorkspaces(member.userId)).toEqual([
-      { id: own, name: "Personal", role: "owner", personal: true },
-      { id: shared, name: "Personal", role: "member", personal: false },
+      {
+        id: own,
+        publicId: PUBLIC_ID,
+        name: "Personal",
+        role: "owner",
+        personal: true,
+      },
+      {
+        id: shared,
+        publicId: PUBLIC_ID,
+        name: "Personal",
+        role: "member",
+        personal: false,
+      },
     ]);
   });
 });

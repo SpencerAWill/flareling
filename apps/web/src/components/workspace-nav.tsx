@@ -3,13 +3,14 @@ import { useId } from "react";
 
 interface Workspace {
   readonly id: string;
+  readonly publicId: string;
   readonly name: string;
   readonly personal: boolean;
 }
 
 const SECTIONS = [
-  { to: "/w/$workspaceId/members", label: "Members" },
-  { to: "/w/$workspaceId/billing", label: "Billing" },
+  { to: "/w/$publicId/members", label: "Members" },
+  { to: "/w/$publicId/billing", label: "Billing" },
 ] as const;
 
 /**
@@ -41,17 +42,17 @@ export function WorkspaceNav({
           </label>
           <select
             id={selectId}
-            value={current.id}
+            value={current.publicId}
             onChange={(event) =>
               navigate({
                 to: section.to,
-                params: { workspaceId: event.target.value },
+                params: { publicId: event.target.value },
               })
             }
             className="rounded border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900"
           >
             {workspaces.map((w) => (
-              <option key={w.id} value={w.id}>
+              <option key={w.id} value={w.publicId}>
                 {w.personal ? `${w.name} (just you)` : w.name}
               </option>
             ))}
@@ -67,7 +68,7 @@ export function WorkspaceNav({
             <li key={s.to}>
               <Link
                 to={s.to}
-                params={{ workspaceId: current.id }}
+                params={{ publicId: current.publicId }}
                 className="text-sm"
                 activeProps={{
                   className: "font-semibold underline",

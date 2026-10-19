@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import { type BillingInterval, type PaidPlanName, PLANS } from "./plans.ts";
 import type { Stripe } from "./stripe.ts";
 
-const { billingCustomers } = schema;
+const { billingCustomers, workspaces } = schema;
 
 export interface BillingContext {
   readonly stripe: Stripe;
@@ -18,14 +18,22 @@ export interface BillingContext {
   readonly appBaseUrl: string;
 }
 
-/** The workspace's billing page, where Stripe sends people back to. */
-function billingUrl(
+/**
+ * The workspace's billing page, where Stripe sends people back to. Its URL
+ * uses the workspace's public id, as every page URL does.
+ */
+async function billingUrl(
   ctx: BillingContext,
   workspaceId: string,
   query = "",
-): string {
+): Promise<string> {
+  const [workspace] = await getDb()
+    .select({ publicId: workspaces.publicId })
+    .from(workspaces)
+    .where(eq(workspaces.id, workspaceId));
+  if (!workspace) throw new Error("workspace vanished after the role check");
   return new URL(
-    `/w/${workspaceId}/billing${query}`,
+    `/w/${workspace.publicId}/billing${query}`,
     ctx.appBaseUrl,
   ).toString();
 }
@@ -91,8 +99,8 @@ export async function startCheckout(
     client_reference_id: input.workspaceId,
     // Carried onto the subscription, so its events name their workspace.
     subscription_data: { metadata: { workspace_id: input.workspaceId } },
-    success_url: billingUrl(ctx, input.workspaceId, "?checkout=success"),
-    cancel_url: billingUrl(ctx, input.workspaceId),
+    success_url: await billingUrl(ctx, input.workspaceId, "?checkout=success"),
+    cancel_url: await billingUrl(ctx, input.workspaceId),
   });
   if (!session.url)
     throw new Error("Stripe returned a Checkout session with no URL.");
@@ -109,7 +117,7 @@ export async function openBillingPortal(
   const customer = await ensureCustomer(ctx.stripe, workspaceId);
   const session = await ctx.stripe.billingPortal.sessions.create({
     customer,
-    return_url: billingUrl(ctx, workspaceId),
+    return_url: await billingUrl(ctx, workspaceId),
   });
   return session.url;
 }

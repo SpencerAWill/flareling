@@ -17,12 +17,12 @@ import {
   revokeInviteFn,
 } from "#/server/workspaces/fns.ts";
 
-const workspaceRoute = getRouteApi("/w/$workspaceId");
+const workspaceRoute = getRouteApi("/w/$publicId");
 
-export const Route = createFileRoute("/w/$workspaceId/members")({
-  loader: async ({ params }) => {
+export const Route = createFileRoute("/w/$publicId/members")({
+  loader: async ({ context }) => {
     const result = await getMembersFn({
-      data: { workspaceId: params.workspaceId },
+      data: { workspaceId: context.workspace.id },
     }).catch(() => ({ ok: false as const }));
     // Non-members, unknown ids and malformed ids all look the same.
     if (!result.ok) throw notFound();
@@ -65,8 +65,8 @@ function Members() {
                 <>
                   To invite more people, revoke an invite, remove someone, or{" "}
                   <Link
-                    to="/w/$workspaceId/billing"
-                    params={{ workspaceId: workspace.id }}
+                    to="/w/$publicId/billing"
+                    params={{ publicId: workspace.publicId }}
                     className="underline"
                   >
                     upgrade the plan

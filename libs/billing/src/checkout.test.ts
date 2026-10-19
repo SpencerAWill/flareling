@@ -49,7 +49,7 @@ function stripeHandlers(calls: {
 
 describe("startCheckout", () => {
   it("creates the workspace's customer once and a subscription Checkout for the plan's price", async () => {
-    const { principal, workspaceId } = await createOwner();
+    const { principal, workspaceId, publicId } = await createOwner();
     const calls = {
       customers: [] as URLSearchParams[],
       checkout: [] as URLSearchParams[],
@@ -78,7 +78,7 @@ describe("startCheckout", () => {
       workspaceId,
     );
     expect(session?.get("success_url")).toBe(
-      `https://app.example.com/w/${workspaceId}/billing?checkout=success`,
+      `https://app.example.com/w/${publicId}/billing?checkout=success`,
     );
   });
 
@@ -120,7 +120,7 @@ describe("startCheckout", () => {
 
 describe("openBillingPortal", () => {
   it("returns a portal session for the workspace's customer, returning to its billing page", async () => {
-    const { principal, workspaceId } = await createOwner();
+    const { principal, workspaceId, publicId } = await createOwner();
     await getDb()
       .insert(schema.billingCustomers)
       .values({ workspaceId, stripeCustomerId: "cus_existing" });
@@ -141,7 +141,7 @@ describe("openBillingPortal", () => {
     );
     expect(body?.get("customer")).toBe("cus_existing");
     expect(body?.get("return_url")).toBe(
-      `https://app.example.com/w/${workspaceId}/billing`,
+      `https://app.example.com/w/${publicId}/billing`,
     );
   });
 });

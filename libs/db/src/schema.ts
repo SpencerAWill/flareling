@@ -290,6 +290,12 @@ export const workspaces = sqliteTable(
   "workspaces",
   {
     id: text("id").primaryKey().$defaultFn(newId),
+    // What URLs show (`/w/<publicId>`): short and random (newPublicId), where
+    // `id` is a UUIDv7 that would also reveal when the workspace was made.
+    // Always set by libs/core. The '' default exists only so the column
+    // could be added to existing rows (migration 0007 backfills them); a
+    // table rebuild to drop it would cascade-delete every child row.
+    publicId: text("public_id").notNull().default(""),
     name: text("name").notNull(),
     // Set for the workspace created automatically for a new account. Unique,
     // so two concurrent first requests can't create two.
@@ -300,7 +306,10 @@ export const workspaces = sqliteTable(
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
   },
-  (t) => [uniqueIndex("workspaces_personal_user_unique").on(t.personalUserId)],
+  (t) => [
+    uniqueIndex("workspaces_personal_user_unique").on(t.personalUserId),
+    uniqueIndex("workspaces_public_id_unique").on(t.publicId),
+  ],
 );
 
 export const workspaceMembers = sqliteTable(

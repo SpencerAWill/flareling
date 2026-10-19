@@ -12,6 +12,7 @@ import {
   getDb,
   isUniqueViolation,
   newId,
+  newPublicId,
   recordAudit,
   schema,
 } from "@flareling/db";
@@ -45,6 +46,8 @@ function normalizeWorkspaceName(name: string): string | null {
 
 export interface WorkspaceMembership {
   readonly id: string;
+  /** What URLs show (`/w/<publicId>`); see schema.workspaces.publicId. */
+  readonly publicId: string;
   readonly name: string;
   readonly role: WorkspaceRole;
   readonly personal: boolean;
@@ -57,6 +60,7 @@ export async function listWorkspaces(
   const rows = await getDb()
     .select({
       id: workspaces.id,
+      publicId: workspaces.publicId,
       name: workspaces.name,
       role: workspaceMembers.role,
       personalUserId: workspaces.personalUserId,
@@ -68,6 +72,7 @@ export async function listWorkspaces(
   return rows
     .map((r) => ({
       id: r.id,
+      publicId: r.publicId,
       name: r.name,
       role: r.role,
       personal: r.personalUserId === userId,
@@ -94,14 +99,20 @@ export async function ensurePersonalWorkspace(
   const id = newId();
   const createdAt = new Date(now.epochMilliseconds);
   try {
-    await db.batch([
-      db
-        .insert(workspaces)
-        .values({ id, name: "Personal", personalUserId: userId, createdAt }),
-      db
-        .insert(workspaceMembers)
-        .values({ workspaceId: id, userId, role: "owner", createdAt }),
-    ]);
+    await withPublicId((publicId) =>
+      db.batch([
+        db.insert(workspaces).values({
+          id,
+          publicId,
+          name: "Personal",
+          personalUserId: userId,
+          createdAt,
+        }),
+        db
+          .insert(workspaceMembers)
+          .values({ workspaceId: id, userId, role: "owner", createdAt }),
+      ]),
+    );
   } catch (err) {
     if (!isUniqueViolation(err, "workspaces.personal_user_id")) throw err;
     const [winner] = await db
@@ -123,7 +134,7 @@ export async function ensurePersonalWorkspace(
 }
 
 export type CreateWorkspaceResult =
-  | { readonly ok: true; readonly id: string }
+  | { readonly ok: true; readonly id: string; readonly publicId: string }
   | { readonly ok: false; readonly reason: "invalid_name" | "limit_reached" };
 
 /**
@@ -145,19 +156,22 @@ export async function createWorkspace(
   const id = newId();
   // INSERT ... SELECT lists every column in table order, hence the explicit
   // nulls and created_at.
-  const [created] = await db.batch([
-    db.insert(workspaces).select(sql`
-      SELECT ${id}, ${normalized}, NULL, ${now.epochMilliseconds}
-      WHERE (
-        SELECT count(*) FROM workspace_members m
-        JOIN workspaces w ON w.id = m.workspace_id
-        WHERE m.user_id = ${userId} AND m.role = 'owner'
-          AND w.personal_user_id IS NULL
-      ) < ${OWNED_WORKSPACE_LIMIT}`),
-    db.insert(workspaceMembers).select(sql`
-      SELECT ${id}, ${userId}, 'owner', ${now.epochMilliseconds}
-      WHERE EXISTS (SELECT 1 FROM workspaces WHERE id = ${id})`),
-  ]);
+  const { created, publicId } = await withPublicId(async (publicId) => {
+    const [created] = await db.batch([
+      db.insert(workspaces).select(sql`
+        SELECT ${id}, ${publicId}, ${normalized}, NULL, ${now.epochMilliseconds}
+        WHERE (
+          SELECT count(*) FROM workspace_members m
+          JOIN workspaces w ON w.id = m.workspace_id
+          WHERE m.user_id = ${userId} AND m.role = 'owner'
+            AND w.personal_user_id IS NULL
+        ) < ${OWNED_WORKSPACE_LIMIT}`),
+      db.insert(workspaceMembers).select(sql`
+        SELECT ${id}, ${userId}, 'owner', ${now.epochMilliseconds}
+        WHERE EXISTS (SELECT 1 FROM workspaces WHERE id = ${id})`),
+    ]);
+    return { created, publicId };
+  });
   if (created.meta.changes === 0) return { ok: false, reason: "limit_reached" };
 
   await recordAudit({
@@ -168,7 +182,26 @@ export async function createWorkspace(
     metadata: { personal: false },
     at: new Date(now.epochMilliseconds),
   });
-  return { ok: true, id };
+  return { ok: true, id, publicId };
+}
+
+/**
+ * Runs `insert` with a fresh public id, and again with another if that one
+ * was taken. At about 51 random bits a collision is vanishingly rare, but
+ * the unique index, not luck, is what guarantees uniqueness.
+ */
+async function withPublicId<T>(
+  insert: (publicId: string) => Promise<T>,
+): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await insert(newPublicId());
+    } catch (err) {
+      if (attempt >= 3 || !isUniqueViolation(err, "workspaces.public_id")) {
+        throw err;
+      }
+    }
+  }
 }
 
 /** `userId`'s role in `workspaceId`, or null if they aren't a member. */

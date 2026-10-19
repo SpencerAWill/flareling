@@ -2,6 +2,7 @@ import type { Principal } from "@flareling/auth";
 import { ensurePersonalWorkspace } from "@flareling/core";
 import { getDb, newId, schema } from "@flareling/db";
 import { setupNetwork } from "@msw/cloudflare";
+import { eq } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
 import { createStripe } from "../src/index.ts";
@@ -37,13 +38,22 @@ export async function formBody(request: {
   return new URLSearchParams(await request.text());
 }
 
-/** A user with a personal workspace they own. */
+/** A user with a personal workspace they own, and its URL's public id. */
 export async function createOwner(): Promise<{
   principal: Principal;
   workspaceId: string;
+  publicId: string;
 }> {
   const userId = newId();
   await getDb().insert(schema.users).values({ id: userId });
+  const workspaceId = await ensurePersonalWorkspace(
+    userId,
+    Temporal.Now.instant(),
+  );
+  const [workspace] = await getDb()
+    .select({ publicId: schema.workspaces.publicId })
+    .from(schema.workspaces)
+    .where(eq(schema.workspaces.id, workspaceId));
   return {
     principal: {
       userId,
@@ -53,7 +63,8 @@ export async function createOwner(): Promise<{
       permissions: [],
       isSystemAdmin: false,
     },
-    workspaceId: await ensurePersonalWorkspace(userId, Temporal.Now.instant()),
+    workspaceId,
+    publicId: workspace?.publicId ?? "",
   };
 }
 

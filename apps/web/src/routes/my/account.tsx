@@ -60,15 +60,15 @@ function Account() {
                 ({workspace.role})
               </span>{" "}
               <Link
-                to="/w/$workspaceId/members"
-                params={{ workspaceId: workspace.id }}
+                to="/w/$publicId/members"
+                params={{ publicId: workspace.publicId }}
                 className="text-sm underline"
               >
                 Members
               </Link>{" "}
               <Link
-                to="/w/$workspaceId/billing"
-                params={{ workspaceId: workspace.id }}
+                to="/w/$publicId/billing"
+                params={{ publicId: workspace.publicId }}
                 className="text-sm underline"
               >
                 Billing
