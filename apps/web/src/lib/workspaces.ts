@@ -1,3 +1,12 @@
+import type { WorkspaceRole } from "@flareling/core/client";
+
+/** How roles read in the UI. */
+export const ROLE_NAMES: Record<WorkspaceRole, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
+};
+
 /**
  * The current workspace's name, from the /w/$workspaceId layout's loader, for
  * a page's title. Head functions see every match's loader data, not just

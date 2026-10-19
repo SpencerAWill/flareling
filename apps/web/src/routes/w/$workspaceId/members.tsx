@@ -9,7 +9,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { type FormEvent, useId, useState } from "react";
 import { LeaveWorkspace, MemberRow } from "#/components/member-row.tsx";
-import { workspaceTitle } from "#/lib/workspaces.ts";
+import { ROLE_NAMES, workspaceTitle } from "#/lib/workspaces.ts";
 import {
   getMembersFn,
   inviteMemberFn,
@@ -32,12 +32,6 @@ export const Route = createFileRoute("/w/$workspaceId/members")({
   }),
   component: Members,
 });
-
-const ROLE_NAMES = {
-  owner: "Owner",
-  admin: "Admin",
-  member: "Member",
-} as const;
 
 function Members() {
   const { workspace } = workspaceRoute.useLoaderData();

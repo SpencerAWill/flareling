@@ -1,20 +1,14 @@
+import { mayManage, type WorkspaceRole } from "@flareling/core/client";
 import { Button } from "@flareling/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { ROLE_NAMES } from "#/lib/workspaces.ts";
 import {
   changeRoleFn,
   leaveWorkspaceFn,
   removeMemberFn,
 } from "#/server/workspaces/fns.ts";
-
-type Role = "owner" | "admin" | "member";
-
-const ROLE_NAMES: Record<Role, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  member: "Member",
-};
 
 const ERRORS: Record<string, string> = {
   last_owner: "A workspace needs an owner. Make someone else an owner first.",
@@ -26,11 +20,6 @@ const ERRORS: Record<string, string> = {
 };
 
 const errorFor = (reason: string) => ERRORS[reason] ?? ERRORS.unavailable ?? "";
-
-/** As libs/core decides: admins manage non-owners; owners manage everyone. */
-function mayManage(viewer: Role, target: Role): boolean {
-  return viewer === "owner" || (viewer === "admin" && target !== "owner");
-}
 
 /**
  * One member, with role and remove controls for the people allowed to use
@@ -44,9 +33,9 @@ export function MemberRow({
   personal,
 }: {
   workspaceId: string;
-  member: { userId: string; email: string; role: Role };
+  member: { userId: string; email: string; role: WorkspaceRole };
   viewerId: string;
-  viewerRole: Role;
+  viewerRole: WorkspaceRole;
   personal: boolean;
 }) {
   const router = useRouter();
@@ -56,7 +45,7 @@ export function MemberRow({
   const [error, setError] = useState<string | null>(null);
   const isViewer = member.userId === viewerId;
   const editable = !personal && mayManage(viewerRole, member.role);
-  const roles: Role[] =
+  const roles: WorkspaceRole[] =
     viewerRole === "owner" ? ["owner", "admin", "member"] : ["admin", "member"];
 
   async function run(
@@ -91,7 +80,7 @@ export function MemberRow({
             value={member.role}
             disabled={pending}
             onChange={(event) => {
-              const role = event.target.value as Role;
+              const role = event.target.value as WorkspaceRole;
               void run(() =>
                 changeRole({
                   data: { workspaceId, userId: member.userId, role },
