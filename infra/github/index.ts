@@ -7,6 +7,9 @@ import {
   deploysEnabled,
   features,
   prodReviewerIds,
+  pulumiOrganization,
+  pulumiPreviews,
+  pulumiUserLogin,
   repositoryName,
 } from "./src/config.ts";
 import { repository } from "./src/repository.ts";
@@ -80,6 +83,7 @@ const tokens =
         zoneId: cloudflareZoneId,
         zoneDedicated: cloudflareZoneDedicated,
         repositoryName,
+        preview: pulumiPreviews,
       })
     : undefined;
 
@@ -121,6 +125,66 @@ if (cloudflareAccountId && tokens) {
     }
   }
 }
+
+// PR previews of every infra/cloudflare stack (cicd.yml's `preview:` jobs).
+// No branch policy, because every PR branch needs it. Its Cloudflare token
+// can only read, but the Pulumi token a job here gets through OIDC is
+// personal and can read every stack's secrets, so every run waits for a
+// reviewer (README, "Pulumi previews on PRs").
+if (pulumiPreviews) {
+  const missing = [
+    !(features.environments && features.requiredReviewers) &&
+      "a plan with required reviewers on environments",
+    prodReviewerIds.length === 0 && "prodReviewerIds",
+    !tokens && "cloudflareAccountId (for the read-only Cloudflare token)",
+    !pulumiOrganization && "pulumiOrganization",
+    !pulumiUserLogin && "pulumiUserLogin",
+  ].filter(Boolean);
+  if (missing.length > 0) {
+    throw new Error(`pulumiPreviews needs ${missing.join(", ")}.`);
+  }
+}
+if (
+  pulumiPreviews &&
+  tokens?.preview &&
+  pulumiOrganization &&
+  pulumiUserLogin
+) {
+  const preview = new github.RepositoryEnvironment("preview", {
+    repository: repository.name,
+    environment: "preview",
+    canAdminsBypass: true,
+    preventSelfReview: false,
+    reviewers: [{ users: prodReviewerIds }],
+  });
+
+  new github.ActionsEnvironmentSecret("preview-cloudflare_preview_api_token", {
+    repository: repository.name,
+    environment: preview.environment,
+    secretName: "CLOUDFLARE_PREVIEW_API_TOKEN",
+    value: tokens.preview,
+  });
+
+  // What the jobs' pulumi/auth-actions step asks for. Variables rather than
+  // literals in cicd.yml, so a repo made from the template sets them here.
+  new github.ActionsVariable("pulumi-organization", {
+    repository: repository.name,
+    variableName: "PULUMI_ORGANIZATION",
+    value: pulumiOrganization,
+  });
+  new github.ActionsVariable("pulumi-user-login", {
+    repository: repository.name,
+    variableName: "PULUMI_USER_LOGIN",
+    value: pulumiUserLogin,
+  });
+}
+
+// cicd.yml's `preview:` jobs run only when it is "true".
+new github.ActionsVariable("pulumi-previews-enabled", {
+  repository: repository.name,
+  variableName: "PULUMI_PREVIEWS_ENABLED",
+  value: String(pulumiPreviews),
+});
 
 export const repositoryUrl = repository.htmlUrl;
 export const enabledFeatures = features;

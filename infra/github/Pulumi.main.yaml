@@ -20,6 +20,14 @@ config:
   # until a deployed environment can start: it needs an email provider
   # (docs/adr/0015-email-behind-an-interface.md).
   flareling-github:deploysEnabled: "true"
+  # Turns on cicd.yml's `preview:` jobs (PULUMI_PREVIEWS_ENABLED): a
+  # `pulumi preview` of every infra/cloudflare stack, as a comment per stack
+  # on PRs that touch infra. They log in to Pulumi Cloud through OIDC, as this
+  # user: the account's GitHub issuer, managed by SpencerAWill/spencerwill.com's
+  # infra/github, must trust this repo's `preview` environment first.
+  flareling-github:pulumiPreviews: "true"
+  flareling-github:pulumiOrganization: SpencerAWill
+  flareling-github:pulumiUserLogin: SpencerAWill
   # Mints the Cloudflare CI tokens. Needs cloudflare:apiToken set as a secret
   # (`pulumi config set --secret cloudflare:apiToken`): a token allowed to
   # create account API tokens. Same account and zone as infra/cloudflare.

@@ -317,6 +317,7 @@ Sources: https://developers.cloudflare.com/kv/platform/limits/ , https://develop
 - *Exposed:* a future PR-preview deploy (wrangler `versions upload --preview-alias`) needs `CLOUDFLARE_API_TOKEN`, which is not available in Dependabot runs.
 - *Symptom:* the preview deploy fails, blocking a required check.
 - *Protection:* either duplicate the preview token as a **Dependabot secret** (managed by infra/github Pulumi via `github.DependabotSecret`), or skip preview jobs with `if: github.actor != 'dependabot[bot]'` and keep them non-required. Never switch to `pull_request_target` with checkout of PR code.
+- *Done for `pulumi preview` (2026-10-19):* cicd.yml's `preview:` jobs skip Dependabot runs and aren't part of `required`. Pushing any commit to the branch previews it as yourself.
 
 **R8. Workers Logs volume and the Dec 1, 2026 pricing change (now, medium).**
 - *Exposed:* `head_sampling_rate: 1` plus `console.info` events (`email.sent`, warnings) plus invocation logs, against 200k events/day on Free. At the 100k requests/day cap, that is 2+ events per request. Over-quota behaviour on Free: UNVERIFIED. The Observability pricing change is 6 weeks out.

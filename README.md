@@ -242,13 +242,30 @@ A new stack's first deploy has no public URL yet: the custom domain can only poi
 
 | Workflow | Runs on | Does |
 | --- | --- | --- |
-| `cicd.yml` | PRs (skips drafts) and pushes to `main` | `check:` jobs: changed paths, `pnpm audit --prod`, a gitleaks scan of the full history, `pnpm verify` + build + size budget + Playwright with axe, and actionlint + zizmor. `required` aggregates them and is the one required status check. On `main`: `deploy: dev`, then `deploy: prod` after approval. 🚧 A `pulumi preview` on PRs |
+| `cicd.yml` | PRs (skips drafts) and pushes to `main` | `check:` jobs: changed paths, `pnpm audit --prod`, a gitleaks scan of the full history, `pnpm verify` + build + size budget + Playwright with axe, and actionlint + zizmor. `required` aggregates them and is the one required status check. On PRs that touch infra: `preview: <stack>`, a `pulumi preview` of each `infra/cloudflare` stack, as a sticky comment per stack ([Pulumi previews on PRs](#pulumi-previews-on-prs)). On `main`: `deploy: dev`, then `deploy: prod` after approval. |
 | `lint-pr.yml` | PR opened, edited, or updated | Runs commitlint on the PR title, which becomes the squash commit on `main` |
 | `quality.yml` | Weekly schedule, and manual dispatch | Coverage and mutation testing reports as artifacts, with coverage in the run summary (informational, not gates) |
 
-Job names are `check: <what>` and `deploy: <environment>`. Rename them freely: the ruleset requires only `required`.
+Job names are `check: <what>`, `preview: <stack>` and `deploy: <environment>`. Rename them freely: the ruleset requires only `required`.
 
-CI secrets are scoped per GitHub environment where the plan allows, and fall back to repository secrets otherwise. `infra/github` creates and writes all of them except `PULUMI_ACCESS_TOKEN`, which is set by hand once. See [GitHub as code](#github-as-code).
+CI secrets are scoped per GitHub environment where the plan allows, and fall back to repository secrets otherwise. `infra/github` creates and writes all of them except `PULUMI_ACCESS_TOKEN`, which is set by hand once for the deploys. Previews store no Pulumi token: they log in through OIDC. See [GitHub as code](#github-as-code).
+
+### Pulumi previews on PRs
+
+A PR that touches `infra/cloudflare`, the lockfile, or the preview job gets a `preview: <stack>` job per stack (`dev` and `prod`; add a stack to the job's matrix when you add one). Each one runs `pulumi preview --json` and posts the result as **its own comment**, edited in place on every push, so the PR always shows one current preview per stack. The comment shows the change counts, then every changed property's old and new value. When that doesn't fit GitHub's 65,536-character limit, it shows just the changed resources and the names of their changed properties, and when even that doesn't fit, only the counts. Either way it links to the run, whose job summary has the fullest version that fits there (1 MiB). The diff is of the program's declared inputs, so computed outputs don't show up as noise, and secrets show as `"[secret]"`. The renderer is `tooling/scripts/src/pulumi-preview.ts`.
+
+A failed preview posts its error output as that stack's comment and fails its job. The jobs aren't part of `required`: a preview informs the review, and `deploy:` runs `pulumi up --diff` again anyway.
+
+How it stays safe, since any PR branch can run it:
+
+- **Each run waits for a reviewer.** The jobs run in the `preview` environment, which requires approval from `prodReviewerIds`. They log in to Pulumi Cloud with GitHub OIDC (`pulumi/auth-actions`), and on Pulumi's Individual edition the only token that can be exchanged for is a personal one, with all of its owner's access, including other projects' stack secrets. So approve a run only once you've read the branch's changes, especially to `.github/` or anything that runs code. One approval covers every stack in the run.
+- **The Cloudflare token can only read.** `CLOUDFLARE_PREVIEW_API_TOKEN` is the infra token's permissions with each `Write` swapped for `Read` (`infra/github/src/cloudflare-tokens.ts`), a secret of the `preview` environment only. The write tokens stay in `dev` and `prod`, which only `main` can use.
+- **Forks and Dependabot are skipped.** Their runs get no secrets. To preview a Dependabot PR, push any commit to its branch (`git commit --allow-empty`), which runs it as you.
+
+Setting it up in a new repo:
+
+1. Register this repo's `preview` environment with your Pulumi org's GitHub OIDC issuer. Pulumi Cloud allows one issuer per URL per org, so if one already exists, add a policy there instead of creating a second. For this account, the issuer is managed by `SpencerAWill/spencerwill.com`'s `infra/github`: add `"<owner>/<repo>": ["preview"]` to `pulumiOidcRepositories` and apply it. The policy matches GitHub's immutable subject, so check that `gh api repos/<owner>/<repo>/actions/oidc/customization/sub` shows `"use_immutable_subject": true`.
+2. Set `pulumiPreviews: "true"`, `pulumiOrganization` and `pulumiUserLogin` in `infra/github/Pulumi.main.yaml`, then apply `infra/github`. That creates the `preview` environment, mints the read-only token, and sets the `PULUMI_ORGANIZATION`, `PULUMI_USER_LOGIN` and `PULUMI_PREVIEWS_ENABLED` variables. It refuses to apply on a plan where `preview` can't require a reviewer.
 
 ## Infrastructure (Pulumi)
 
@@ -301,10 +318,11 @@ It manages:
 
 - **The repository itself:** description, visibility, template flag, squash-only merges titled from the PR (so `main` keeps Conventional Commits), delete branches after merge, and Dependabot alerts. The repo is `protect`ed in Pulumi and archived rather than deleted if it ever leaves the program.
 - **A ruleset on the default branch:** no deletion or force pushes, linear history, PRs with resolved review threads, and required status checks once CI exists (`requiredChecks` in stack config). Repository admins can bypass, which keeps direct pushes working during setup and means nobody can be locked out.
-- **Environments:** `dev` and `prod`, each deployable from `main` only. `prod` gets required reviewers (`prodReviewerIds`) where the plan allows.
-- **CI secrets.** When `cloudflareAccountId` is set, Pulumi creates two least-privilege Cloudflare account tokens and writes them straight into GitHub. Nobody sees or copies a token, and destroying the stack revokes them. To rotate, run `pnpm apply --replace <token URN>`.
+- **Environments:** `dev` and `prod`, each deployable from `main` only. `prod` gets required reviewers (`prodReviewerIds`) where the plan allows. With `pulumiPreviews`, also `preview` (any branch, always behind those reviewers) for [Pulumi previews on PRs](#pulumi-previews-on-prs).
+- **CI secrets.** When `cloudflareAccountId` is set, Pulumi creates least-privilege Cloudflare account tokens and writes them straight into GitHub. Nobody sees or copies a token, and destroying the stack revokes them. To rotate, run `pnpm apply --replace <token URN>`.
   - `CLOUDFLARE_API_TOKEN` is for Wrangler code deploys: Worker scripts, D1 migrations, routes.
   - `CLOUDFLARE_INFRA_API_TOKEN` is for `pulumi up` on `infra/cloudflare`.
+  - `CLOUDFLARE_PREVIEW_API_TOKEN` (in `preview` only) is the same reach, read only, for `pulumi preview` on PRs.
   - `CLOUDFLARE_ACCOUNT_ID` is a plain repository variable.
   - The exact permissions live in `infra/github/src/cloudflare-tokens.ts`.
 

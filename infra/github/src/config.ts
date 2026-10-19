@@ -48,6 +48,19 @@ export const prodReviewerIds =
   config.getObject<number[]>("prodReviewerIds") ?? [];
 
 /**
+ * Whether cicd.yml previews every infra/cloudflare stack on PRs that touch
+ * infra (the PULUMI_PREVIEWS_ENABLED repo variable). The jobs log in to
+ * Pulumi Cloud through OIDC, so turn it on only once the account's GitHub
+ * issuer trusts this repo's `preview` environment (README, "Pulumi previews
+ * on PRs").
+ */
+export const pulumiPreviews = config.getBoolean("pulumiPreviews") ?? false;
+
+/** The Pulumi org the OIDC exchange targets, and the user its token is for. */
+export const pulumiOrganization = config.get("pulumiOrganization");
+export const pulumiUserLogin = config.get("pulumiUserLogin");
+
+/**
  * Cloudflare account to mint CI tokens in. Optional: without it the GitHub
  * side applies on its own, so a new repo can be locked down before its
  * Cloudflare account exists.
