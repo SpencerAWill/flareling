@@ -14,6 +14,8 @@
  * every tier but the first links to it.
  */
 
+import { z } from "zod";
+
 /** GitHub rejects a comment body over 65,536 characters; leave headroom. */
 export const COMMENT_LIMIT = 60_000;
 /** GitHub's job summary limit is 1 MiB per step, in bytes. */
@@ -26,23 +28,31 @@ const VALUE_LIMIT = 200;
 /** Tail of a failed preview's output shown in its comment. */
 const LOG_LIMIT = 20_000;
 
-interface ResourceState {
-  readonly inputs?: Record<string, unknown>;
-}
+const resourceState = z.object({
+  inputs: z.record(z.string(), z.unknown()).optional(),
+});
 
-export interface PreviewStep {
-  readonly op: string;
-  readonly urn: string;
-  readonly oldState?: ResourceState | null;
-  readonly newState?: ResourceState | null;
-  readonly replaceReasons?: readonly string[] | null;
-}
+const previewStep = z.object({
+  op: z.string(),
+  urn: z.string(),
+  oldState: resourceState.nullish(),
+  newState: resourceState.nullish(),
+  replaceReasons: z.array(z.string()).nullish(),
+});
 
-export interface PreviewJson {
-  readonly changeSummary?: Readonly<Record<string, number>> | null;
-  readonly steps?: readonly PreviewStep[] | null;
-  readonly diagnostics?: readonly { readonly message?: string }[] | null;
-}
+/**
+ * The parts of `pulumi preview --json` this reads. Parsed rather than cast:
+ * Pulumi's JSON isn't a stable API, and a shape it no longer matches should
+ * render as a failed preview naming the problem, not as a confusing comment.
+ */
+export const previewJson = z.object({
+  changeSummary: z.record(z.string(), z.number()).nullish(),
+  steps: z.array(previewStep).nullish(),
+  diagnostics: z.array(z.object({ message: z.string().optional() })).nullish(),
+});
+
+export type PreviewStep = z.infer<typeof previewStep>;
+export type PreviewJson = z.infer<typeof previewJson>;
 
 export interface RenderContext {
   /** The stack, also the comment's sticky marker. */
@@ -171,7 +181,7 @@ export function renderFailure(log: string, context: RenderContext): Rendered {
 export function failureLog(stderr: string, stdout: string): string {
   let diagnostics: string[] = [];
   try {
-    const parsed = JSON.parse(stdout) as PreviewJson;
+    const parsed = previewJson.parse(JSON.parse(stdout));
     diagnostics = (parsed.diagnostics ?? []).flatMap((d) =>
       d.message ? [d.message.trimEnd()] : [],
     );

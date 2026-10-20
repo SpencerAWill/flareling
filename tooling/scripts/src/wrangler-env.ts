@@ -36,6 +36,7 @@ import {
   parse,
   printParseErrorCode,
 } from "jsonc-parser";
+import { z } from "zod";
 
 /** The Pulumi outputs (infra/cloudflare/index.ts) a deploy needs. */
 export interface StackOutputs {
@@ -268,26 +269,37 @@ export function syncWranglerConfig(
   return result;
 }
 
+/** Each OUTPUT_KEYS type as a schema. "string?" may be empty (a stack
+ *  without that feature); a "string" may not. */
+const OUTPUT_TYPES = {
+  string: z.string().min(1),
+  "string?": z.string(),
+  number: z.number(),
+} as const;
+
+/** OUTPUT_KEYS as a zod schema. Other outputs a stack has pass through. */
+const stackOutputs = z.looseObject(
+  Object.fromEntries(
+    Object.entries(OUTPUT_KEYS).map(([key, type]) => [key, OUTPUT_TYPES[type]]),
+  ),
+) as unknown as z.ZodType<StackOutputs>;
+
 /** Validates `pulumi stack output --json`, naming every missing or wrong key. */
 export function parseStackOutputs(json: unknown): StackOutputs {
-  if (typeof json !== "object" || json === null) {
+  if (typeof json !== "object" || json === null || Array.isArray(json)) {
     throw new SyncError(
       "Stack outputs must be a JSON object (pulumi stack output --json).",
     );
   }
-  const record = json as Record<string, unknown>;
-  // "string?" may be empty (a stack without that feature); others may not.
-  const problems = Object.entries(OUTPUT_KEYS)
-    .filter(([key, type]) =>
-      type === "string?"
-        ? typeof record[key] !== "string"
-        : typeof record[key] !== type || record[key] === "",
-    )
-    .map(([key, type]) => `${key} (${type})`);
-  if (problems.length > 0) {
+  const parsed = stackOutputs.safeParse(json);
+  if (!parsed.success) {
+    const keys = new Set(parsed.error.issues.map((i) => String(i.path[0])));
+    const problems = Object.entries(OUTPUT_KEYS)
+      .filter(([key]) => keys.has(key))
+      .map(([key, type]) => `${key} (${type})`);
     throw new SyncError(
       `Stack outputs are missing or malformed: ${problems.join(", ")}`,
     );
   }
-  return record as unknown as StackOutputs;
+  return parsed.data;
 }
