@@ -7,6 +7,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { inviteSchema, newWorkspaceSchema } from "#/lib/schemas.ts";
 
 const workspaceInput = z.object({ workspaceId: z.uuid() });
 
@@ -50,7 +51,7 @@ async function unlessRefused<T>(
 
 /** Creates a team workspace owned by the signed-in account. */
 export const createWorkspaceFn = createServerFn({ method: "POST" })
-  .validator(z.object({ name: z.string().max(200) }))
+  .validator(newWorkspaceSchema)
   .handler(async ({ data }) => {
     const { createWorkspace } = await import("@flareling/core");
     const principal = await signedIn();
@@ -109,12 +110,7 @@ export const getMembersFn = createServerFn({ method: "GET" })
 
 /** Emails an invite to join the workspace; resends an open one. */
 export const inviteMemberFn = createServerFn({ method: "POST" })
-  .validator(
-    workspaceInput.extend({
-      email: z.email().max(254),
-      role: z.enum(["admin", "member"]),
-    }),
-  )
+  .validator(workspaceInput.extend(inviteSchema.shape))
   .handler(async ({ data }) => {
     const { inviteMember } = await import("@flareling/core");
     const { errorMessage, log } = await import("@flareling/log");
