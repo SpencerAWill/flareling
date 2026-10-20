@@ -4,7 +4,11 @@
  * into storage calls.
  */
 import { errorMessage, log } from "@flareling/log";
+import { z } from "zod";
 import { type AuthContext, isSecure } from "./context.ts";
+
+/** The part of Turnstile's siteverify answer this reads. */
+const siteverifyResponse = z.object({ success: z.boolean() });
 
 /**
  * Whether a request under `key` is within its limit. Keys are namespaced
@@ -69,6 +73,13 @@ export async function passesTurnstile(
     log.warn("auth.turnstile_error", { status: response.status });
     return false;
   }
-  const result = (await response.json()) as { success?: unknown };
-  return result.success === true;
+  // Anything but a well-formed answer saying success is a failure.
+  const result = siteverifyResponse.safeParse(
+    await response.json().catch(() => null),
+  );
+  if (!result.success) {
+    log.warn("auth.turnstile_malformed");
+    return false;
+  }
+  return result.data.success;
 }

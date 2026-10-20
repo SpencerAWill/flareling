@@ -709,6 +709,9 @@ importers:
       temporal-polyfill:
         specifier: 'catalog:'
         version: 1.0.5
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'
