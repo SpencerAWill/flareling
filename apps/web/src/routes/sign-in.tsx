@@ -1,5 +1,5 @@
 import { isSafeRedirect } from "@flareling/auth/client";
-import { Button, Input, Label, Separator } from "@flareling/ui";
+import { Button, Separator } from "@flareling/ui";
 import {
   browserSupportsWebAuthnAutofill,
   startAuthentication,
@@ -7,11 +7,13 @@ import {
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { KeyRoundIcon, MailCheckIcon, MailIcon } from "lucide-react";
-import { type FormEvent, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { AuthShell } from "#/components/auth-shell.tsx";
+import { Form, useAppForm } from "#/components/form.tsx";
 import { Turnstile } from "#/components/turnstile.tsx";
 import { afterSessionChange } from "#/lib/auth.ts";
+import { signInSchema } from "#/lib/schemas.ts";
 import {
   beginPasskeySignInFn,
   finishPasskeySignInFn,
@@ -46,7 +48,6 @@ function SignIn() {
   const { turnstileSiteKey } = Route.useLoaderData();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const resetTurnstile = useRef<(() => void) | null>(null);
-  const emailId = useId();
 
   // The autofill ceremony's first request, while it's in flight. The button
   // waits for it before beginning its own: each begin sets the ceremony
@@ -82,26 +83,28 @@ function SignIn() {
     });
   }, []);
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const email = String(new FormData(event.currentTarget).get("email") ?? "");
-    setState("sending");
-    try {
-      await requestMagicLink({
-        data: {
-          email,
-          redirect: next,
-          turnstileToken: turnstileToken ?? undefined,
-        },
-      });
-      setState("sent");
-    } catch {
-      setState("error");
-    } finally {
-      // Turnstile tokens are single use.
-      resetTurnstile.current?.();
-    }
-  }
+  const form = useAppForm({
+    defaultValues: { email: suggestedEmail ?? "" },
+    validators: { onChange: signInSchema },
+    onSubmit: async ({ value }) => {
+      setState("sending");
+      try {
+        await requestMagicLink({
+          data: {
+            email: value.email,
+            redirect: next,
+            turnstileToken: turnstileToken ?? undefined,
+          },
+        });
+        setState("sent");
+      } catch {
+        setState("error");
+      } finally {
+        // Turnstile tokens are single use.
+        resetTurnstile.current?.();
+      }
+    },
+  });
 
   return (
     <AuthShell
@@ -123,20 +126,18 @@ function SignIn() {
           </p>
         </div>
       ) : (
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={emailId}>Email</Label>
-            {/* "webauthn" lets the browser offer passkeys from this field. */}
-            <Input
-              id={emailId}
-              name="email"
-              type="email"
-              required
-              defaultValue={suggestedEmail}
-              placeholder="you@example.com"
-              autoComplete="username webauthn"
-            />
-          </div>
+        <Form form={form} className="flex flex-col gap-4">
+          {/* "webauthn" lets the browser offer passkeys from this field. */}
+          <form.AppField name="email">
+            {(field) => (
+              <field.TextField
+                label="Email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="username webauthn"
+              />
+            )}
+          </form.AppField>
           {turnstileSiteKey && (
             <Turnstile
               siteKey={turnstileSiteKey}
@@ -144,16 +145,15 @@ function SignIn() {
               resetRef={resetTurnstile}
             />
           )}
-          <Button
-            type="submit"
-            variant="flare"
-            disabled={
-              state === "sending" || (!!turnstileSiteKey && !turnstileToken)
-            }
-          >
-            <MailIcon />
-            Email me a sign-in link
-          </Button>
+          <form.AppForm>
+            <form.SubmitButton
+              variant="flare"
+              disabled={!!turnstileSiteKey && !turnstileToken}
+            >
+              <MailIcon />
+              Email me a sign-in link
+            </form.SubmitButton>
+          </form.AppForm>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <Separator className="flex-1" />
             or
@@ -177,7 +177,7 @@ function SignIn() {
                 : "Something went wrong sending the link. Try again in a minute."}
             </p>
           )}
-        </form>
+        </Form>
       )}
     </AuthShell>
   );

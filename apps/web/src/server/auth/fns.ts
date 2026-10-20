@@ -6,6 +6,7 @@
 import type { AuthContext } from "@flareling/auth";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { signInSchema } from "#/lib/schemas.ts";
 
 /** The signed-in account, or null. Sent to that account's own browser. */
 export const getSessionFn = createServerFn({ method: "GET" }).handler(
@@ -26,8 +27,8 @@ export const getSignInConfigFn = createServerFn({ method: "GET" }).handler(
 
 export const requestMagicLinkFn = createServerFn({ method: "POST" })
   .validator(
-    z.object({
-      email: z.email().max(254),
+    // The sign-in form's schema (src/lib/schemas.ts), plus what the page adds.
+    signInSchema.extend({
       redirect: z.string().max(2048).optional(),
       turnstileToken: z.string().max(4096).optional(),
     }),

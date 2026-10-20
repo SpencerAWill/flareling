@@ -7,9 +7,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Input,
-  Label,
-  NativeSelect,
 } from "@flareling/ui";
 import {
   createFileRoute,
@@ -21,9 +18,11 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { MailIcon, SendIcon, SparklesIcon } from "lucide-react";
 import { AnimatePresence } from "motion/react";
-import { type FormEvent, useId, useState } from "react";
+import { useState } from "react";
+import { Form, useAppForm } from "#/components/form.tsx";
 import { LeaveWorkspace, MemberRow } from "#/components/member-row.tsx";
 import { usePresence } from "#/lib/realtime.tsx";
+import { inviteSchema } from "#/lib/schemas.ts";
 import { ROLE_NAMES, workspaceTitle } from "#/lib/workspaces.ts";
 import {
   getMembersFn,
@@ -245,60 +244,60 @@ function useInvite(workspaceId: string) {
 
 function InviteForm({ workspaceId }: { workspaceId: string }) {
   const invite = useInvite(workspaceId);
-  const emailId = useId();
-  const roleId = useId();
-  const [pending, setPending] = useState(false);
   const [status, setStatus] = useState<
     { kind: "sent"; email: string } | { kind: "error"; message: string } | null
   >(null);
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const fields = new FormData(form);
-    const email = String(fields.get("email") ?? "").trim();
-    const role = fields.get("role") === "admin" ? "admin" : "member";
-    setPending(true);
-    setStatus(null);
-    const result = await invite(email, role);
-    setPending(false);
-    if (result.ok) {
-      form.reset();
-      setStatus({ kind: "sent", email });
-    } else {
-      setStatus({
-        kind: "error",
-        message:
-          INVITE_ERRORS[result.reason] ?? INVITE_ERRORS.unavailable ?? "",
-      });
-    }
-  }
+  const form = useAppForm({
+    defaultValues: {
+      email: "",
+      role: "member" as "admin" | "member",
+    },
+    validators: { onChange: inviteSchema },
+    onSubmit: async ({ value, formApi }) => {
+      setStatus(null);
+      const email = value.email.trim();
+      const result = await invite(email, value.role);
+      if (result.ok) {
+        formApi.reset();
+        setStatus({ kind: "sent", email });
+      } else {
+        setStatus({
+          kind: "error",
+          message:
+            INVITE_ERRORS[result.reason] ?? INVITE_ERRORS.unavailable ?? "",
+        });
+      }
+    },
+  });
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={emailId}>Email</Label>
-        <Input
-          id={emailId}
-          name="email"
-          type="email"
-          required
-          maxLength={254}
-          placeholder="teammate@example.com"
-          autoComplete="off"
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={roleId}>Role</Label>
-        <NativeSelect id={roleId} name="role" defaultValue="member">
-          <option value="member">Member</option>
-          <option value="admin">Admin</option>
-        </NativeSelect>
-      </div>
-      <Button type="submit" variant="flare" disabled={pending}>
-        <SendIcon />
-        Send invite
-      </Button>
+    <Form form={form} className="flex flex-col gap-3">
+      <form.AppField name="email">
+        {(field) => (
+          <field.TextField
+            label="Email"
+            type="email"
+            maxLength={254}
+            placeholder="teammate@example.com"
+            autoComplete="off"
+          />
+        )}
+      </form.AppField>
+      <form.AppField name="role">
+        {(field) => (
+          <field.SelectField label="Role">
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+          </field.SelectField>
+        )}
+      </form.AppField>
+      <form.AppForm>
+        <form.SubmitButton variant="flare">
+          <SendIcon />
+          Send invite
+        </form.SubmitButton>
+      </form.AppForm>
       {status?.kind === "sent" && (
         <p role="status" className="text-sm text-muted-foreground">
           Invite sent to {status.email}.
@@ -309,7 +308,7 @@ function InviteForm({ workspaceId }: { workspaceId: string }) {
           {status.message}
         </p>
       )}
-    </form>
+    </Form>
   );
 }
 

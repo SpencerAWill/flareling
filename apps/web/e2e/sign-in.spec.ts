@@ -58,3 +58,24 @@ test("refuses a link that was already used", async ({ page }, testInfo) => {
     "expired or has already been used",
   );
 });
+
+test("says what's wrong with an address before sending anything", async ({
+  page,
+}) => {
+  await page.goto("/sign-in");
+  await waitForHydration(page);
+  const email = page.getByLabel("Email");
+  await email.fill("ada@");
+  await email.blur();
+  await expect(page.getByText("Enter a valid email address.")).toBeVisible();
+  await expect(email).toHaveAttribute("aria-invalid", "true");
+  await expect(
+    page.getByRole("button", { name: "Email me a sign-in link" }),
+  ).toBeDisabled();
+
+  await email.fill("ada@example.com");
+  await expect(page.getByText("Enter a valid email address.")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Email me a sign-in link" }),
+  ).toBeEnabled();
+});

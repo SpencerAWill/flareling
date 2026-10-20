@@ -1,10 +1,11 @@
 import { WORKSPACE_NAME_MAX } from "@flareling/core/client";
-import { Button, Input, Label } from "@flareling/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { PlusIcon } from "lucide-react";
-import { type FormEvent, useId, useState } from "react";
+import { useState } from "react";
+import { newWorkspaceSchema } from "#/lib/schemas.ts";
 import { createWorkspaceFn } from "#/server/workspaces/fns.ts";
+import { Form, useAppForm } from "./form.tsx";
 
 const REASONS: Record<string, string> = {
   invalid_name: "Give the workspace a name.",
@@ -18,52 +19,56 @@ const REASONS: Record<string, string> = {
 export function NewWorkspace() {
   const create = useServerFn(createWorkspaceFn);
   const navigate = useNavigate();
-  const nameId = useId();
-  const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const name = String(new FormData(event.currentTarget).get("name") ?? "");
-    setPending(true);
-    setError(null);
-    const result = await create({ data: { name } }).catch(() => ({
-      ok: false as const,
-      reason: "unavailable" as const,
-    }));
-    if (result.ok) {
-      await navigate({
-        to: "/w/$publicId/members",
-        params: { publicId: result.publicId },
-      });
-      return;
-    }
-    setError(REASONS[result.reason] ?? REASONS.unavailable ?? null);
-    setPending(false);
-  }
+  const form = useAppForm({
+    defaultValues: { name: "" },
+    validators: { onChange: newWorkspaceSchema },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      const result = await create({ data: value }).catch(() => ({
+        ok: false as const,
+        reason: "unavailable" as const,
+      }));
+      if (result.ok) {
+        await navigate({
+          to: "/w/$publicId/members",
+          params: { publicId: result.publicId },
+        });
+        return;
+      }
+      setError(REASONS[result.reason] ?? REASONS.unavailable ?? null);
+    },
+  });
 
   return (
-    <form onSubmit={onSubmit} className="flex w-full flex-wrap items-end gap-2">
-      <div className="flex min-w-48 grow flex-col gap-2">
-        <Label htmlFor={nameId}>New workspace</Label>
-        <Input
-          id={nameId}
-          name="name"
-          required
-          maxLength={WORKSPACE_NAME_MAX}
-          placeholder="Acme, Inc."
-          autoComplete="organization"
-        />
-      </div>
-      <Button type="submit" variant="flare" disabled={pending}>
-        <PlusIcon />
-        Create workspace
-      </Button>
+    <Form
+      form={form}
+      className="flex w-full flex-col gap-2 sm:flex-row sm:items-start"
+    >
+      <form.AppField name="name">
+        {(field) => (
+          <field.TextField
+            label="New workspace"
+            className="min-w-48 grow"
+            maxLength={WORKSPACE_NAME_MAX}
+            placeholder="Acme, Inc."
+            autoComplete="organization"
+          />
+        )}
+      </form.AppField>
+      <form.AppForm>
+        {/* Lined up with the input, below its label. */}
+        <form.SubmitButton variant="flare" className="sm:mt-[1.375rem]">
+          <PlusIcon />
+          Create workspace
+        </form.SubmitButton>
+      </form.AppForm>
       {error && (
         <p role="alert" className="w-full text-sm text-destructive">
           {error}
         </p>
       )}
-    </form>
+    </Form>
   );
 }
