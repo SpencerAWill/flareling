@@ -23,7 +23,11 @@ inputs:
     required: true
   cloudflare-account-id:
     required: true
-  pulumi-access-token:
+  pulumi-organization:
+    description: The Pulumi org the OIDC exchange targets (vars.PULUMI_ORGANIZATION)
+    required: true
+  pulumi-user-login:
+    description: The Pulumi user its token is for (vars.PULUMI_USER_LOGIN)
     required: true
   cloudflare-api-token:
     description: Wrangler's deploy token (the environment's CLOUDFLARE_API_TOKEN)
@@ -55,6 +59,19 @@ runs:
     - run: pnpm install --frozen-lockfile
       shell: bash
 
+    # Exchanges the job's GitHub OIDC token for a short-lived Pulumi token and
+    # exports it as PULUMI_ACCESS_TOKEN for the steps below; no Pulumi token
+    # is stored. Needs `id-token: write` on the job. Pulumi Cloud trusts only
+    # the environments listed for this repo in the account's issuer (managed
+    # by SpencerAWill/spencerwill.com's infra/github): dev and prod here.
+    # An hour outlasts the job's 30-minute timeout.
+    - uses: pulumi/auth-actions@141415910c3beb54e03b48e9057c204c97b956f2 # v2.1.0
+      with:
+        organization: ${{ inputs.pulumi-organization }}
+        requested-token-type: urn:pulumi:token-type:access_token:personal
+        scope: user:${{ inputs.pulumi-user-login }}
+        token-expiration: 3600
+
     # No `command`: installs the CLI only. Same version as @pulumi/pulumi in
     # the catalog; bump them together.
     - uses: pulumi/actions@8e5e406f4007fca908480587cb9893c07090f58d # v7.0.0
@@ -68,7 +85,6 @@ runs:
       working-directory: infra/cloudflare
       env:
         STACK: ${{ inputs.environment }}
-        PULUMI_ACCESS_TOKEN: ${{ inputs.pulumi-access-token }}
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-infra-api-token }}
       run: |
         pulumi stack select --create "$STACK"
@@ -80,7 +96,6 @@ runs:
       working-directory: infra/cloudflare
       env:
         STACK: ${{ inputs.environment }}
-        PULUMI_ACCESS_TOKEN: ${{ inputs.pulumi-access-token }}
       run: |
         pulumi stack output --stack "$STACK" --json > "$RUNNER_TEMP/outputs.json"
         echo "url=$(jq -r .webBaseUrl "$RUNNER_TEMP/outputs.json")" >> "$GITHUB_OUTPUT"
@@ -133,7 +148,6 @@ runs:
       shell: bash
       env:
         STACK: ${{ inputs.environment }}
-        PULUMI_ACCESS_TOKEN: ${{ inputs.pulumi-access-token }}
         STRIPE_SECRET_KEY: ${{ inputs.stripe-secret-key }}
         STRIPE_WEBHOOK_SECRET: ${{ inputs.stripe-webhook-secret }}
       run: |

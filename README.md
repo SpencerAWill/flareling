@@ -248,7 +248,7 @@ A new stack's first deploy has no public URL yet: the custom domain can only poi
 
 Job names are `check: <what>`, `preview: <stack>` and `deploy: <environment>`. Rename them freely: the ruleset requires only `required`.
 
-CI secrets are scoped per GitHub environment where the plan allows, and fall back to repository secrets otherwise. `infra/github` creates and writes all of them except `PULUMI_ACCESS_TOKEN`, which is set by hand once for the deploys. Previews store no Pulumi token: they log in through OIDC. See [GitHub as code](#github-as-code).
+CI secrets are scoped per GitHub environment where the plan allows, and fall back to repository secrets otherwise. `infra/github` creates and writes all of them. No Pulumi token is stored at all: deploys and previews log in to Pulumi Cloud through GitHub OIDC (`pulumi/auth-actions`), for an hour-long token per job. See [GitHub as code](#github-as-code).
 
 ### Pulumi previews on PRs
 
@@ -264,7 +264,7 @@ How it stays safe, since any PR branch can run it:
 
 Setting it up in a new repo:
 
-1. Register this repo's `preview` environment with your Pulumi org's GitHub OIDC issuer. Pulumi Cloud allows one issuer per URL per org, so if one already exists, add a policy there instead of creating a second. For this account, the issuer is managed by `SpencerAWill/spencerwill.com`'s `infra/github`: add `"<owner>/<repo>": ["preview"]` to `pulumiOidcRepositories` and apply it. The policy matches GitHub's immutable subject, so check that `gh api repos/<owner>/<repo>/actions/oidc/customization/sub` shows `"use_immutable_subject": true`.
+1. Register this repo's `preview` environment with your Pulumi org's GitHub OIDC issuer (and `dev` and `prod`, for the deploys). Pulumi Cloud allows one issuer per URL per org, so if one already exists, add a policy there instead of creating a second. For this account, the issuer is managed by `SpencerAWill/spencerwill.com`'s `infra/github`: add `"<owner>/<repo>": ["dev", "prod", "preview"]` to `pulumiOidcRepositories` and apply it. The policy matches GitHub's immutable subject, so check that `gh api repos/<owner>/<repo>/actions/oidc/customization/sub` shows `"use_immutable_subject": true`.
 2. Set `pulumiPreviews: "true"`, `pulumiOrganization` and `pulumiUserLogin` in `infra/github/Pulumi.main.yaml`, then apply `infra/github`. That creates the `preview` environment, mints the read-only token, and sets the `PULUMI_ORGANIZATION`, `PULUMI_USER_LOGIN` and `PULUMI_PREVIEWS_ENABLED` variables. It refuses to apply on a plan where `preview` can't require a reviewer.
 
 ## Infrastructure (Pulumi)
@@ -329,7 +329,7 @@ It manages:
 It does not manage:
 
 - **Workflow files or `dependabot.yml`.** They already live in the repo.
-- **`PULUMI_ACCESS_TOKEN`.** This is the one secret set by hand, because CI needs it before Pulumi can run.
+- **Pulumi Cloud's trust in this repo.** The org's GitHub OIDC issuer policy lists which of this repo's environments may log in (`dev`, `prod`, `preview`). For this account it's managed in `SpencerAWill/spencerwill.com`'s `infra/github` (`pulumiOidcRepositories`).
 - **Personal or organization settings.**
 
 #### Plan limits
@@ -501,7 +501,7 @@ Still being decided. Feedback welcome.
 - **Preview deploys:** neither reference repo has per-PR previews yet. Decide whether they use Workers version preview URLs or a dedicated `preview` stack.
 - **Public third-party API:** if the suite needs one, add `apps/public-api` with [Hono](https://hono.dev) and `@hono/zod-openapi` for versioned routes, API keys, and generated OpenAPI docs. Internal callers still use RPC.
 - **Billing:** Stripe integration pattern (webhooks into Queues, entitlements in D1 or KV).
-- **Pulumi state backend:** Pulumi Cloud for now (the `infra/github` stack lives there). Self-managed R2 is still an option. Either way, `PULUMI_ACCESS_TOKEN` (or the R2 backend credentials) is the one CI secret set by hand.
+- **Pulumi state backend:** Pulumi Cloud for now (the `infra/github` stack lives there), which CI reaches through OIDC with no stored token. Self-managed R2 is still an option, but its credentials would be a CI secret set by hand.
 
 ## Contributing
 
