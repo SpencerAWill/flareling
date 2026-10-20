@@ -17,6 +17,7 @@ import { DurableObject } from "cloudflare:workers";
 import {
   CLOSE,
   CONNECTION_HEADERS,
+  connectionIdentity,
   PING,
   PONG,
   type RoomEvent,
@@ -24,6 +25,7 @@ import {
   type ServerMessage,
   type WorkspaceRoomApi,
 } from "@flareling/contracts";
+import { z } from "zod";
 
 /**
  * How long a socket may stay open. The session and membership are checked
@@ -32,11 +34,11 @@ import {
  */
 export const MAX_AGE_MS = 60 * 60 * 1000;
 
-interface Attachment {
-  readonly userId: string;
-  readonly sessionId: string;
-  readonly connectedAt: number;
-}
+/** What each socket carries through hibernation: who, and since when. */
+const attachmentSchema = connectionIdentity.extend({
+  connectedAt: z.number(),
+});
+type Attachment = z.infer<typeof attachmentSchema>;
 
 const userTag = (userId: string) => `user:${userId}`;
 const sessionTag = (sessionId: string) => `session:${sessionId}`;
@@ -55,11 +57,14 @@ export class WorkspaceRoom
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
       return new Response("Expected a WebSocket upgrade", { status: 426 });
     }
-    const userId = request.headers.get(CONNECTION_HEADERS.userId);
-    const sessionId = request.headers.get(CONNECTION_HEADERS.sessionId);
-    if (!userId || !sessionId) {
+    const identity = connectionIdentity.safeParse({
+      userId: request.headers.get(CONNECTION_HEADERS.userId),
+      sessionId: request.headers.get(CONNECTION_HEADERS.sessionId),
+    });
+    if (!identity.success) {
       return new Response("Missing connection identity", { status: 400 });
     }
+    const { userId, sessionId } = identity.data;
 
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server, [userTag(userId), sessionTag(sessionId)]);
@@ -167,7 +172,11 @@ export class WorkspaceRoom
   /** Who's here, once per person however many tabs they have open. */
   private broadcastPresence(except?: WebSocket): void {
     const online = [
-      ...new Set(this.openSockets(except).map((ws) => attachment(ws).userId)),
+      ...new Set(
+        this.openSockets(except)
+          .map((ws) => attachment(ws).userId)
+          .filter(Boolean),
+      ),
     ].sort();
     this.broadcast({ type: "presence", online }, except);
   }
@@ -185,6 +194,15 @@ export class WorkspaceRoom
   }
 }
 
+/**
+ * The socket's attachment, parsed: a socket accepted by a different version
+ * of this code could carry another shape. One that doesn't parse counts as
+ * nobody (left out of presence) and as expired, so the next alarm closes
+ * it, rather than breaking presence for everyone.
+ */
 function attachment(ws: WebSocket): Attachment {
-  return ws.deserializeAttachment() as Attachment;
+  const parsed = attachmentSchema.safeParse(ws.deserializeAttachment());
+  return parsed.success
+    ? parsed.data
+    : { userId: "", sessionId: "", connectedAt: 0 };
 }
