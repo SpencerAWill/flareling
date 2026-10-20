@@ -120,12 +120,12 @@ catalog:
   # Kept on the wrangler version @cloudflare/vitest-plugin and vite-plugin pin,
   # so the workspace has one wrangler.
   "@cloudflare/vite-plugin": ^1.63.1
-  wrangler: ^4.149.0
+  wrangler: ^4.150.0
 
   # Testing
   # Vitest and @cloudflare/vitest-plugin move together: the plugin peers on a
   # Vitest range (1.4.0 added Vitest 5). Dependabot groups them.
-  vitest: ^5.0.3
+  vitest: ^5.0.1
   "@cloudflare/vitest-plugin": ^1.4.0
   # The @vitest/* companions peer on the exact Vitest version, so they move
   # with `vitest` above (Dependabot groups them).
