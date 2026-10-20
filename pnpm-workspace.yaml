@@ -164,7 +164,7 @@ catalog:
   inquirer: ^12.11.1
   lint-staged: ^17.6.0
   sherif: ^1.13.0
-  turbo: ^2.11.7
+  turbo: ^2.11.8
   knip: ^6.41.0
   # tooling/scripts/sync-env: edits wrangler.jsonc keeping its comments.
   jsonc-parser: ^3.3.1
