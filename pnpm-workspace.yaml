@@ -71,13 +71,13 @@ catalogMode: strict
 catalog:
   # Language and types
   typescript: ^7.0.2
-  "@types/node": ^24.19.1
+  "@types/node": ^24.19.2
   "@types/react": ^19.3.0
   "@types/react-dom": ^19.3.0
 
   # App framework
-  "@tanstack/react-router": ^1.170.41
-  "@tanstack/react-start": ^1.168.60
+  "@tanstack/react-router": ^1.170.44
+  "@tanstack/react-start": ^1.169.1
   # Every form in apps/web (src/components/form.tsx), validated with the same
   # zod schemas as the server functions (src/lib/schemas.ts).
   "@tanstack/react-form": ^1.33.5
@@ -101,7 +101,7 @@ catalog:
   # Data, validation and ids
   drizzle-orm: ^0.45.4
   drizzle-kit: ^0.31.11
-  zod: ^4.6.5
+  zod: ^4.6.7
   "@t3-oss/env-core": ^0.13.11
   uuidv7: ^1.2.1
   temporal-polyfill: ^1.0.5
@@ -129,8 +129,8 @@ catalog:
   "@cloudflare/vitest-plugin": ^1.4.0
   # The @vitest/* companions peer on the exact Vitest version, so they move
   # with `vitest` above (Dependabot groups them).
-  "@vitest/coverage-istanbul": ^5.0.3
-  "@vitest/browser-playwright": ^5.0.3
+  "@vitest/coverage-istanbul": ^5.0.4
+  "@vitest/browser-playwright": ^5.0.4
   fast-check: ^4.10.2
   # `playwright` is the browser driver Vitest's browser mode uses; keep it on
   # the same version as @playwright/test.
@@ -139,12 +139,12 @@ catalog:
   "@axe-core/playwright": ^4.13.0
   # Outbound HTTP mocking in Workers tests (fetchMock was removed from the
   # Cloudflare test plugin; its docs point here).
-  msw: ^3.0.2
+  msw: ^3.0.3
   "@msw/cloudflare": ^0.2.0
-  storybook: ^10.6.1
-  "@storybook/react-vite": ^10.6.1
-  "@storybook/addon-vitest": ^10.6.1
-  "@storybook/addon-a11y": ^10.6.1
+  storybook: ^10.6.2
+  "@storybook/react-vite": ^10.6.2
+  "@storybook/addon-vitest": ^10.6.2
+  "@storybook/addon-a11y": ^10.6.2
   "@stryker-mutator/api": ^10.0.0
   "@stryker-mutator/core": ^10.0.0
   "@stryker-mutator/vitest-runner": ^10.0.0
