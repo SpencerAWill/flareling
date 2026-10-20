@@ -74,7 +74,7 @@ export async function waitForHydration(page: Page, timeoutMs = 10_000) {
 
 /**
  * Signs in as `email` with a magic link from Mailpit, ending on /my/account
- * with its requests finished: leaving a page mid-request aborts them, which
+ * once it has rendered: leaving a page mid-request aborts its requests, which
  * WebKit reports as "TypeError: Load failed".
  */
 export async function signInByEmail(page: Page, email: string) {
@@ -88,6 +88,10 @@ export async function signInByEmail(page: Page, email: string) {
   await waitForHydration(page);
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page).toHaveURL(/\/my\/account$/);
-  await waitForHydration(page);
-  await page.waitForLoadState("networkidle");
+  // The URL changes as the client-side navigation starts; the heading shows
+  // once its code and data have loaded. (networkidle doesn't help here: it
+  // tracks full page loads, not client-side navigations.)
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Your account" }),
+  ).toBeVisible();
 }

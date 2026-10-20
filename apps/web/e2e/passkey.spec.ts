@@ -39,7 +39,8 @@ test("adds a passkey, then signs in with it", async ({ page }, testInfo) => {
 
   // Signed out, the passkey alone gets back in.
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page.getByRole("link", { name: "Your account" })).toBeVisible();
+  // Signed out: home offers sign-in again.
+  await expect(page.getByRole("link", { name: "Get started" })).toBeVisible();
   await page.goto("/sign-in");
   await waitForHydration(page);
   // The virtual authenticator answers the page's autofill ceremony on its

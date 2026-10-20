@@ -1,9 +1,22 @@
-import { Button } from "@flareling/ui";
+import {
+  Button,
+  buttonVariants,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@flareling/ui";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { LogOutIcon } from "lucide-react";
+import { AppHeader } from "#/components/app-header.tsx";
+import { MemberAvatar, WorkspaceTile } from "#/components/avatars.tsx";
 import { NewWorkspace } from "#/components/new-workspace.tsx";
 import { Passkeys } from "#/components/passkeys.tsx";
 import { afterSessionChange, requireSignedIn } from "#/lib/auth.ts";
+import { ROLE_NAMES } from "#/lib/workspaces.ts";
 import {
   listPasskeysFn,
   listWorkspacesFn,
@@ -37,51 +50,90 @@ function Account() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-4 px-6">
-      <h1 className="text-2xl font-semibold">Your account</h1>
-      <p>
-        Signed in as <strong>{principal.primaryEmail}</strong>
-      </p>
-      <p className="text-sm text-neutral-700 dark:text-neutral-300">
-        Roles: {principal.roles.join(", ") || "none"}
-      </p>
-      <section
-        className="flex flex-col gap-2"
-        aria-labelledby="workspaces-heading"
-      >
-        <h2 id="workspaces-heading" className="text-lg font-semibold">
-          Workspaces
-        </h2>
-        <ul className="flex flex-col gap-1">
-          {workspaces.map((workspace) => (
-            <li key={workspace.id}>
-              {workspace.name}{" "}
-              <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                ({workspace.role})
-              </span>{" "}
-              <Link
-                to="/w/$publicId/members"
-                params={{ publicId: workspace.publicId }}
-                className="text-sm underline"
-              >
-                Members
-              </Link>{" "}
-              <Link
-                to="/w/$publicId/billing"
-                params={{ publicId: workspace.publicId }}
-                className="text-sm underline"
-              >
-                Billing
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <NewWorkspace />
-      </section>
-      <Passkeys passkeys={passkeys} />
-      <Button variant="secondary" className="self-start" onClick={onSignOut}>
-        Sign out
-      </Button>
-    </main>
+    <>
+      <AppHeader />
+      <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10 sm:px-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <MemberAvatar email={principal.primaryEmail} size="lg" />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Your account
+            </h1>
+            <p className="truncate text-sm text-muted-foreground">
+              Signed in as {principal.primaryEmail}
+            </p>
+          </div>
+          <Button variant="secondary" onClick={onSignOut}>
+            <LogOutIcon />
+            Sign out
+          </Button>
+        </div>
+
+        <section aria-labelledby="workspaces-heading">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <h2 id="workspaces-heading">Workspaces</h2>
+              </CardTitle>
+              <CardDescription>
+                Your personal workspace is just for you. Team workspaces are for
+                working with others.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="-mx-2 flex flex-col">
+                {workspaces.map((workspace) => (
+                  <li
+                    key={workspace.id}
+                    className="flex flex-wrap items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/60"
+                  >
+                    <WorkspaceTile
+                      name={workspace.name}
+                      personal={workspace.personal}
+                      className="size-8 text-sm"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">
+                        {workspace.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {ROLE_NAMES[workspace.role]}
+                      </span>
+                    </span>
+                    <span className="flex gap-1">
+                      <Link
+                        to="/w/$publicId/members"
+                        params={{ publicId: workspace.publicId }}
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "sm",
+                        })}
+                      >
+                        Members
+                      </Link>
+                      <Link
+                        to="/w/$publicId/billing"
+                        params={{ publicId: workspace.publicId }}
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "sm",
+                        })}
+                      >
+                        Billing
+                      </Link>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter className="border-t">
+              <NewWorkspace />
+            </CardFooter>
+          </Card>
+        </section>
+
+        <Passkeys passkeys={passkeys} />
+      </main>
+    </>
   );
 }

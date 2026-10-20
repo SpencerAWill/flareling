@@ -1,4 +1,5 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { MotionConfig } from "motion/react";
 import type { ReactNode } from "react";
 import { currentPrincipal } from "#/lib/auth.ts";
 import { getSessionFn } from "#/server/auth/fns.ts";
@@ -32,7 +33,8 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        {/* Animations follow the visitor's reduced-motion setting. */}
+        <MotionConfig reducedMotion="user">{children}</MotionConfig>
         <Scripts />
       </body>
     </html>

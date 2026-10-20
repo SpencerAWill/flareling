@@ -1,13 +1,15 @@
 import { isSafeRedirect } from "@flareling/auth/client";
-import { Button } from "@flareling/ui";
+import { Button, Input, Label, Separator } from "@flareling/ui";
 import {
   browserSupportsWebAuthnAutofill,
   startAuthentication,
 } from "@simplewebauthn/browser";
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { KeyRoundIcon, MailCheckIcon, MailIcon } from "lucide-react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { z } from "zod";
+import { AuthShell } from "#/components/auth-shell.tsx";
 import { Turnstile } from "#/components/turnstile.tsx";
 import { afterSessionChange } from "#/lib/auth.ts";
 import {
@@ -44,6 +46,7 @@ function SignIn() {
   const { turnstileSiteKey } = Route.useLoaderData();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const resetTurnstile = useRef<(() => void) | null>(null);
+  const emailId = useId();
 
   // The autofill ceremony's first request, while it's in flight. The button
   // waits for it before beginning its own: each begin sets the ceremony
@@ -101,27 +104,39 @@ function SignIn() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-6">
-      <h1 className="text-2xl font-semibold">Sign in</h1>
+    <AuthShell
+      title={state === "sent" ? "Check your inbox" : "Sign in"}
+      description={
+        state === "sent"
+          ? undefined
+          : "New here? Signing in creates your account."
+      }
+    >
       {state === "sent" ? (
-        <p role="status">
-          Check your email. If an account can use that address, a sign-in link
-          is on its way. It expires in 15 minutes.
-        </p>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <span className="grid size-12 place-items-center rounded-full bg-success/15 text-success">
+            <MailCheckIcon className="size-6" aria-hidden />
+          </span>
+          <p role="status" className="text-sm text-muted-foreground">
+            Check your email. If an account can use that address, a sign-in link
+            is on its way. It expires in 15 minutes.
+          </p>
+        </div>
       ) : (
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Email</span>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={emailId}>Email</Label>
             {/* "webauthn" lets the browser offer passkeys from this field. */}
-            <input
+            <Input
+              id={emailId}
               name="email"
               type="email"
               required
               defaultValue={suggestedEmail}
+              placeholder="you@example.com"
               autoComplete="username webauthn"
-              className="rounded border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
             />
-          </label>
+          </div>
           {turnstileSiteKey && (
             <Turnstile
               siteKey={turnstileSiteKey}
@@ -131,12 +146,19 @@ function SignIn() {
           )}
           <Button
             type="submit"
+            variant="flare"
             disabled={
               state === "sending" || (!!turnstileSiteKey && !turnstileToken)
             }
           >
+            <MailIcon />
             Email me a sign-in link
           </Button>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <Separator className="flex-1" />
+            or
+            <Separator className="flex-1" />
+          </div>
           <Button
             type="button"
             variant="secondary"
@@ -145,10 +167,11 @@ function SignIn() {
               signInWithPasskey(false).catch(() => setPasskeyError(true));
             }}
           >
+            <KeyRoundIcon />
             Sign in with a passkey
           </Button>
           {(state === "error" || passkeyError) && (
-            <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+            <p role="alert" className="text-sm text-destructive">
               {passkeyError
                 ? "That didn't work. Use an email link instead."
                 : "Something went wrong sending the link. Try again in a minute."}
@@ -156,6 +179,6 @@ function SignIn() {
           )}
         </form>
       )}
-    </main>
+    </AuthShell>
   );
 }

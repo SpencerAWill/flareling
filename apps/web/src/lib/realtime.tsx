@@ -40,9 +40,16 @@ interface RealtimeState {
   /** User ids with the workspace open, this one included once connected. */
   readonly online: ReadonlySet<string>;
   readonly connected: boolean;
+  /** Gave up for good (removed, or signed out): no point saying "connecting". */
+  readonly stopped: boolean;
 }
 
-const OFFLINE: RealtimeState = { online: new Set(), connected: false };
+const OFFLINE: RealtimeState = {
+  online: new Set(),
+  connected: false,
+  stopped: false,
+};
+const STOPPED: RealtimeState = { ...OFFLINE, stopped: true };
 const RealtimeContext = createContext<RealtimeState>(OFFLINE);
 
 /** Who has this workspace open right now. */
@@ -98,7 +105,7 @@ function useWorkspaceSocket(workspaceId: string): RealtimeState {
         // Reconnecting would be refused. Reloading shows why: the
         // workspace's 404, or the sign-in redirect.
         stopped = true;
-        setState(OFFLINE);
+        setState(STOPPED);
         router.invalidate().catch(() => {}); // superseded by a navigation
       }
       // Closes from this end too, in case the room's close frame is lost;
@@ -121,7 +128,11 @@ function useWorkspaceSocket(workspaceId: string): RealtimeState {
       ws.addEventListener("message", (event) => {
         const message = parse(event.data);
         if (message?.type === "presence") {
-          setState({ online: new Set(message.online), connected: true });
+          setState({
+            online: new Set(message.online),
+            connected: true,
+            stopped: false,
+          });
         } else if (message?.type === "members_changed") {
           router.invalidate().catch(() => {}); // superseded by a navigation
         } else if (message?.type === "disconnect") {
@@ -130,7 +141,8 @@ function useWorkspaceSocket(workspaceId: string): RealtimeState {
       });
       ws.addEventListener("close", (event) => {
         clearInterval(ping);
-        setState(OFFLINE);
+        // A stop already announced by the room's message stays a stop.
+        if (!stopped) setState(OFFLINE);
         const why = reasonForCode(event.code);
         if (why) disconnected(why);
         if (stopped) return;

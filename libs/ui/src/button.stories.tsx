@@ -31,3 +31,15 @@ export const Disabled: Story = {
     await expect(args.onClick).not.toHaveBeenCalled();
   },
 };
+
+export const Flare: Story = {
+  args: { variant: "flare", children: "Create workspace" },
+};
+
+export const Ghost: Story = {
+  args: { variant: "ghost" },
+};
+
+export const Destructive: Story = {
+  args: { variant: "destructive", children: "Remove" },
+};

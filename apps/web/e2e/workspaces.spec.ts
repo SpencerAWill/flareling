@@ -27,9 +27,8 @@ test("someone creates a team workspace and switches between workspaces", async (
   // Switching keeps the section: Billing here goes to Billing there.
   await page.getByRole("link", { name: "Billing" }).click();
   await expect(page).toHaveURL(/\/billing$/);
-  await page
-    .getByLabel("Workspace", { exact: true })
-    .selectOption({ label: "Personal (just you)" });
+  await page.getByRole("button", { name: /switch workspace/ }).click();
+  await page.getByRole("menuitem", { name: /Personal/ }).click();
   await expect(
     page.getByRole("heading", { name: "Billing for Personal" }),
   ).toBeVisible();

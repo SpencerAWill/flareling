@@ -24,12 +24,13 @@ test("signs in with an emailed link, and out again", async ({
   // A new account gets a personal workspace, which it owns.
   await expect(
     page.getByRole("listitem").filter({ hasText: "Personal" }),
-  ).toContainText("Personal (owner)");
+  ).toContainText("Owner");
 
   await page.getByRole("button", { name: "Sign out" }).click();
   // Wait for the home page to finish loading before leaving it: navigating
   // away mid-load aborts its requests, which the router logs as an error.
-  await expect(page.getByRole("link", { name: "Your account" })).toBeVisible();
+  // Signed out: home offers sign-in again.
+  await expect(page.getByRole("link", { name: "Get started" })).toBeVisible();
   await page.goto("/my/account");
   await expect(page).toHaveURL(/\/sign-in/);
 });

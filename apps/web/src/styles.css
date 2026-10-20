@@ -1,16 +1,8 @@
 @import "tailwindcss";
+/* The suite's tokens (colors, radii) and animation utilities. */
+@import "@flareling/ui/theme.css";
 
 /* Workspace libs aren't scanned automatically (Tailwind skips anything under
    node_modules, where they are linked), so each one that ships classes is
    listed. */
 @source "../../../libs/ui/src";
-
-@layer base {
-  :root {
-    color-scheme: light dark;
-  }
-
-  body {
-    @apply bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100;
-  }
-}
