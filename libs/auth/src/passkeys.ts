@@ -27,6 +27,7 @@ import {
 import { isoBase64URL, isoUint8Array } from "@simplewebauthn/server/helpers";
 import { and, eq, gt } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
+import { z } from "zod";
 import {
   type AuthContext,
   cookieName,
@@ -39,6 +40,29 @@ import { signIn } from "./principal.ts";
 import type { Principal } from "./rbac.ts";
 import { loadSession } from "./session.ts";
 import { randomToken } from "./tokens.ts";
+
+/** The transport names verification takes. */
+type Transports = NonNullable<
+  Parameters<typeof verifyAuthenticationResponse>[0]["credential"]["transports"]
+>;
+
+/** The transports column: a JSON array of the browser's transport names. */
+const storedTransports = z.array(z.string());
+
+/**
+ * The stored transports, for verification. They only hint which way to
+ * reach the authenticator, so a row that doesn't parse (written by an older
+ * version, or edited by hand) just leaves them out.
+ */
+function transportsOf(column: string | null): { transports?: Transports } {
+  if (!column) return {};
+  try {
+    const parsed = storedTransports.safeParse(JSON.parse(column));
+    return parsed.success ? { transports: parsed.data as Transports } : {};
+  } catch {
+    return {};
+  }
+}
 
 const { passkeyCredentials, users, webauthnChallenges } = schema;
 const CEREMONY_COOKIE = "webauthn";
@@ -273,9 +297,7 @@ export async function finishPasskeyAuthentication(
       id: credential.credentialId,
       publicKey: isoBase64URL.toBuffer(credential.publicKey),
       counter: credential.counter,
-      ...(credential.transports
-        ? { transports: JSON.parse(credential.transports) }
-        : {}),
+      ...transportsOf(credential.transports),
     },
     requireUserVerification: false,
   }).catch(() => undefined);

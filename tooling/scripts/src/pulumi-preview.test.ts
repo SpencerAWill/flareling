@@ -245,6 +245,11 @@ describe("failureLog", () => {
   it("keeps stdout that isn't JSON", () => {
     assert.equal(failureLog("", "plain text\n"), "plain text");
   });
+
+  it("keeps stdout that is JSON but not a preview's shape", () => {
+    const stdout = JSON.stringify({ diagnostics: "not a list" });
+    assert.equal(failureLog("", stdout), stdout);
+  });
 });
 
 function manyChanges(count: number, valueLength: number) {

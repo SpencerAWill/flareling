@@ -19,7 +19,8 @@
     "@flareling/log": "workspace:*",
     "@simplewebauthn/server": "catalog:",
     "drizzle-orm": "catalog:",
-    "temporal-polyfill": "catalog:"
+    "temporal-polyfill": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",

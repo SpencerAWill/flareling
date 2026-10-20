@@ -1,10 +1,11 @@
 import {
   createStripe,
   processStripeEvent,
-  type StripeEventMessage,
+  stripeEventMessage,
 } from "@flareling/billing";
 import { errorMessage, log, runWithLogContext } from "@flareling/log";
 import { Temporal } from "temporal-polyfill";
+import { z } from "zod";
 import { getEnv } from "./env.ts";
 import { runRetentionSweeps } from "./retention.ts";
 
@@ -17,8 +18,13 @@ export const CRONS = {
   retention: "17 3 * * *",
 } as const;
 
-/** Every message this Worker accepts, told apart by `kind`. */
-export type JobMessage = StripeEventMessage;
+/**
+ * Every message this Worker accepts, told apart by `kind`, each owned by the
+ * lib that produces it. Bodies are parsed with this, not trusted: a message
+ * that doesn't match (an unknown kind, a newer producer, a bad hand replay)
+ * fails with the reason, is retried, and ends in the dead-letter queue.
+ */
+const jobMessage = z.discriminatedUnion("kind", [stripeEventMessage]);
 
 /**
  * Delay before retry n (1-based): 30 s, 1 min, 2 min, 4 min, 8 min. With
@@ -31,7 +37,12 @@ export function retryDelaySeconds(attempts: number): number {
   return Math.min(30 * 2 ** (attempts - 1), 12 * 60 * 60);
 }
 
-async function handle(body: JobMessage): Promise<void> {
+async function handle(raw: unknown): Promise<void> {
+  const parsed = jobMessage.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(`Malformed job message: ${z.prettifyError(parsed.error)}`);
+  }
+  const body = parsed.data;
   switch (body.kind) {
     case "stripe.event": {
       const env = getEnv();
@@ -49,12 +60,6 @@ async function handle(body: JobMessage): Promise<void> {
         result,
       });
       return;
-    }
-    default: {
-      // A producer newer than this consumer, or a typo. Retrying sends it to
-      // the dead-letter queue, where it can be inspected and replayed.
-      const kind = (body as { kind?: unknown }).kind;
-      throw new Error(`Unknown job kind: ${String(kind)}`);
     }
   }
 }
@@ -74,7 +79,7 @@ export default {
     });
   },
 
-  async queue(batch: MessageBatch<JobMessage>): Promise<void> {
+  async queue(batch: MessageBatch<unknown>): Promise<void> {
     // One message at a time: each is a few subrequests, and acking or
     // retrying each separately means one bad message never redelivers the
     // rest of its batch.
@@ -99,4 +104,4 @@ export default {
       );
     }
   },
-} satisfies ExportedHandler<Env, JobMessage>;
+} satisfies ExportedHandler<Env, unknown>;

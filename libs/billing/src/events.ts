@@ -16,17 +16,25 @@
 import { getDb, schema } from "@flareling/db";
 import { log } from "@flareling/log";
 import { eq, sql } from "drizzle-orm";
+import { z } from "zod";
 import { planForLookupKey } from "./plans.ts";
 import { cryptoProvider, type Stripe } from "./stripe.ts";
 
 const { billingCustomers, stripeEvents, subscriptions } = schema;
 
-/** What goes on the queue: the id is all processing needs. */
-export interface StripeEventMessage {
-  readonly kind: "stripe.event";
-  readonly id: string;
-  readonly type: string;
-}
+/**
+ * What goes on the queue: the id is all processing needs. A schema, because
+ * the consumer (apps/jobs) parses what it receives rather than trusting a
+ * type: a producer from another version, or a message replayed by hand from
+ * the dead-letter queue, fails at the door with the reason.
+ */
+export const stripeEventMessage = z.object({
+  kind: z.literal("stripe.event"),
+  id: z.string().startsWith("evt_"),
+  type: z.string().min(1),
+});
+
+export type StripeEventMessage = z.infer<typeof stripeEventMessage>;
 
 /**
  * The event, if `rawBody` carries a valid Stripe signature for `secret`

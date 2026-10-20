@@ -39,6 +39,16 @@ export const CONNECTION_HEADERS = {
   sessionId: "X-Realtime-Session-Id",
 } as const;
 
+/**
+ * Who a connection is, as the room reads it from CONNECTION_HEADERS. Ids are
+ * UUIDs in practice; bounded rather than pinned to that, since the room
+ * uses them only as opaque tags (at most 256 characters each).
+ */
+export const connectionIdentity = z.object({
+  userId: z.string().min(1).max(64),
+  sessionId: z.string().min(1).max(64),
+});
+
 export const serverMessage = z.discriminatedUnion("type", [
   /** Who has the workspace open: user ids, once each however many tabs. */
   z.object({ type: z.literal("presence"), online: z.array(z.string()) }),

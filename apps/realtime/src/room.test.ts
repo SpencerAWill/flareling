@@ -83,6 +83,18 @@ describe("WorkspaceRoom", () => {
       (await room.fetch("https://room/", { headers: { Upgrade: "websocket" } }))
         .status,
     ).toBe(400);
+    // Ids become socket tags, which have a size limit: bounded, not trusted.
+    expect(
+      (
+        await room.fetch("https://room/", {
+          headers: {
+            Upgrade: "websocket",
+            [CONNECTION_HEADERS.userId]: "u".repeat(65),
+            [CONNECTION_HEADERS.sessionId]: "s",
+          },
+        })
+      ).status,
+    ).toBe(400);
   });
 
   it("tells everyone who's here, once per person however many tabs", async () => {
@@ -159,6 +171,22 @@ describe("WorkspaceRoom", () => {
 
     a.ws.send(JSON.stringify({ type: "presence", online: ["forged"] }));
     await a.closedWith(1008);
+  });
+
+  it("leaves a socket whose attachment doesn't parse out of presence, and closes it", async () => {
+    const room = freshRoom();
+    const odd = await connect(room, "odd");
+    const fine = await connect(room, "fine");
+    await fine.presence(["fine", "odd"]);
+
+    await runInDurableObject(room, (_, state) => {
+      for (const ws of state.getWebSockets("user:odd")) {
+        ws.serializeAttachment({ from: "another version" });
+      }
+    });
+    expect(await runDurableObjectAlarm(room)).toBe(true);
+    await odd.closedWith(CLOSE.expired);
+    await fine.presence(["fine"]);
   });
 
   it("closes sockets once they reach the maximum age, and keeps the rest", async () => {

@@ -16,7 +16,8 @@
     "rollback": "wrangler rollback --yes"
   },
   "dependencies": {
-    "@flareling/contracts": "workspace:*"
+    "@flareling/contracts": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",

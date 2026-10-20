@@ -6,13 +6,18 @@
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { z } from "zod";
 
-interface Totals {
-  total: Record<
-    "statements" | "branches" | "functions" | "lines",
-    { pct: number }
-  >;
-}
+/** The part of a json-summary report this reads. */
+const pct = z.object({ pct: z.number() });
+const coverageSummary = z.object({
+  total: z.object({
+    statements: pct,
+    branches: pct,
+    functions: pct,
+    lines: pct,
+  }),
+});
 
 const rows: string[] = [];
 for (const group of ["apps", "libs"]) {
@@ -20,7 +25,9 @@ for (const group of ["apps", "libs"]) {
   for (const name of readdirSync(group).sort()) {
     const file = join(group, name, "coverage", "coverage-summary.json");
     if (!existsSync(file)) continue;
-    const { total } = JSON.parse(readFileSync(file, "utf8")) as Totals;
+    const { total } = coverageSummary.parse(
+      JSON.parse(readFileSync(file, "utf8")),
+    );
     rows.push(
       `| ${group}/${name} | ${total.statements.pct}% | ${total.branches.pct}% | ${total.functions.pct}% | ${total.lines.pct}% |`,
     );

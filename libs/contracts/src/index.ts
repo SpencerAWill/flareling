@@ -1,6 +1,7 @@
 export {
   CLOSE,
   CONNECTION_HEADERS,
+  connectionIdentity,
   type DisconnectReason,
   PING,
   PONG,

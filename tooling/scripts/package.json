@@ -19,6 +19,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
-    "jsonc-parser": "catalog:"
+    "jsonc-parser": "catalog:",
+    "zod": "catalog:"
   }
 }

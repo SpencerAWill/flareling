@@ -16,7 +16,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import {
   failureLog,
-  type PreviewJson,
+  previewJson,
   type Rendered,
   renderFailure,
   renderPreview,
@@ -56,9 +56,9 @@ const stdout = read(preview);
 let rendered: Rendered | undefined;
 if (values["exit-code"] === "0") {
   try {
-    rendered = renderPreview(JSON.parse(stdout) as PreviewJson, context);
+    rendered = renderPreview(previewJson.parse(JSON.parse(stdout)), context);
   } catch {
-    // Not JSON: rendered as a failure below.
+    // Not JSON, or not the shape this reads: rendered as a failure below.
   }
 }
 rendered ??= renderFailure(failureLog(read(log), stdout), context);

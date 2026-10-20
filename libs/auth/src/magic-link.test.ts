@@ -155,6 +155,19 @@ describe("Turnstile", () => {
     expect(form?.get("remoteip")).toBe("203.0.113.7");
   });
 
+  it("fails closed on an answer it doesn't understand", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    network.use(
+      http.post(SITEVERIFY, () => HttpResponse.json({ success: "yes" })),
+    );
+    const ctx = withSecret();
+    await requestMagicLink(ctx, {
+      email: "odd@example.com",
+      turnstileToken: "good",
+    });
+    expect(ctx.sent).toEqual([]);
+  });
+
   it("fails closed on an error response, open when Cloudflare is unreachable", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     network.use(

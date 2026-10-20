@@ -269,6 +269,27 @@ describe("signing in with a passkey", () => {
     });
   });
 
+  it("passes the stored transports to verification, and skips a corrupt column", async () => {
+    const { principal } = await register("pk-transports@example.com");
+    const credentialId = await storedCredentialId(principal.userId);
+
+    await authenticate(credentialId, 0);
+    expect(
+      verifyAuthentication.mock.lastCall?.[0].credential.transports,
+    ).toEqual(["internal"]);
+
+    await getDb()
+      .update(schema.passkeyCredentials)
+      .set({ transports: "not json" })
+      .where(eq(schema.passkeyCredentials.userId, principal.userId));
+    const { result } = await authenticate(credentialId, 0);
+    // Transports are only a hint: still signed in, without them.
+    expect(result).toEqual({ ok: true, userId: principal.userId });
+    expect(
+      verifyAuthentication.mock.lastCall?.[0].credential,
+    ).not.toHaveProperty("transports");
+  });
+
   it("gives the same answer for an unknown credential and a failed check", async () => {
     const unknown = await authenticate("no-such-credential", 0);
     expect(unknown.result).toEqual({ ok: false, reason: "invalid" });
