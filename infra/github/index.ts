@@ -164,9 +164,18 @@ if (
     secretName: "CLOUDFLARE_PREVIEW_API_TOKEN",
     value: tokens.preview,
   });
+}
 
-  // What the jobs' pulumi/auth-actions step asks for. Variables rather than
-  // literals in cicd.yml, so a repo made from the template sets them here.
+// What every Pulumi job's pulumi/auth-actions step asks for: the previews'
+// and the deploys'. Variables rather than literals in cicd.yml, so a repo
+// made from the template sets them here. Both log in through OIDC; no Pulumi
+// token is stored in GitHub.
+if (deploysEnabled && !(pulumiOrganization && pulumiUserLogin)) {
+  throw new Error(
+    "deploysEnabled needs pulumiOrganization and pulumiUserLogin: deploys log in to Pulumi Cloud through OIDC.",
+  );
+}
+if (pulumiOrganization && pulumiUserLogin) {
   new github.ActionsVariable("pulumi-organization", {
     repository: repository.name,
     variableName: "PULUMI_ORGANIZATION",

@@ -21,7 +21,7 @@ Promotion: a Workers version belongs to one Worker, so dev's version can't be "p
 - **No Wrangler environments.** One `wrangler.jsonc` per app; `sync-env` points it at the stack.
 - **Names:** check jobs `check: <what>`, deploy jobs `deploy: <environment>`. Grouping by workflow name ("CI / lint") is more common, but checks and deploys share a workflow here, and the prefixes keep them apart. The ruleset requires only `required`, an aggregate of every check, so renaming a check can't break it.
 - **Off until it can work:** deploys run only when `DEPLOYS_ENABLED` is `true`. A deployed environment won't start without an email provider (ADR 0015).
-- **Secrets:** Cloudflare tokens and app secrets are environment secrets (readable only by a job deploying to that environment, from `main`); `PULUMI_ACCESS_TOKEN` is the one repo secret, read by the deploy jobs directly, like every other secret.
+- **Secrets:** Cloudflare tokens and app secrets are environment secrets (readable only by a job deploying to that environment, from `main`); the deploy jobs read them directly. Pulumi Cloud is reached through GitHub OIDC (`pulumi/auth-actions`, `id-token: write`), so no Pulumi token is stored (replaced the `PULUMI_ACCESS_TOKEN` repo secret on 2026-10-20).
 
 ## Consequences
 

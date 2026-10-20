@@ -40,7 +40,12 @@ export const isTemplate = config.getBoolean("isTemplate") ?? false;
 export const requiredChecks =
   config.getObject<string[]>("requiredChecks") ?? [];
 
-/** Whether cicd.yml deploys main (the DEPLOYS_ENABLED repo variable). */
+/**
+ * Whether cicd.yml deploys main (the DEPLOYS_ENABLED repo variable). The
+ * deploy jobs log in to Pulumi Cloud through OIDC, so turn it on only once
+ * the account's GitHub issuer trusts this repo's `dev` and `prod`
+ * environments, and pulumiOrganization and pulumiUserLogin are set.
+ */
 export const deploysEnabled = config.getBoolean("deploysEnabled") ?? false;
 
 /** GitHub user IDs allowed to approve prod deploys, where the plan allows it. */

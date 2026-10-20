@@ -20,5 +20,5 @@ They are separate because they need different credentials, change at different r
 
 - Every stateful resource is declared in code, never in the dashboard or through Wrangler auto-provisioning. Data resources are `protect`ed in prod.
 - In a zone shared with other sites (`spencerwill.com` today), only this suite's hostnames are declared: no zone-wide settings or WAF rules, which would change every site in the zone.
-- `PULUMI_ACCESS_TOKEN` is the one secret set by hand. The Pulumi GitHub provider clears optional fields that are left out, so every repo setting is declared explicitly.
+- CI stores no Pulumi token: jobs log in to Pulumi Cloud through GitHub OIDC (originally `PULUMI_ACCESS_TOKEN` was set by hand; replaced 2026-10-20). The Pulumi GitHub provider clears optional fields that are left out, so every repo setting is declared explicitly.
 - What GitHub can enforce depends on the plan, so rulesets and environment protection are gated on it in `infra/github/src/config.ts`.

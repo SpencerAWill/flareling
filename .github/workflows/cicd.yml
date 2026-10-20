@@ -496,6 +496,7 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+      id-token: write # the OIDC exchange with Pulumi Cloud
     environment:
       name: dev
       url: ${{ steps.deploy.outputs.url }}
@@ -511,7 +512,8 @@ jobs:
         with:
           environment: dev
           cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          pulumi-access-token: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          pulumi-organization: ${{ vars.PULUMI_ORGANIZATION }}
+          pulumi-user-login: ${{ vars.PULUMI_USER_LOGIN }}
           cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           cloudflare-infra-api-token: ${{ secrets.CLOUDFLARE_INFRA_API_TOKEN }}
           stripe-secret-key: ${{ secrets.STRIPE_SECRET_KEY }}
@@ -533,6 +535,7 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+      id-token: write # the OIDC exchange with Pulumi Cloud
     environment:
       name: prod
       url: ${{ steps.deploy.outputs.url }}
@@ -548,7 +551,8 @@ jobs:
         with:
           environment: prod
           cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          pulumi-access-token: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          pulumi-organization: ${{ vars.PULUMI_ORGANIZATION }}
+          pulumi-user-login: ${{ vars.PULUMI_USER_LOGIN }}
           cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           cloudflare-infra-api-token: ${{ secrets.CLOUDFLARE_INFRA_API_TOKEN }}
           stripe-secret-key: ${{ secrets.STRIPE_SECRET_KEY }}
