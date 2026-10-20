@@ -18,7 +18,8 @@
     "@flareling/db": "workspace:*",
     "@flareling/log": "workspace:*",
     "drizzle-orm": "catalog:",
-    "stripe": "catalog:"
+    "stripe": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",

@@ -17,7 +17,7 @@ import {
   it,
   vi,
 } from "vitest";
-import worker, { CRONS, type JobMessage, retryDelaySeconds } from "./index.ts";
+import worker, { CRONS, retryDelaySeconds } from "./index.ts";
 
 const network = setupNetwork();
 network.configure({ onUnhandledFrame: "error" });
@@ -35,13 +35,13 @@ afterAll(() => network.disable());
 async function run(
   messages: { id: string; body: unknown; attempts?: number }[],
 ) {
-  const batch = createMessageBatch<JobMessage>(
+  const batch = createMessageBatch<unknown>(
     "flareling-dev-jobs",
     messages.map((m) => ({
       id: m.id,
       timestamp: new Date(),
       attempts: m.attempts ?? 1,
-      body: m.body as JobMessage,
+      body: m.body,
     })),
   );
   const delays: Record<string, number | undefined> = {};
@@ -113,6 +113,16 @@ describe("the jobs queue consumer", () => {
     const result = await run([{ id: "m4", body: { kind: "nope" } }]);
     expect(result.retryMessages).toEqual([{ msgId: "m4" }]);
     expect(result.delays).toEqual({ m4: 30 });
+  });
+
+  it("refuses a known kind with a malformed body, saying why", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = await run([
+      { id: "m5", body: { kind: "stripe.event", id: "not-an-event" } },
+    ]);
+    expect(result.retryMessages).toEqual([{ msgId: "m5" }]);
+    expect(JSON.stringify(error.mock.calls)).toContain("Malformed job message");
+    expect(JSON.stringify(error.mock.calls)).toMatch(/id|type/);
   });
 });
 
