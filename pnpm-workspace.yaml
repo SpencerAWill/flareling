@@ -76,13 +76,13 @@ catalog:
   "@types/react-dom": ^19.3.0
 
   # App framework
-  "@tanstack/react-router": ^1.170.44
-  "@tanstack/react-start": ^1.169.1
+  "@tanstack/react-router": ^1.170.45
+  "@tanstack/react-start": ^1.169.3
   # Every form in apps/web (src/components/form.tsx), validated with the same
   # zod schemas as the server functions (src/lib/schemas.ts).
   "@tanstack/react-form": ^1.33.5
-  react: ^19.3.0
-  react-dom: ^19.3.0
+  react: ^19.3.1
+  react-dom: ^19.3.1
   vite: ^8.3.4
   "@vitejs/plugin-react": ^6.1.2
   tailwindcss: ^4.3.3
@@ -93,10 +93,10 @@ catalog:
   # primitives, variants, icons, and the enter/exit animation utilities.
   "@base-ui/react": ^1.9.0
   class-variance-authority: ^0.7.1
-  lucide-react: ^1.55.0
+  lucide-react: ^1.60.0
   tw-animate-css: ^1.4.0
   # Small entrance and list animations (apps/web), off for reduced motion.
-  motion: ^14.1.0
+  motion: ^14.4.0
 
   # Data, validation and ids
   drizzle-orm: ^0.45.4
@@ -104,7 +104,7 @@ catalog:
   zod: ^4.6.7
   "@t3-oss/env-core": ^0.13.11
   uuidv7: ^1.2.1
-  temporal-polyfill: ^1.0.5
+  temporal-polyfill: ^1.0.6
 
   # Auth and billing
   "@simplewebauthn/server": ^14.0.3
@@ -114,58 +114,58 @@ catalog:
   stripe: ^23.0.0
   # Verifies Cloudflare Access's tokens on apps/web's /dev/outbox (WebCrypto,
   # so it runs in Workers). What Cloudflare's Access docs use.
-  jose: ^6.2.12
+  jose: ^6.2.13
 
   # Cloudflare
   # Kept on the wrangler version @cloudflare/vitest-plugin and vite-plugin pin,
   # so the workspace has one wrangler.
-  "@cloudflare/vite-plugin": ^1.63.1
-  wrangler: ^4.149.0
+  "@cloudflare/vite-plugin": ^1.64.0
+  wrangler: ^4.151.3
 
   # Testing
   # Vitest and @cloudflare/vitest-plugin move together: the plugin peers on a
   # Vitest range (1.4.0 added Vitest 5). Dependabot groups them.
   vitest: ^5.0.3
-  "@cloudflare/vitest-plugin": ^1.4.0
+  "@cloudflare/vitest-plugin": ^1.4.6
   # The @vitest/* companions peer on the exact Vitest version, so they move
   # with `vitest` above (Dependabot groups them).
-  "@vitest/coverage-istanbul": ^5.0.4
-  "@vitest/browser-playwright": ^5.0.4
+  "@vitest/coverage-istanbul": ^5.0.5
+  "@vitest/browser-playwright": ^5.0.5
   fast-check: ^4.10.2
   # `playwright` is the browser driver Vitest's browser mode uses; keep it on
   # the same version as @playwright/test.
-  "@playwright/test": ^1.64.0
-  playwright: ^1.64.0
-  "@axe-core/playwright": ^4.13.0
+  "@playwright/test": ^1.64.1
+  playwright: ^1.64.1
+  "@axe-core/playwright": ^4.14.0
   # Outbound HTTP mocking in Workers tests (fetchMock was removed from the
   # Cloudflare test plugin; its docs point here).
   msw: ^3.0.3
   "@msw/cloudflare": ^0.2.0
-  storybook: ^10.6.2
-  "@storybook/react-vite": ^10.6.2
-  "@storybook/addon-vitest": ^10.6.2
-  "@storybook/addon-a11y": ^10.6.2
+  storybook: ^10.6.3
+  "@storybook/react-vite": ^10.6.3
+  "@storybook/addon-vitest": ^10.6.3
+  "@storybook/addon-a11y": ^10.6.3
   "@stryker-mutator/api": ^10.0.0
   "@stryker-mutator/core": ^10.0.0
   "@stryker-mutator/vitest-runner": ^10.0.0
 
   # Infrastructure
-  "@pulumi/pulumi": ^3.268.0
-  "@pulumi/cloudflare": ^6.22.0
+  "@pulumi/pulumi": ^3.270.0
+  "@pulumi/cloudflare": ^6.22.1
   "@pulumi/github": ^6.15.0
 
   # Repo tooling
   "@biomejs/biome": ^2.5.15
-  "@commitlint/cli": ^21.2.3
-  "@commitlint/config-conventional": ^21.2.3
-  "@commitlint/cz-commitlint": ^21.2.3
+  "@commitlint/cli": ^21.2.4
+  "@commitlint/config-conventional": ^21.2.4
+  "@commitlint/cz-commitlint": ^21.2.4
   commitizen: ^4.3.2
   husky: ^9.1.7
   inquirer: ^12.11.1
   lint-staged: ^17.6.0
   sherif: ^1.13.0
-  turbo: ^2.11.7
-  knip: ^6.41.0
+  turbo: ^2.11.10
+  knip: ^6.42.1
   # tooling/scripts/sync-env: edits wrangler.jsonc keeping its comments.
   jsonc-parser: ^3.3.1
 
