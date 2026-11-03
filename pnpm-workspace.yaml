@@ -120,7 +120,7 @@ catalog:
   # Kept on the wrangler version @cloudflare/vitest-plugin and vite-plugin pin,
   # so the workspace has one wrangler.
   "@cloudflare/vite-plugin": ^1.63.1
-  wrangler: ^4.149.0
+  wrangler: ^4.154.0
 
   # Testing
   # Vitest and @cloudflare/vitest-plugin move together: the plugin peers on a
